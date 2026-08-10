@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142019">
+  <title>فرم درخواست همکاری | سامان پولک</title>
+  <meta name="description" content="فرم درخواست همکاری سامان پولک برای ثبت اطلاعات اولیه متقاضیان استخدام.">
+  <link rel="icon" href="../assets/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="apply-page">
+  <header class="site-header">
+    <a class="brand" href="/">
+      <img src="../assets/logo.png" alt="سامان پولک" width="44" height="44">
+      <span>
+        <b>سامان پولک</b>
+        <small>فرم استخدام</small>
+      </span>
+    </a>
+    <nav>
+      <a href="/">صفحه استخدام</a>
+      <a class="nav-cta" href="#applicationForm">تکمیل فرم</a>
+    </nav>
+  </header>
+
+  <main class="form-shell">
+    <section class="form-hero">
+      <span class="eyebrow">درخواست همکاری</span>
+      <h1>فرم استخدام سامان پولک</h1>
+      <p>فیلدهای ستاره‌دار الزامی هستند. اطلاعات شما فقط در سامانه داخلی شرکت بررسی می‌شود.</p>
+    </section>
+
+    <section id="closedNotice" class="closed-notice" hidden>
+      <h2>در حال حاضر پذیرش درخواست فعال نیست</h2>
+      <p>سامان پولک در این بازه زمانی درخواست همکاری جدید دریافت نمی‌کند. لطفاً بعداً دوباره مراجعه کنید.</p>
+    </section>
+
+    <form id="applicationForm" class="application-form" novalidate>
+      <section class="form-section">
+        <h2>اطلاعات فردی</h2>
+        <div class="fields">
+          <label>نام <b>*</b><input name="firstName" required autocomplete="given-name"></label>
+          <label>نام خانوادگی <b>*</b><input name="lastName" required autocomplete="family-name"></label>
+          <fieldset class="field-group birth-fields">
+            <legend>تاریخ تولد <b>*</b></legend>
+            <select name="birthDay" required aria-label="روز تولد"><option value="">روز</option></select>
+            <select name="birthMonth" required aria-label="ماه تولد"><option value="">ماه</option></select>
+            <select name="birthYear" required aria-label="سال تولد"><option value="">سال</option></select>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>محل سکونت</h2>
+        <div class="fields">
+          <label>محل سکونت <b>*</b>
+            <select name="city" required>
+              <option value="">انتخاب کنید</option>
+              <option>تبریز</option><option>سهند</option><option>اسکو</option><option>آذرشهر</option>
+              <option>ایلخچی</option><option>مرند</option><option>شبستر</option><option>مراغه</option>
+              <option>بناب</option><option>ملکان</option><option>عجب‌شیر</option><option>اهر</option>
+              <option>بستان‌آباد</option><option>هریس</option><option>دیگر</option>
+            </select>
+          </label>
+          <label data-conditional="sahand">فاز محل سکونت <b>*</b>
+            <select name="sahandPhase">
+              <option value="">انتخاب کنید</option>
+              <option>فاز ۱</option><option>فاز ۲</option><option>فاز ۳</option><option>فاز ۴</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>خانوادگی و رفت‌وآمد</h2>
+        <div class="fields">
+          <fieldset class="field-group">
+            <legend>خودرو شخصی دارید؟ <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="hasCar" value="yes" required> بله</label>
+            <label class="radio-card"><input type="radio" name="hasCar" value="no"> خیر</label>
+          </fieldset>
+          <fieldset class="field-group">
+            <legend>وضعیت تأهل <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="maritalStatus" value="مجرد" required> مجرد</label>
+            <label class="radio-card"><input type="radio" name="maritalStatus" value="متأهل"> متأهل</label>
+          </fieldset>
+          <label>تعداد فرزندان <b>*</b><input name="childrenCount" type="number" min="0" required value="0"></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>وضعیت نظام وظیفه</h2>
+        <div class="fields">
+          <fieldset class="field-group field-wide">
+            <legend>وضعیت خدمت سربازی <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="militaryStatus" value="پایان خدمت" required> پایان خدمت</label>
+            <label class="radio-card"><input type="radio" name="militaryStatus" value="معافیت دائم"> معافیت دائم</label>
+            <label class="radio-card"><input type="radio" name="militaryStatus" value="معافیت موقت تحصیلی"> معافیت موقت تحصیلی</label>
+          </fieldset>
+          <label data-conditional="exemption">دلیل معافیت <b>*</b>
+            <select name="militaryExemptionReason">
+              <option value="">انتخاب کنید</option><option>کفالت</option><option>پزشکی</option><option>سایر</option>
+            </select>
+          </label>
+          <label data-conditional="medical">علت / وضعیت پزشکی <b>*</b><textarea name="militaryMedicalDetail" rows="3"></textarea></label>
+          <label data-conditional="other-exemption">توضیح معافیت <b>*</b><textarea name="militaryExplanation" rows="3"></textarea></label>
+          <label data-conditional="temp-exemption">معافیت تا چه تاریخی اعتبار دارد؟ <b>*</b><input name="militaryTempExpiry" placeholder="مثلاً ۱۴۰۶/۰۶/۳۱" inputmode="numeric"></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>سابقه کاری</h2>
+        <div class="fields">
+          <fieldset class="field-group">
+            <legend>سابقه کاری دارید؟ <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="hasWorkExperience" value="yes" required> بله</label>
+            <label class="radio-card"><input type="radio" name="hasWorkExperience" value="no"> خیر</label>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>سابقه بیمه تأمین اجتماعی</h2>
+        <div class="fields">
+          <fieldset class="field-group">
+            <legend>سابقه بیمه تأمین اجتماعی دارید؟ <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="hasInsurance" value="yes" required> بله</label>
+            <label class="radio-card"><input type="radio" name="hasInsurance" value="no"> خیر</label>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>توضیحات تکمیلی</h2>
+        <div class="fields">
+          <label class="field-wide">اگر توضیحی دارید، اینجا بنویسید
+            <textarea name="experienceNotes" rows="4" placeholder="نام محل‌ کارهای قبلی، مدت همکاری، سابقه بیمه، علت اتمام همکاری یا هر توضیح تکمیلی دیگر"></textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>تحصیلات</h2>
+        <div class="fields">
+          <fieldset class="field-group field-wide">
+            <legend>آخرین مدرک تحصیلی <b>*</b></legend>
+            <label class="radio-card"><input type="radio" name="education" value="دیپلم" required> دیپلم</label>
+            <label class="radio-card"><input type="radio" name="education" value="کاردانی"> کاردانی</label>
+            <label class="radio-card"><input type="radio" name="education" value="کارشناسی"> کارشناسی</label>
+            <label class="radio-card"><input type="radio" name="education" value="کارشناسی ارشد"> کارشناسی ارشد</label>
+            <label class="radio-card"><input type="radio" name="education" value="دکتری"> دکتری</label>
+            <label class="radio-card"><input type="radio" name="education" value="دیگر"> دیگر</label>
+          </fieldset>
+          <label data-conditional="education-other">عنوان مدرک تحصیلی <b>*</b><input name="educationOther"></label>
+          <label>رشته تحصیلی<input name="educationField"></label>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>اطلاعات تماس</h2>
+        <div class="fields">
+          <label>شماره موبایل <b>*</b><input name="mobile" required inputmode="tel" autocomplete="tel" placeholder="09xxxxxxxxx" dir="ltr"></label>
+        </div>
+      </section>
+
+      <div id="formErrors" class="form-errors" hidden></div>
+      <button id="submitBtn" class="btn primary submit-btn" type="submit">ثبت درخواست همکاری</button>
+      <p id="successMessage" class="success-message" hidden>
+        درخواست شما با موفقیت ثبت شد. اطلاعات شما بررسی خواهد شد و در صورت نیاز با شما تماس خواهیم گرفت.
+      </p>
+    </form>
+  </main>
+
+  <script src="../script.js" defer></script>
+</body>
+</html>

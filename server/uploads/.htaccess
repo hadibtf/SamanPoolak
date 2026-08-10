@@ -1,0 +1,6 @@
+# Serve uploaded images statically; no directory listing, no PHP execution here.
+Options -Indexes
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8
+<FilesMatch "\.(php|phtml|phps|cgi|pl|py)$">
+    Require all denied
+</FilesMatch>

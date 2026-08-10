@@ -1,0 +1,35 @@
+# Optional performance rules for the samanpoolak.ir landing site.
+# NOTE: the deploy script does NOT upload this file (so it never clobbers the
+# host's own .htaccess). If you want these rules live, merge them into the
+# .htaccess already in the samanpoolak.ir doc root via cPanel → File Manager.
+
+AddDefaultCharset UTF-8
+
+# --- gzip / compression ---
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml text/plain application/xml
+</IfModule>
+
+# --- cache rules ---
+# HTML and un-hashed CSS/JS must revalidate so edits show without clearing cache.
+# Images/fonts can be cached longer because they change rarely.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 0 seconds"
+  ExpiresByType application/javascript "access plus 0 seconds"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType font/ttf "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html|styles\.css|script\.js)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(webp|png|jpg|jpeg|ico|ttf)$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+</IfModule>

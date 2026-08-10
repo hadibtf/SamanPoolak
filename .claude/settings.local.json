@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install react-router-dom --save)",
+      "PowerShell($env:CI = \"true\"; npm run build)"
+    ]
+  }
+}

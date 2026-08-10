@@ -1,0 +1,211 @@
+.inquiries-page {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 16px 110px;
+}
+
+.inquiries-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.inquiries-header h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #1c1c1e;
+}
+
+.inquiries-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.refresh-btn,
+.status-btn {
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.refresh-btn {
+  background: #007aff;
+  color: white;
+  padding: 10px 14px;
+}
+
+.refresh-btn:disabled { opacity: 0.7; cursor: wait; }
+.refresh-btn:not(:disabled):active,
+.status-btn:active { transform: scale(0.97); }
+
+.inquiry-filters {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.inquiry-filters input {
+  width: 100%;
+  border: 1px solid rgba(118, 118, 128, 0.2);
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.filter-tabs {
+  display: flex;
+  background: rgba(118, 118, 128, 0.12);
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.filter-tabs button {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-tabs button.active {
+  background: #fff;
+  color: #007aff;
+  box-shadow: 0 5px 18px -12px rgba(0, 0, 0, 0.45);
+}
+
+.inquiries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.inquiry-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+.inquiry-card.handled { opacity: 0.72; }
+.inquiry-main { flex: 1; min-width: 0; }
+
+.inquiry-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.inquiry-top h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #1c1c1e;
+}
+
+.inquiry-state {
+  color: #007aff;
+  background: rgba(0, 122, 255, 0.1);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inquiry-card.handled .inquiry-state {
+  color: #30a46c;
+  background: rgba(48, 164, 108, 0.12);
+}
+
+.inquiry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 12px;
+  align-items: center;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.inquiry-meta a {
+  color: #007aff;
+  text-decoration: none;
+}
+
+.inquiry-meta i { margin-left: 5px; }
+
+.inquiry-note {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: rgba(118, 118, 128, 0.08);
+  border-radius: 10px;
+  color: #374151;
+  font-size: 13px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.handled-at {
+  display: block;
+  margin-top: 8px;
+  color: #7c8798;
+}
+
+.status-btn {
+  align-self: flex-start;
+  background: rgba(0, 122, 255, 0.1);
+  color: #007aff;
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .inquiries-header h1,
+[data-theme="dark"] .inquiry-top h3 { color: #f5f5f7; }
+[data-theme="dark"] .inquiries-header p,
+[data-theme="dark"] .inquiry-meta,
+[data-theme="dark"] .handled-at { color: #9a9aa2; }
+[data-theme="dark"] .inquiry-card,
+[data-theme="dark"] .inquiry-filters input {
+  background: var(--glass-surface);
+  border-color: var(--glass-border);
+}
+[data-theme="dark"] .filter-tabs button.active { background: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] .inquiry-note { background: rgba(255, 255, 255, 0.07); color: #d7d7dd; }
+
+@media (max-width: 640px) {
+  .inquiries-header,
+  .inquiry-card,
+  .inquiry-filters {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .refresh-btn,
+  .status-btn { width: 100%; }
+  .filter-tabs { overflow-x: auto; }
+}

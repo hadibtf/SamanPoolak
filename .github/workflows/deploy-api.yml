@@ -1,0 +1,42 @@
+name: Deploy API to cPanel
+
+# Deploys the server/ folder to the cPanel host over FTPS on every push to main
+# that touches the backend. Configure these repo secrets first
+# (Settings -> Secrets and variables -> Actions):
+#   FTP_SERVER      e.g. ftp.hadibtf.ir
+#   FTP_USERNAME    the FTP account username
+#   FTP_PASSWORD    the FTP account password
+#   FTP_REMOTE_DIR  subdomain doc root as the FTP user sees it, with trailing slash
+#                   e.g. /api.hadibtf.ir/  or  /public_html/api/
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./server/
+          server-dir: ${{ secrets.FTP_REMOTE_DIR }}
+          # Never overwrite live config or ship docs/samples/VCS metadata.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/*.md
+            config.php
+            config.sample.php

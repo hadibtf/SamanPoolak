@@ -1,0 +1,343 @@
+/* ===== Attendance tab (محاسبه با سوابق حضور و غیاب) ===== */
+
+.attendance-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.att-import-card { padding: 22px 24px; }
+
+.att-import-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.att-h2 { font-size: 18px; font-weight: 700; color: #1c1c1e; margin: 0; }
+.att-h3 { font-size: 16px; font-weight: 700; color: #1c1c1e; margin: 0 0 14px; }
+.att-sub { font-size: 13px; color: #8e8e93; margin: 4px 0 0; }
+
+.att-hint { font-size: 12.5px; color: #8e8e93; margin: 12px 0 0; line-height: 1.9; }
+.att-hint code {
+  background: rgba(118, 118, 128, 0.14);
+  padding: 1px 6px;
+  border-radius: 6px;
+  direction: ltr;
+  display: inline-block;
+}
+
+.att-btn-primary {
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0a84ff, #007aff);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 20px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -6px rgba(0, 122, 255, 0.5);
+  transition: transform 0.2s ease;
+  white-space: nowrap;
+}
+.att-btn-primary:hover { transform: translateY(-1px); }
+.att-btn-primary:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+/* Employee list */
+.att-emp-list { display: flex; flex-direction: column; gap: 10px; }
+
+.att-emp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: right;
+}
+.att-emp-row:hover { background: rgba(0, 122, 255, 0.06); transform: translateY(-1px); }
+.att-emp-row.disabled { opacity: 0.6; }
+
+.att-emp-name { font-size: 15px; font-weight: 600; color: #1c1c1e; }
+.att-emp-card { font-size: 12px; color: #6b7280; }
+
+/* Modal */
+.att-modal { max-width: 720px; margin: 0 auto; }
+
+.att-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.att-modal-head h2 { font-size: 19px; font-weight: 700; color: #1c1c1e; margin: 0; }
+
+.att-close {
+  border: none;
+  background: rgba(118, 118, 128, 0.14);
+  color: var(--active-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.att-range { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
+.att-range-pickers { display: flex; gap: 10px; flex: 1 1 320px; }
+.att-range-pickers .rmdp-container { flex: 1; }
+.att-range-pickers .rmdp-input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.att-quick { display: flex; gap: 8px; }
+.att-quick button {
+  border: none;
+  background: rgba(118, 118, 128, 0.12);
+  color: #3a3a3c;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.att-quick button:hover { background: rgba(0, 122, 255, 0.1); color: var(--active-color); }
+
+.att-range-total {
+  background: rgba(0, 122, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #0040a0;
+  margin-bottom: 16px;
+}
+.att-range-total strong { font-size: 15px; }
+.att-days-count { color: #6b7280; font-size: 13px; }
+
+/* Range work-time summary (worked / overtime / deduction / net) */
+.att-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+@media (max-width: 560px) {
+  .att-summary { grid-template-columns: repeat(2, 1fr); }
+}
+.att-sum-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(118, 118, 128, 0.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.att-sum-cell span { font-size: 11px; color: #8e8e93; }
+.att-sum-cell strong { font-size: 14px; color: #1c1c1e; }
+.att-sum-cell small { font-size: 10px; color: #9ca3af; }
+.att-sum-cell strong.pos { color: #1e7a37; }
+.att-sum-cell strong.neg { color: #c2700a; }
+.att-sum-net { background: rgba(0, 122, 255, 0.08); }
+
+.att-days { display: flex; flex-direction: column; gap: 6px; }
+
+/* Shared column tracks so every row's times/duration line up vertically. */
+.att-day-header,
+.att-day-main {
+  display: grid;
+  grid-template-columns: 1fr 124px 92px;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Column header */
+.att-day-header {
+  padding: 2px 12px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+.att-day-header span:nth-child(2) { text-align: center; }
+.att-day-header span:nth-child(3) { text-align: left; }
+
+.att-day {
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.att-day.flagged { background: rgba(255, 149, 0, 0.06); border-color: rgba(255, 149, 0, 0.25); }
+
+/* Compact one-line summary: day | exit–entry | duration (columns from shared rule) */
+.att-day-id { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.att-day-id b { font-size: 14px; font-weight: 700; color: #1c1c1e; }
+.att-day-date { font-size: 12px; color: #8e8e93; direction: ltr; }
+
+.att-day-times {
+  font-size: 13px;
+  color: #475569;
+  direction: ltr;
+  text-align: center;
+  white-space: nowrap;
+}
+.att-day-dur {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+/* Persian phrase ("۷ ساعت و ۲۴ دقیقه") must stay RTL; only the +H:MM token is LTR. */
+.att-worked { font-size: 13px; font-weight: 700; color: #1c1c1e; }
+.att-bal { font-size: 11px; font-weight: 600; direction: ltr; }
+.att-bal.pos { color: #1e7a37; }
+.att-bal.neg { color: #c2700a; }
+.att-day-dur.warn .att-worked { color: #c2700a; }
+
+/* Manually-entered time in the summary line: green + clickable to remove */
+.att-day-times .t-manual {
+  color: #1e7a37;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.att-scans { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+.att-scan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(118, 118, 128, 0.12);
+  color: #3a3a3c;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 16px;
+  direction: ltr;
+}
+.att-scan.manual { background: rgba(52, 199, 89, 0.16); color: #1e7a37; }
+.att-scan.dup { background: rgba(255, 149, 0, 0.18); color: #c2700a; }
+
+.att-scan-tag { font-size: 10px; font-style: normal; opacity: 0.8; }
+
+.att-scan-del {
+  border: none;
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.att-flag {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.att-flag.warn { background: rgba(255, 59, 48, 0.1); color: #b91c1c; }
+.att-flag.info { background: rgba(255, 149, 0, 0.1); color: #c2700a; }
+
+.att-exit-add { display: flex; gap: 8px; margin-top: 8px; }
+.att-exit-add input {
+  width: 100px;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  font-size: 13px;
+  direction: ltr;
+  text-align: center;
+  background: #fff;
+}
+.att-exit-add button,
+.att-dup-row button {
+  border: none;
+  background: var(--active-color);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.att-dup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+}
+.att-dup-row:not(:last-child) { border-bottom: 1px dashed rgba(0, 0, 0, 0.08); }
+
+/* Modal shell (self-contained — Payroll page doesn't import People.css) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 2000;
+}
+.modal-content {
+  background: rgba(248, 248, 250, 0.95);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.6);
+  width: 100%;
+  max-height: 90vh;
+  border-radius: 24px 24px 0 0;
+  padding: 24px;
+  overflow-y: auto;
+  animation: attSlideUp 0.3s ease-out;
+}
+@keyframes attSlideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Toast (self-contained) */
+.attendance-tab + .toast,
+.attendance-tab .toast,
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 13px 22px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 3000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+.toast.success { background: rgba(52, 199, 89, 0.95); }
+.toast.error { background: rgba(255, 59, 48, 0.95); }

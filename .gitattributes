@@ -1,0 +1,5 @@
+# Keep shell scripts LF-only so they run under bash on Windows checkouts too.
+*.sh text eol=lf
+
+# Windows batch files must be CRLF to run reliably under cmd.exe.
+*.bat text eol=crlf

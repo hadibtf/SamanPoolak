@@ -1,0 +1,320 @@
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('../src/fonts/Vazirmatn-Bold.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('../src/fonts/Vazirmatn-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Vazirmatn';
+    src: url('../src/fonts/Vazirmatn-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --bg-color: #f2f2f7; /* iOS System Gray/White */
+    --nav-bg: rgba(255, 255, 255, 0.6); /* Glass opacity */
+    --active-color: #007aff; /* iOS Blue */
+    --text-color: #8e8e93; /* iOS Unselected Gray */
+    --glass-surface: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.6);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Vazirmatn', sans-serif;
+    background-color: var(--bg-color);
+    height: 100vh;
+    overflow: hidden; /* Prevents the shell from scrolling, allows inner pages to scroll */
+    direction: rtl; /* Set default direction to RTL */
+}
+
+/* Auth splash shown while validating a stored session */
+.app-splash {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--active-color);
+    font-size: 44px;
+    animation: splashPulse 1.2s ease-in-out infinite;
+}
+
+.splash-logo {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+}
+
+@keyframes splashPulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.96); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* Ambient gradient mesh — gives the liquid-glass surfaces something to refract */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.18), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(175, 82, 222, 0.14), transparent 40%),
+        radial-gradient(circle at 78% 88%, rgba(52, 199, 89, 0.12), transparent 44%),
+        radial-gradient(circle at 18% 92%, rgba(255, 149, 0, 0.12), transparent 42%),
+        var(--bg-color);
+    pointer-events: none;
+}
+
+/* Container for the modular pages */
+.app-container {
+    width: 100%;
+    /* Leaves room for the bottom nav and respects iOS bottom safe area (home indicator) */
+    height: calc(100vh - 80px - env(safe-area-inset-bottom, 0px)); 
+    overflow-y: auto; /* Allow pages to scroll */
+}
+
+/* Liquid Glass Navigation */
+.glass-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: calc(80px + env(safe-area-inset-bottom, 0px));
+    background: var(--nav-bg);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%); /* Safari support */
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 -8px 32px -12px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 1000;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: color 0.2s ease;
+    flex: 1;
+    padding: 10px 0;
+    cursor: pointer;
+}
+
+.nav-item i {
+    font-size: clamp(18px, 5vw, 24px);
+    margin-bottom: 6px;
+    transition: transform 0.1s ease;
+}
+
+.nav-item span {
+    font-size: clamp(9px, 2.8vw, 11px);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.nav-item.active {
+    color: var(--active-color);
+}
+
+.nav-item:active i {
+    transform: scale(0.85); /* Subtle press effect */
+}
+
+/* 1. Force global inheritance on all form controls */
+input, 
+button, 
+textarea, 
+select, 
+option,
+.rmdp-input,
+.rmdp-container,
+.rmdp-calendar,
+.rmdp-day,
+.rmdp-week-day,
+.rmdp-header-values {
+    font-family: 'Vazirmatn', sans-serif !important;
+}
+
+.payroll-container,
+.res-box,
+.btn-calc,
+.btn-currency,
+.days-msg {
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+/* ===================== Dark theme =====================
+   Class-scoped overrides only (never bare element selectors), so the
+   off-screen PDF sources (.salary-slip / .invoice-sheet) stay light. */
+[data-theme="dark"] {
+    --bg-color: #0c0c11;
+    --nav-bg: rgba(28, 28, 34, 0.6);
+    --glass-surface: rgba(32, 32, 40, 0.74);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] body { color: #ececf1; }
+
+[data-theme="dark"] body::before {
+    background:
+        radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.16), transparent 42%),
+        radial-gradient(circle at 88% 12%, rgba(175, 82, 222, 0.14), transparent 40%),
+        radial-gradient(circle at 78% 88%, rgba(52, 199, 89, 0.10), transparent 44%),
+        var(--bg-color);
+}
+
+[data-theme="dark"] .glass-nav { border-top-color: rgba(255, 255, 255, 0.08); }
+
+/* Surfaces */
+[data-theme="dark"] .glass-card,
+[data-theme="dark"] .order-card,
+[data-theme="dark"] .card,
+[data-theme="dark"] .modal-content {
+    background: var(--glass-surface);
+    border-color: var(--glass-border);
+    color: #ececf1;
+}
+
+/* Headings + primary text */
+[data-theme="dark"] .orders-header h1,
+[data-theme="dark"] .order-list h1,
+[data-theme="dark"] .payroll-container h1,
+[data-theme="dark"] .header-section h1,
+[data-theme="dark"] .settings-page h1,
+[data-theme="dark"] .section-title,
+[data-theme="dark"] .sub-title,
+[data-theme="dark"] .settings-section-title,
+[data-theme="dark"] .detail strong,
+[data-theme="dark"] .order-product,
+[data-theme="dark"] .person-info h3,
+[data-theme="dark"] .settings-user-info strong,
+[data-theme="dark"] .user-row-info strong,
+[data-theme="dark"] .recon-col h4,
+[data-theme="dark"] .timeline-body strong,
+[data-theme="dark"] h2 { color: #f5f5f7; }
+
+[data-theme="dark"] .submit-order label,
+[data-theme="dark"] .order-list label,
+[data-theme="dark"] .user-form label,
+[data-theme="dark"] .form-group label,
+[data-theme="dark"] .recon-col .row,
+[data-theme="dark"] .person-info p,
+[data-theme="dark"] .detail span,
+[data-theme="dark"] .timeline-date,
+[data-theme="dark"] .muted,
+[data-theme="dark"] .result-count,
+[data-theme="dark"] .state-banner-label { color: #9a9aa2; }
+
+/* Form controls */
+[data-theme="dark"] .submit-order input,
+[data-theme="dark"] .submit-order select,
+[data-theme="dark"] .submit-order textarea,
+[data-theme="dark"] .order-list input,
+[data-theme="dark"] .order-list select,
+[data-theme="dark"] .submit-order .rmdp-input,
+[data-theme="dark"] .order-list .rmdp-input,
+[data-theme="dark"] .user-form input,
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea,
+[data-theme="dark"] .payroll-container input,
+[data-theme="dark"] .rmdp-input {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #f5f5f7 !important;
+}
+
+/* Explicitly paint the native <option> popup (classic, works in Chrome, Edge,
+   and Firefox). Both background and text are set so they're self-consistent
+   regardless of how each engine themes the popup. */
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup {
+    background-color: #1d1d24;
+    color: #f5f5f7;
+}
+
+/* Bottom-sheet modal: solid dark surface (the translucent glass reads washed
+   out over the overlay) with readable text. */
+[data-theme="dark"] .modal-overlay { background: rgba(0, 0, 0, 0.6); }
+[data-theme="dark"] .modal-content {
+    background: #16161c;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ececf1;
+}
+[data-theme="dark"] .modal-content h2 { color: #f5f5f7; }
+
+/* Soft-tinted blocks */
+[data-theme="dark"] .recon-col,
+[data-theme="dark"] .toggle-row,
+[data-theme="dark"] .item-desc,
+[data-theme="dark"] .user-row,
+[data-theme="dark"] .marking-chip,
+[data-theme="dark"] .chip { background: rgba(255, 255, 255, 0.07); color: #d7d7dd; }
+
+[data-theme="dark"] .toggle-row span,
+[data-theme="dark"] .marking-chip span { color: #ececf1; }
+
+/* Dropdowns / search */
+[data-theme="dark"] .search-dropdown { background: #1d1d24; border-color: rgba(255, 255, 255, 0.1); }
+[data-theme="dark"] .dropdown-item { border-bottom-color: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] .dropdown-item:hover { background: rgba(10, 132, 255, 0.18); }
+
+/* Payroll labels + readonly */
+[data-theme="dark"] .payroll-container label { color: #9a9aa2; }
+[data-theme="dark"] .readonly-field { background: rgba(255, 255, 255, 0.05) !important; }
+
+/* iOS segmented control */
+[data-theme="dark"] .segmented-control { background: rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .segmented-control .segment { color: #c7c7cf; }
+[data-theme="dark"] .segmented-control .segment.active { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+/* Jalali date-picker calendar popup (react-multi-date-picker) */
+[data-theme="dark"] .rmdp-wrapper,
+[data-theme="dark"] .rmdp-calendar,
+[data-theme="dark"] .rmdp-panel-body { background: #1d1d24; color: #ececf1; }
+[data-theme="dark"] .rmdp-wrapper { box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55); border: 1px solid rgba(255, 255, 255, 0.08); }
+[data-theme="dark"] .rmdp-header-values,
+[data-theme="dark"] .rmdp-header-values span { color: #f5f5f7; }
+[data-theme="dark"] .rmdp-week-day { color: #93c5fd; }
+[data-theme="dark"] .rmdp-day span { color: #ececf1; }
+[data-theme="dark"] .rmdp-day.rmdp-deactive span,
+[data-theme="dark"] .rmdp-day.rmdp-disabled span { color: #66666e; }
+[data-theme="dark"] .rmdp-arrow { border-color: #93c5fd; }
+[data-theme="dark"] .rmdp-arrow-container:hover { background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+[data-theme="dark"] .rmdp-arrow-container:hover .rmdp-arrow { border-color: #fff; }
+[data-theme="dark"] .rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover { background: rgba(10, 132, 255, 0.35) !important; }
+[data-theme="dark"] .rmdp-day.rmdp-today span { background: rgba(255, 255, 255, 0.14); color: #fff; }
+[data-theme="dark"] .rmdp-day.rmdp-selected span:not(.highlight) { background: #0a84ff; box-shadow: none; color: #fff; }
+[data-theme="dark"] .rmdp-month-picker,
+[data-theme="dark"] .rmdp-year-picker { background: #1d1d24; }
+[data-theme="dark"] .rmdp-ym .rmdp-day span { color: #ececf1; }
+
+/* Holidays (official events + Fridays) — see src/holidays.js / JalaliDatePicker.
+   react-multi-date-picker puts the mapDays className on the inner <span>, so we
+   target the span (not the .rmdp-day cell). Selected days keep their own color. */
+.rmdp-day span.rmdp-holiday { color: #ff3b30; font-weight: 600; }
+.rmdp-day.rmdp-selected span.rmdp-holiday { color: #fff; }
+[data-theme="dark"] .rmdp-day span.rmdp-holiday { color: #ff6961; }
+[data-theme="dark"] .rmdp-day.rmdp-selected span.rmdp-holiday { color: #fff; }
