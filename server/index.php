@@ -12,6 +12,7 @@ require __DIR__ . '/routes/people.php';
 require __DIR__ . '/routes/orders.php';
 require __DIR__ . '/routes/markings.php';
 require __DIR__ . '/routes/expenses.php';
+require __DIR__ . '/routes/issue_notes.php';
 require __DIR__ . '/routes/attendance.php';
 require __DIR__ . '/routes/holidays.php';
 require __DIR__ . '/routes/inquiries.php';
@@ -53,6 +54,10 @@ $routes = [
     ['POST',   '/expenses',         'expenses_create', true],
     ['PUT',    '/expenses/{id}',    'expenses_update', true],
     ['DELETE', '/expenses/{id}',    'expenses_delete', true],
+    ['GET',    '/issue-notes',      'issue_notes_list', true],
+    ['POST',   '/issue-notes',      'issue_notes_create', true],
+    ['PUT',    '/issue-notes/{id}', 'issue_notes_update', true],
+    ['DELETE', '/issue-notes/{id}', 'issue_notes_delete', true],
     ['POST',   '/inquiries',        'inquiries_create', false],
     ['GET',    '/inquiries',        'inquiries_list',   true],
     ['PUT',    '/inquiries/{id}',   'inquiries_update', true],

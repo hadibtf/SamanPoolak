@@ -138,6 +138,13 @@ export const expensesApi = {
   remove: (id) => api.del(`/expenses/${encodeURIComponent(id)}`),
 };
 
+export const issueNotesApi = {
+  list: (updatedAfter) => api.get(`/issue-notes${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  create: (note) => api.post('/issue-notes', note),
+  update: (id, patch) => api.put(`/issue-notes/${encodeURIComponent(id)}`, patch),
+  remove: (id) => api.del(`/issue-notes/${encodeURIComponent(id)}`),
+};
+
 export const inquiriesApi = {
   list: () => api.get('/inquiries'),
   update: (id, patch) => api.put(`/inquiries/${encodeURIComponent(id)}`, patch),

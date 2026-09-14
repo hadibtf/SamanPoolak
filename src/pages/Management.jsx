@@ -19,13 +19,16 @@ const Management = () => {
             to="/orders/list"
             className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}
           >
-            لیست سفارشات
+            سفارشات
           </NavLink>
           <NavLink
             to="/orders/inquiries"
             className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}
           >
             درخواست‌ها
+          </NavLink>
+          <NavLink to="/orders/issue-notes" className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}>
+            برگه خروج
           </NavLink>
         </div>
       </div>

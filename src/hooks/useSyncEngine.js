@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { db } from '../db';
 import {
-  peopleApi, ordersApi, markingsApi, expensesApi, attendanceApi, holidaysApi, getToken,
+  peopleApi, ordersApi, markingsApi, expensesApi, issueNotesApi, attendanceApi, holidaysApi, getToken,
 } from '../api/client';
 import { onSyncRequest } from '../syncBus';
 import { applyServerHolidays } from '../holidays';
@@ -28,6 +28,7 @@ const RESOURCES = [
   { table: 'orders',     key: 'orders',     cursorKey: 'signit_orders_synced_at',     list: ordersApi.list },
   { table: 'markings',   key: 'markings',   cursorKey: 'signit_markings_synced_at',    list: markingsApi.list },
   { table: 'expenses',   key: 'expenses',   cursorKey: 'signit_expenses_synced_at',    list: expensesApi.list },
+  { table: 'issueNotes', key: 'issueNotes', cursorKey: 'signit_issue_notes_synced_at', list: issueNotesApi.list },
   { table: 'attendance', key: 'attendance', cursorKey: 'signit_attendance_synced_at',  list: attendanceApi.list },
   { table: 'holidays',   key: 'holidays',   cursorKey: 'signit_holidays_synced_at',    list: holidaysApi.list, onApplied: afterHolidaysPull },
 ];

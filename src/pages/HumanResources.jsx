@@ -298,14 +298,14 @@ const HumanResources = () => {
             className={`segment ${activeTab === 'calc' ? 'active' : ''}`}
             onClick={() => setActiveTab('calc')}
           >
-            محاسبه حقوق
+            حقوق
           </button>
           <button
             type="button"
             className={`segment ${activeTab === 'attendance' ? 'active' : ''}`}
             onClick={() => setActiveTab('attendance')}
           >
-            حضور و غیاب
+            حضور غیاب
           </button>
           <button
             type="button"

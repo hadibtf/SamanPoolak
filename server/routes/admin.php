@@ -8,7 +8,7 @@ function admin_backup($params, $body, $user)
 {
     require_admin($user);
     $out = ['version' => 1, 'exportedAt' => to_iso(now_utc())];
-    foreach (['people', 'orders', 'markings', 'expenses', 'inquiries', 'job_applications', 'app_settings', 'users'] as $t) {
+    foreach (['people', 'orders', 'markings', 'expenses', 'issue_notes', 'inquiries', 'job_applications', 'app_settings', 'users'] as $t) {
         $out[$t] = db()->query("SELECT * FROM $t")->fetchAll();
     }
     json_response($out);
@@ -68,12 +68,13 @@ function admin_restore($params, $body, $user)
     $orders = $body['orders'] ?? null;
     $markings = $body['markings'] ?? null;
     $expenses = $body['expenses'] ?? null;
+    $issueNotes = $body['issue_notes'] ?? null;
     $users = $body['users'] ?? null;
     $inquiries = $body['inquiries'] ?? null;
     $jobApplications = $body['job_applications'] ?? null;
     $appSettings = $body['app_settings'] ?? null;
 
-    if (!is_array($people) && !is_array($orders) && !is_array($markings) && !is_array($expenses) && !is_array($inquiries) && !is_array($jobApplications) && !is_array($appSettings)) {
+    if (!is_array($people) && !is_array($orders) && !is_array($markings) && !is_array($expenses) && !is_array($issueNotes) && !is_array($inquiries) && !is_array($jobApplications) && !is_array($appSettings)) {
         json_error('فایل پشتیبان نامعتبر است', 422);
     }
 
@@ -83,6 +84,7 @@ function admin_restore($params, $body, $user)
         if (is_array($orders))   { db()->exec('DELETE FROM orders');   restore_insert_rows('orders', $orders); }
         if (is_array($markings)) { db()->exec('DELETE FROM markings'); restore_insert_rows('markings', $markings); }
         if (is_array($expenses)) { db()->exec('DELETE FROM expenses'); restore_insert_rows('expenses', $expenses); }
+        if (is_array($issueNotes)) { db()->exec('DELETE FROM issue_notes'); restore_insert_rows('issue_notes', $issueNotes); }
         if (is_array($inquiries)) { db()->exec('DELETE FROM inquiries'); restore_insert_rows('inquiries', $inquiries); }
         if (is_array($jobApplications)) { db()->exec('DELETE FROM job_applications'); restore_insert_rows('job_applications', $jobApplications); }
         if (is_array($appSettings)) { db()->exec('DELETE FROM app_settings'); restore_insert_rows('app_settings', $appSettings); }

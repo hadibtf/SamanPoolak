@@ -127,6 +127,16 @@ db.version(8).stores({
   holidays: 'id, dateKey, year'
 });
 
+// v9: issue notes (برگه خروج) — server-backed outgoing-goods slips.
+db.version(9).stores({
+  people: 'id, category, firstName, lastName, syncStatus', counters: 'name',
+  orders: '++id, orderNumber, date, customerId, syncStatus', markings: '++id, customerId, name',
+  expenses: '++id, date, category, syncStatus', attendanceScans: '++id, cardNo, dateKey, source',
+  attendanceEmployees: 'cardNo', personCards: 'personId', attendance: 'id, cardNo, dateKey, source, syncStatus',
+  holidays: 'id, dateKey, year',
+  issueNotes: 'id, date, customerName, receiverFirstName, receiverLastName, syncStatus'
+});
+
 /**
  * Generates a prefixed ID based on category:
  * 0-[AutoNumber] for Employees

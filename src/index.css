@@ -318,3 +318,17 @@ option,
 .rmdp-day.rmdp-selected span.rmdp-holiday { color: #fff; }
 [data-theme="dark"] .rmdp-day span.rmdp-holiday { color: #ff6961; }
 [data-theme="dark"] .rmdp-day.rmdp-selected span.rmdp-holiday { color: #fff; }
+
+/* خروج کالا: formal slip preview over a blurred, gently dimmed workspace. */
+.issue-note-overlay { position: fixed; inset: 0; z-index: 4000; display: grid; place-items: center; padding: 12px; overflow: hidden; overscroll-behavior: none; touch-action: none; background: rgba(15, 23, 42, .42); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); animation: fadeIn .18s ease; }
+.issue-slip { position: absolute; top: 50%; left: 50%; width: 794px; min-width: 794px; height: 559px; min-height: 559px; overflow: hidden; padding: 28px; border: 5px double #1e3a5f; border-radius: 8px; background: #fffdf3; color: #172033; box-shadow: 0 24px 70px rgba(0,0,0,.35); font-family: Vazirmatn, sans-serif; transform: translate(-50%, -50%) scale(var(--issue-slip-scale, 1)); transform-origin: center; }
+.issue-slip-head { display:flex; justify-content:space-between; align-items:flex-start; padding:0 4px 18px; border-bottom:2px solid #1e3a5f; }.issue-slip-head h1 { margin:0; color:#142b4a; font-size:30px; }.issue-slip-head div { font-weight:600; line-height:2; text-align:left; }
+.issue-slip-meta { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px 4px; font-size:15px; }.issue-slip-meta span { border-bottom:1px dashed #64748b; padding-bottom:7px; }
+.issue-slip-table { width:100%; border-collapse:collapse; font-size:14px; }.issue-slip-table th,.issue-slip-table td { border:1px solid #334155; padding:10px 8px; text-align:right; vertical-align:top; }.issue-slip-table th { background:#e7eef7; color:#152b49; font-size:14px; }.issue-slip-table th:first-child,.issue-slip-table td:first-child { width:48px; text-align:center; }.issue-slip-table tbody tr { height:48px; }
+.issue-slip-signatures { display:flex; justify-content:space-between; gap:70px; margin:70px 25px 4px; }.issue-slip-signatures span { flex:1; border-top:1px solid #334155; padding-top:9px; text-align:center; font-weight:700; }.issue-slip-actions { display:flex; justify-content:flex-end; gap:14px; margin-top:26px; padding-top:16px; border-top:1px solid #d4d4c8; }.issue-slip-actions .open-note-btn { min-width:116px; }.issue-slip-actions i { margin-left:6px; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@media(max-width:640px){.issue-note-overlay{padding:10px}}
+
+/* Native time inputs have an intrinsic minimum width in some mobile browsers. */
+.issue-header-grid > label { min-width: 0; max-width: 100%; overflow: hidden; }
+.issue-header-grid .issue-time-input { display: block; box-sizing: border-box; inline-size: 100% !important; min-inline-size: 0 !important; max-inline-size: 100% !important; width: 100% !important; direction: ltr; appearance: none; -webkit-appearance: none; }

@@ -8,6 +8,7 @@ import SubmitOrder from './pages/SubmitOrder';
 import OrderList from './pages/OrderList';
 import OrderView from './pages/OrderView';
 import Inquiries from './pages/Inquiries';
+import IssueNotes from './pages/IssueNotes';
 import SettingsInfo from './pages/SettingsInfo';
 import Login from './pages/Login';
 import { useAuth } from './auth/AuthContext';
@@ -28,6 +29,7 @@ function AppShell() {
             <Route index element={<SubmitOrder />} />
             <Route path="list" element={<OrderList />} />
             <Route path="inquiries" element={<Inquiries />} />
+            <Route path="issue-notes" element={<IssueNotes />} />
           </Route>
           <Route path="/orders/edit/:id" element={<SubmitOrder />} />
           <Route path="/orders/view/:id" element={<OrderView />} />

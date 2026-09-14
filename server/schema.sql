@@ -105,6 +105,19 @@ CREATE TABLE IF NOT EXISTS expenses (
     INDEX idx_expenses_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Outgoing-goods issue notes (برگه خروج). One product per note.
+CREATE TABLE IF NOT EXISTS issue_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date VARCHAR(8) NOT NULL DEFAULT '', date_text VARCHAR(64) NOT NULL DEFAULT '', time VARCHAR(8) NOT NULL DEFAULT '',
+    receiver_first_name VARCHAR(128) NOT NULL DEFAULT '', receiver_last_name VARCHAR(128) NOT NULL DEFAULT '',
+    customer_name VARCHAR(255) NOT NULL DEFAULT '', product_name VARCHAR(255) NOT NULL DEFAULT '',
+    quantity DECIMAL(14,3) NOT NULL DEFAULT 0, weight DECIMAL(14,3) NOT NULL DEFAULT 0,
+    quantity_unit VARCHAR(64) NOT NULL DEFAULT '', packaging VARCHAR(255) NOT NULL DEFAULT '', description TEXT NULL,
+    items LONGTEXT NULL, -- JSON array: productName, quantity, weight, quantityUnit, packaging, description
+    created_by INT NULL, updated_by INT NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL, deleted_at DATETIME NULL,
+    INDEX idx_issue_notes_date (date), INDEX idx_issue_notes_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Public inquiries submitted from the marketing landing page.
 CREATE TABLE IF NOT EXISTS inquiries (
     id          INT AUTO_INCREMENT PRIMARY KEY,
