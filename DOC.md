@@ -128,23 +128,27 @@ use-case, provided app-wide.
 ## 5. Screens (`src/pages/`)
 
 - **Login** — username/password → `AuthContext.login`.
-- **Payroll** (`Payroll.jsx`) — pure calculator (results not persisted); Jalali
+- **Human Resources** (`HumanResources.jsx`) — pure calculator (results not persisted); Jalali
   working-day math; insurance only on the insured base; non-insured
   additions/deductions; copy-net (always Rial); A5 salary-slip PDF (plain
-  download). Currency comes from `SettingsContext`.
-- **People** (`People.jsx`) — CRUD via `peopleApi`, mirrored to Dexie; opens
+  download). Its tabs include attendance, payroll settings, and job applications.
+  Currency comes from `SettingsContext`.
+- **People** (`People.jsx`) — CRUD via `peopleApi`, mirrored to Dexie; available
+  from the People tab in Settings & Information; opens
   **MarkingsManager** for customers.
 - **MarkingsManager** (`components/`) — per-customer images; compresses
   (`utils/image.js`) and uploads via `markingsApi` (server saves a file, returns a
   URL).
-- **Orders** — `Orders.jsx` (layout + segmented control + `<Outlet/>`),
+- **Management** — `Management.jsx` (layout + segmented control + `<Outlet/>`),
   `SubmitOrder.jsx` (create/edit a multi-item order; server assigns id +
   `YYMMN`), `OrderList.jsx` (filterable), `OrderView.jsx` (per-item panels: state
-  machine + timeline + weight reconciliation + pricing; **invoice PDF**).
+  machine + timeline + weight reconciliation + pricing; **invoice PDF**), and
+  the Inquiries tab (`Inquiries.jsx`).
 - **Expenses** (`Expenses.jsx`) — add/edit/delete modal + filterable list
   (category/date/text) + total; amounts via `formatMoney`; shows "entered by".
-- **Settings** (`Settings.jsx`) — theme toggle, currency, logout, and **admin**
-  user management + DB backup/restore.
+- **Settings & Information** (`SettingsInfo.jsx`) — theme toggle, currency,
+  logout, and **admin** user management + DB backup/restore; its People tab
+  renders the people directory.
 
 ---
 

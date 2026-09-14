@@ -16,7 +16,7 @@ import {
   PLATING_LABELS,
   INVOICE_PLATING_LABELS,
 } from '../constants';
-import './Orders.css';
+import './Management.css';
 
 const fa = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('fa-IR'));
 // Raw Rial formatting — the invoice is always in Rial, never converted.

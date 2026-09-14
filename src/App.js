@@ -1,16 +1,14 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import BottomNav from './components/BottomNav';
-import Payroll from './pages/Payroll';
+import HumanResources from './pages/HumanResources';
 import Expenses from './pages/Expenses';
-import Orders from './pages/Orders';
+import Management from './pages/Management';
 import SubmitOrder from './pages/SubmitOrder';
 import OrderList from './pages/OrderList';
 import OrderView from './pages/OrderView';
-import People from './pages/People';
 import Inquiries from './pages/Inquiries';
-import JobApplications from './pages/JobApplications';
-import Settings from './pages/Settings';
+import SettingsInfo from './pages/SettingsInfo';
 import Login from './pages/Login';
 import { useAuth } from './auth/AuthContext';
 import { useSyncEngine } from './hooks/useSyncEngine';
@@ -24,18 +22,19 @@ function AppShell() {
       <main className="app-container">
         <Routes>
           <Route path="/" element={<Navigate to="/payroll" replace />} />
-          <Route path="/payroll" element={<Payroll />} />
+          <Route path="/payroll" element={<HumanResources />} />
           <Route path="/expenses" element={<Expenses />} />
-          <Route path="/orders" element={<Orders />}>
+          <Route path="/orders" element={<Management />}>
             <Route index element={<SubmitOrder />} />
             <Route path="list" element={<OrderList />} />
+            <Route path="inquiries" element={<Inquiries />} />
           </Route>
           <Route path="/orders/edit/:id" element={<SubmitOrder />} />
           <Route path="/orders/view/:id" element={<OrderView />} />
-          <Route path="/people" element={<People />} />
-          <Route path="/inquiries" element={<Inquiries />} />
-          <Route path="/job-applications" element={<JobApplications />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/people" element={<Navigate to="/settings" replace />} />
+          <Route path="/inquiries" element={<Navigate to="/orders/inquiries" replace />} />
+          <Route path="/job-applications" element={<Navigate to="/payroll" replace />} />
+          <Route path="/settings" element={<SettingsInfo />} />
           <Route path="*" element={<Navigate to="/payroll" replace />} />
         </Routes>
       </main>

@@ -4,13 +4,10 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const BottomNav = () => {
   const navItems = [
-    { to: '/payroll', label: 'حقوق', icon: 'fa-calculator' },
+    { to: '/payroll', label: 'منابع انسانی', icon: 'fa-calculator' },
     { to: '/expenses', label: 'هزینه‌ها', icon: 'fa-wallet' },
-    { to: '/orders', label: 'سفارشات', icon: 'fa-box-open' },
-    { to: '/people', label: 'افراد', icon: 'fa-users' },
-    { to: '/inquiries', label: 'درخواست‌ها', icon: 'fa-inbox' },
-    { to: '/job-applications', label: 'استخدام', icon: 'fa-id-card-clip' },
-    { to: '/settings', label: 'تنظیمات', icon: 'fa-gear' },
+    { to: '/orders', label: 'مدیریت', icon: 'fa-box-open' },
+    { to: '/settings', label: 'تنظیمات و اطلاعات', icon: 'fa-gear' },
   ];
 
   return (

@@ -9,7 +9,7 @@ import { db, jalaliDateKey, yymmPrefix, getCustomerMarkings, newUid } from '../d
 import { ordersApi, ApiError } from '../api/client';
 import { useSettings } from '../context/SettingsContext';
 import { MATERIAL_OPTIONS, PLATING_OPTIONS, ORDER_STATES } from '../constants';
-import './Orders.css';
+import './Management.css';
 
 const blankItem = () => ({
   uid: newUid(),

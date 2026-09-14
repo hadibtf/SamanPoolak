@@ -14,6 +14,26 @@ const YES_NO = {
   no: 'خیر',
 };
 
+const AGE_MIN = 18;
+const AGE_MAX = 30;
+const EDUCATION_OPTIONS = [
+  { value: 'زیر دیپلم', label: 'زیر دیپلم' },
+  { value: 'دیپلم', label: 'دیپلم' },
+  { value: 'کارشناسی', label: 'کارشناسی' },
+  { value: 'کارشناسی ارشد', label: 'کارشناسی ارشد' },
+  { value: 'دکتری', label: 'دکتری' },
+];
+
+const FilterDropdown = ({ label, active, children }) => (
+  <details className="job-filter-menu">
+    <summary className={active ? 'is-active' : ''}>
+      <span>{label}</span>
+      <i className="fa-solid fa-chevron-down" aria-hidden="true"></i>
+    </summary>
+    <div className="job-filter-menu-content">{children}</div>
+  </details>
+);
+
 const currentJalaliYear = Number(
   new Intl.DateTimeFormat('fa-IR-u-nu-latn', { year: 'numeric' }).format(new Date()),
 );
@@ -50,11 +70,11 @@ const JobApplications = () => {
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [educationFilter, setEducationFilter] = useState('all');
-  const [carFilter, setCarFilter] = useState('all');
-  const [workFilter, setWorkFilter] = useState('all');
-  const [minAge, setMinAge] = useState('');
-  const [maxAge, setMaxAge] = useState('');
+  const [educationFilter, setEducationFilter] = useState([]);
+  const [carFilter, setCarFilter] = useState([]);
+  const [workFilter, setWorkFilter] = useState([]);
+  const [minAge, setMinAge] = useState(AGE_MIN);
+  const [maxAge, setMaxAge] = useState(AGE_MAX);
   const [sort, setSort] = useState('new-unprocessed');
   const [toast, setToast] = useState(null);
   const [hiringOpen, setHiringOpen] = useState(true);
@@ -88,19 +108,14 @@ const JobApplications = () => {
     load();
   }, [load]);
 
-  const educationOptions = useMemo(
-    () => [...new Set(items.map((item) => item.education).filter(Boolean))],
-    [items],
-  );
-
   const filtered = useMemo(() => {
     const term = search.trim();
     const list = items.filter((item) => {
       if (statusFilter !== 'all' && item.status !== statusFilter) return false;
-      if (educationFilter !== 'all' && item.education !== educationFilter) return false;
-      if (carFilter !== 'all' && item.hasCar !== carFilter) return false;
-      if (workFilter === 'yes' && !item.hasWorkExperience) return false;
-      if (workFilter === 'no' && item.hasWorkExperience) return false;
+       if (educationFilter.length && !educationFilter.includes(item.education)) return false;
+       if (carFilter.length && !carFilter.includes(item.hasCar)) return false;
+       const workValue = item.hasWorkExperience ? 'yes' : 'no';
+       if (workFilter.length && !workFilter.includes(workValue)) return false;
       const age = ageOf(item.birthDate);
       if (minAge !== '' && (age === null || age < Number(minAge))) return false;
       if (maxAge !== '' && (age === null || age > Number(maxAge))) return false;
@@ -135,6 +150,12 @@ const JobApplications = () => {
   };
 
   const openCount = items.filter((item) => item.status === 'new').length;
+
+  const toggleFilterValue = (setFilter, value) => {
+    setFilter((values) => (values.includes(value)
+      ? values.filter((entry) => entry !== value)
+      : [...values, value]));
+  };
 
   const toggleHiring = async () => {
     try {
@@ -201,35 +222,21 @@ const JobApplications = () => {
       </div>
 
       <div className="glass-card jobs-filters">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="جستجو بر اساس نام، موبایل یا شهر..." />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="all">همه وضعیت‌ها</option>
-          {Object.entries(STATUSES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-        <select value={educationFilter} onChange={(e) => setEducationFilter(e.target.value)}>
-          <option value="all">همه مدارک</option>
-          {educationOptions.map((value) => <option key={value} value={value}>{value}</option>)}
-        </select>
-        <select value={carFilter} onChange={(e) => setCarFilter(e.target.value)}>
-          <option value="all">خودرو: همه</option>
-          <option value="yes">خودرو دارد</option>
-          <option value="no">خودرو ندارد</option>
-        </select>
-        <select value={workFilter} onChange={(e) => setWorkFilter(e.target.value)}>
-          <option value="all">سابقه کاری: همه</option>
-          <option value="yes">سابقه دارد</option>
-          <option value="no">سابقه ندارد</option>
-        </select>
-        <input value={minAge} onChange={(e) => setMinAge(e.target.value)} type="number" min="0" placeholder="حداقل سن" />
-        <input value={maxAge} onChange={(e) => setMaxAge(e.target.value)} type="number" min="0" placeholder="حداکثر سن" />
-        <select value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="new-unprocessed">جدیدترین بررسی‌نشده</option>
-          <option value="newest">جدیدترین درخواست</option>
-          <option value="oldest">قدیمی‌ترین درخواست</option>
-          <option value="name">نام</option>
-          <option value="status">وضعیت</option>
-          <option value="interview">تاریخ مصاحبه</option>
-        </select>
+        <div className="jobs-filter-primary">
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="جستجو بر اساس نام، موبایل یا شهر..." />
+          <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label="مرتب‌سازی">
+            <option value="new-unprocessed">جدیدترین بررسی‌نشده</option><option value="newest">جدیدترین درخواست</option><option value="oldest">قدیمی‌ترین درخواست</option><option value="name">نام</option><option value="status">وضعیت</option><option value="interview">تاریخ مصاحبه</option>
+          </select>
+        </div>
+        <div className="jobs-filter-controls">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="all">همه وضعیت‌ها</option>{Object.entries(STATUSES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
+          <FilterDropdown label="مدرک تحصیلی" active={educationFilter.length > 0}>
+            {EDUCATION_OPTIONS.map(({ value, label }) => <label className="job-check-item" key={value}><input type="checkbox" checked={educationFilter.includes(value)} onChange={() => toggleFilterValue(setEducationFilter, value)} /><span>{label}</span></label>)}
+          </FilterDropdown>
+          <FilterDropdown label="خودرو" active={carFilter.length > 0}>{Object.entries(YES_NO).map(([value, label]) => <label className="job-check-item" key={value}><input type="checkbox" checked={carFilter.includes(value)} onChange={() => toggleFilterValue(setCarFilter, value)} /><span>{label}</span></label>)}</FilterDropdown>
+          <FilterDropdown label="سابقه کاری" active={workFilter.length > 0}>{Object.entries(YES_NO).map(([value, label]) => <label className="job-check-item" key={value}><input type="checkbox" checked={workFilter.includes(value)} onChange={() => toggleFilterValue(setWorkFilter, value)} /><span>{label}</span></label>)}</FilterDropdown>
+          <div className="job-age-range"><div className="job-age-label"><span>بازه سن</span><b>{minAge.toLocaleString('fa-IR')} تا {maxAge.toLocaleString('fa-IR')} سال</b></div><div className="job-range-track"><input aria-label="حداقل سن" type="range" min={AGE_MIN} max={AGE_MAX} value={minAge} onChange={(e) => setMinAge(Math.min(Number(e.target.value), maxAge))} /><input aria-label="حداکثر سن" type="range" min={AGE_MIN} max={AGE_MAX} value={maxAge} onChange={(e) => setMaxAge(Math.max(Number(e.target.value), minAge))} /></div></div>
+        </div>
       </div>
 
       <div className="jobs-list">

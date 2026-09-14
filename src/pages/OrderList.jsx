@@ -6,7 +6,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
 import { ordersApi, ApiError } from '../api/client';
-import './Orders.css';
+import './Management.css';
 
 const OrderList = () => {
   const navigate = useNavigate();

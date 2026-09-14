@@ -17,7 +17,8 @@ team of users on different devices all see the same live data.
 
 - **Auth & users** — per-user login (bcrypt + bearer tokens); the whole app is
   gated. Admins add/remove users and see "entered by" stamps on orders.
-- **People directory** — employees, customers, service providers; server-assigned
+- **People directory** — employees, customers, service providers; available from
+  the People tab under Settings & Information; server-assigned
   prefixed IDs (`0-/1-/2-`), multiple phones/addresses, Jalali birth date.
 - **Per-customer markings** — a directory of stamp/engraving images per customer
   (uploaded as files on the server), reused when creating orders.
@@ -26,11 +27,13 @@ team of users on different devices all see the same live data.
   plating, hardening), pricing, a 7-stage production workflow with history, and
   weight reconciliation. Server-assigned `YYMMN` order numbers.
 - **Invoices & salary slips** — client-rendered PDFs (A4 invoice, A5 salary slip).
-- **Payroll** — year-1405 calculator (insurance, allowances, overtime, deductions,
-  reward) with a Rial/Toman-aware result and a printable slip.
+- **Human resources** — year-1405 payroll calculator (insurance, allowances,
+  overtime, deductions, reward), attendance, payroll settings, and job
+  applications; includes a Rial/Toman-aware result and printable slip.
 - **Expenses** — shared, filterable expense tracker (category, date range, search).
-- **Settings** — light/dark theme, app-wide Rial/Toman currency, admin database
-  backup/restore.
+- **Settings & Information** — light/dark theme, app-wide Rial/Toman currency,
+  admin database backup/restore, and the People directory.
+- **Management** — order entry/list/detail plus the Inquiries tab.
 - **Local-mirror sync** — reads are instant from an IndexedDB mirror; the app
   polls the server (~15s) so one user's change appears for the others. Reading
   works offline; writing needs a connection.
@@ -105,8 +108,8 @@ src/
 ├── hooks/useSyncEngine.js    # polls /…?updatedAfter and mirrors deltas into Dexie
 ├── utils/image.js            # client-side image compression → Base64
 ├── components/               # BottomNav, MarkingsManager
-└── pages/                    # Payroll, People, Orders/SubmitOrder/OrderList/OrderView,
-                              #   Expenses, Settings, Login (+ matching .css)
+└── pages/                    # HumanResources (+ payroll tabs), Management (+ orders/inquiries),
+                              #   SettingsInfo (+ People), Expenses, Login (+ matching .css)
 server/                       # PHP API (see server/DOC.md, server/DEPLOY.md)
 landing/                      # standalone static marketing site (samanpoolak.ir) — see landing/README.md
 jobs/                         # standalone careers site (jobs.samanpoolak.ir)
@@ -118,11 +121,11 @@ todo/                         # open feature plans (DECIDED/OPEN markers)
 
 | Path | Screen |
 | --- | --- |
-| `/payroll` | Payroll calculator + salary slip |
+| `/payroll` | Human Resources: payroll, attendance, settings, and job applications |
 | `/expenses` | Expenses tracker |
-| `/orders`, `/orders/list`, `/orders/edit/:id`, `/orders/view/:id` | Order submit / list / edit / detail+invoice |
-| `/people` | People directory + markings |
-| `/settings` | Theme, currency, backup/restore, user management |
+| `/orders`, `/orders/list`, `/orders/inquiries`, `/orders/edit/:id`, `/orders/view/:id` | Management: order submit / list / inquiries / edit / detail+invoice |
+| `/settings` | Settings & Information: theme, currency, backup/restore, user management, People tab |
+| `/people`, `/inquiries`, `/job-applications` | Legacy paths that redirect to their new parent sections |
 
 (Unauthenticated users see the **Login** screen instead of any route.)
 
