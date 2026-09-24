@@ -94,6 +94,15 @@ const FTP_BETWEEN_FILES_MS = nonNegativeInteger(
 const FTP_CONNECT_TIMEOUT = positiveInteger(env.FTP_CONNECT_TIMEOUT, 20);
 const FTP_MAX_TIME = positiveInteger(env.FTP_MAX_TIME, 180);
 
+const WINSCP_CANDIDATES = [
+  env.WINSCP_PATH,
+  process.env.LOCALAPPDATA &&
+    path.join(process.env.LOCALAPPDATA, 'Programs', 'WinSCP', 'WinSCP.com'),
+  process.env['ProgramFiles(x86)'] &&
+    path.join(process.env['ProgramFiles(x86)'], 'WinSCP', 'WinSCP.com'),
+  process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'WinSCP', 'WinSCP.com'),
+].filter(Boolean);
+
 let NETRC = null;
 
 function requireFtpConfig() {
@@ -176,6 +185,20 @@ function listFiles(dir) {
   return files;
 }
 
+function findWinScp() {
+  return WINSCP_CANDIDATES.find((candidate) => fs.existsSync(candidate)) || null;
+}
+
+function winScpUrlPart(value) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
+function winScpQuote(value) {
+  return String(value).replace(/"/g, '""');
+}
+
 function ensureEmptyDir(dir) {
   fs.rmSync(dir, {
     recursive: true,
@@ -255,6 +278,13 @@ function uploadFile(file, rel, dest) {
   for (let attempt = 1; attempt <= FTP_UPLOAD_ATTEMPTS; attempt++) {
     const args = [
       '-sS',
+
+      // FTP/FTPS cannot be routed through the HTTP proxy configured by VPNs,
+      // proxy clients, or Windows environment variables. Without this curl may
+      // try the proxy (currently 127.0.0.1:9 on this machine) instead of the
+      // cPanel host, making every automatic deploy fail before authentication.
+      '--noproxy',
+      '*',
 
       // Explicit FTPS. The connection starts as FTP and upgrades to TLS.
       '--ssl-reqd',
@@ -347,6 +377,68 @@ function uploadTree(src, dest, excludes = []) {
   if (!fs.existsSync(src)) {
     console.error(`ERROR: ${src} does not exist (build first?)`);
     process.exit(1);
+  }
+
+  requireFtpConfig();
+
+  const winScp = findWinScp();
+
+  if (!winScp) {
+    console.error(
+      'ERROR: WinSCP.com was not found. Install WinSCP or set WINSCP_PATH in deploy.env.',
+    );
+    return false;
+  }
+
+  // One WinSCP synchronize command keeps a single FTPS session open and
+  // transfers only changed files. The previous curl approach made a separate
+  // TLS login for every asset, which this shared host regularly timed out.
+  const tempScript = path.join(os.tmpdir(), `samanpoolak_winscp_${process.pid}.txt`);
+  const fileMask = excludes.length > 0 ? ` -filemask="|${excludes.join(';')}"` : '';
+  const sessionUrl =
+    `ftp://${winScpUrlPart(env.FTP_USER)}:${winScpUrlPart(env.FTP_PASSWORD)}` +
+    `@${FTP_SERVER}/`;
+  const commands = [
+    'option batch abort',
+    'option confirm off',
+    // This matches curl's existing --insecure behavior. The host's AutoSSL
+    // certificate can later be pinned with WinSCP's -certificate option.
+    `open ${sessionUrl} -explicit -certificate=*`,
+    `synchronize remote${fileMask} "${winScpQuote(src)}" "${winScpQuote(dest)}"`,
+    'exit',
+  ];
+
+  try {
+    fs.writeFileSync(tempScript, `${commands.join('\n')}\n`, {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
+
+    const result = spawnSync(
+      winScp,
+      [`/script=${tempScript}`, '/ini=nul', '/nointeractiveinput'],
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+        windowsHide: true,
+      },
+    );
+
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+
+    if (result.error) {
+      console.error(`WinSCP failed to start: ${result.error.message}`);
+      return false;
+    }
+
+    return result.status === 0;
+  } finally {
+    try {
+      fs.unlinkSync(tempScript);
+    } catch {
+      // The temporary script only contains this one deploy's credentials.
+    }
   }
 
   const files = listFiles(src)

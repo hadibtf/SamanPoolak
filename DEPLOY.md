@@ -41,9 +41,12 @@ npm run deploy:jobs     # upload jobs/ → jobs/ (jobs.samanpoolak.ir)
 npm run deploy:all      # api + platform + landing + jobs
 ```
 
-- Implemented in [`scripts/deploy.mjs`](scripts/deploy.mjs) (Node + `curl`
-  over FTPS — no extra tools). Credentials come from a **gitignored `deploy.env`**
-  in the project root (copy [`deploy.env.sample`](deploy.env.sample) once).
+- Implemented in [`scripts/deploy.mjs`](scripts/deploy.mjs) using **WinSCP**
+  over FTPS. It synchronizes changed files through one persistent connection,
+  avoiding shared-host FTP timeouts caused by a separate login per file.
+  Install WinSCP once (or set `WINSCP_PATH` in `deploy.env` if it is installed
+  somewhere unusual). Credentials come from a **gitignored `deploy.env`** in
+  the project root (copy [`deploy.env.sample`](deploy.env.sample) once).
 - Each deploy command asks for a mode:
   - `automatic` uploads over FTP, same as the old deploy flow.
   - `manual` creates zip packages in `deploy-manual/` and writes
@@ -158,3 +161,5 @@ Recorded here for rebuilding on a fresh host:
 - **Deploy says "Input required: server" / connection refused on CI** — ignore
   GitHub Actions; deploy locally (host blocks CI).
 - **See error detail** — temporarily set `'debug' => true` in `config.php`.
+- **WinSCP not found** — install WinSCP, or set `WINSCP_PATH` in `deploy.env`
+  to the full path to `WinSCP.com`.
