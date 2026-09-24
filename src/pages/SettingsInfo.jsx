@@ -25,6 +25,7 @@ const SettingsInfo = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('settings');
+  const [syncing, setSyncing] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -156,6 +157,29 @@ const SettingsInfo = () => {
     }
   };
 
+  const handleFullSync = async () => {
+    if (!navigator.onLine) {
+      showToast('برای همگام‌سازی به اتصال اینترنت نیاز دارید.', 'error');
+      return;
+    }
+    setSyncing(true);
+    try {
+      [
+        'signit_people_synced_at', 'signit_orders_synced_at',
+        'signit_markings_synced_at', 'signit_expenses_synced_at',
+        'signit_issue_notes_synced_at', 'signit_attendance_synced_at',
+        'signit_holidays_synced_at',
+      ].forEach((key) => localStorage.removeItem(key));
+      await requestSync();
+      showToast('داده‌های دستگاه با سرور همگام‌سازی شد.');
+    } catch (err) {
+      console.error('Full sync failed:', err);
+      showToast('خطا در همگام‌سازی داده‌ها.', 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className={`settings-page ${activeTab === 'people' ? 'settings-page-wide' : ''}`}>
       <h1>تنظیمات و اطلاعات</h1>
@@ -219,6 +243,18 @@ const SettingsInfo = () => {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="settings-card glass-card">
+        <h2 className="settings-section-title">
+          <i className="fa-solid fa-rotate"></i> همگام‌سازی داده‌ها
+        </h2>
+        <p className="muted settings-hint">
+          فهرست افراد، سفارش‌ها، هزینه‌ها و سایر داده‌های این دستگاه را دوباره از سرور دریافت می‌کند.
+        </p>
+        <button type="button" className="primary-btn" disabled={syncing} onClick={handleFullSync}>
+          <i className={`fa-solid fa-rotate ${syncing ? 'fa-spin' : ''}`}></i> {syncing ? 'در حال همگام‌سازی...' : 'همگام‌سازی با سرور'}
+        </button>
       </div>
 
       {/* Holiday calendar: upload one YEAR.json per year (kept across launches). */}

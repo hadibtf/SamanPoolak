@@ -7,6 +7,11 @@ import { onSyncRequest } from '../syncBus';
 import { applyServerHolidays } from '../holidays';
 
 const POLL_MS = 15000;
+// Bump this whenever a deployed client must rebuild its local server mirror.
+// A cursor can survive IndexedDB being cleared or migrated; without this reset,
+// a client would only request rows newer than that stale cursor.
+const MIRROR_REVISION = '2';
+const MIRROR_REVISION_KEY = 'signit_mirror_revision';
 
 // After a resource is pulled, optionally bridge the mirror somewhere else.
 // Holidays feed the holidays.js localStorage cache so isHoliday() stays the
@@ -90,6 +95,12 @@ export const useSyncEngine = () => {
   };
 
   useEffect(() => {
+    // One-time, safe full refresh for existing installs. The server remains the
+    // source of truth, and each resource's first pull replaces its local set.
+    if (localStorage.getItem(MIRROR_REVISION_KEY) !== MIRROR_REVISION) {
+      RESOURCES.forEach(({ cursorKey }) => localStorage.removeItem(cursorKey));
+      localStorage.setItem(MIRROR_REVISION_KEY, MIRROR_REVISION);
+    }
     syncData();
 
     const onOnline = () => syncData();

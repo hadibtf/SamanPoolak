@@ -11,4 +11,4 @@ export const onSyncRequest = (fn) => {
 };
 
 /** Fire a sync now (best-effort; no-op if the engine isn't mounted). */
-export const requestSync = () => subscribers.forEach((fn) => fn());
+export const requestSync = () => Promise.all([...subscribers].map((fn) => fn()));
