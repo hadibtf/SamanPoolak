@@ -10,6 +10,7 @@ require __DIR__ . '/routes/auth.php';
 require __DIR__ . '/routes/users.php';
 require __DIR__ . '/routes/people.php';
 require __DIR__ . '/routes/orders.php';
+require __DIR__ . '/routes/production.php';
 require __DIR__ . '/routes/markings.php';
 require __DIR__ . '/routes/expenses.php';
 require __DIR__ . '/routes/issue_notes.php';
@@ -39,6 +40,7 @@ $routes = [
     ['DELETE', '/users/{id}',       'users_delete',  true],
     ['GET',    '/people',           'people_list',   true],
     ['POST',   '/people',           'people_create', true],
+    ['GET',    '/people/{id}/employee-account', 'people_employee_account_get', true],
     ['GET',    '/people/{id}',      'people_get',    true],
     ['PUT',    '/people/{id}',      'people_update', true],
     ['DELETE', '/people/{id}',      'people_delete', true],
@@ -47,6 +49,12 @@ $routes = [
     ['GET',    '/orders/{id}',      'orders_get',    true],
     ['PUT',    '/orders/{id}',      'orders_update', true],
     ['DELETE', '/orders/{id}',      'orders_delete', true],
+    ['GET',    '/production/employees', 'production_employees', true],
+    ['GET',    '/production/tasks', 'production_tasks_list', true],
+    ['POST',   '/production/tasks', 'production_tasks_create', true],
+    ['GET',    '/production/tasks/{id}/logs', 'production_task_logs_list', true],
+    ['POST',   '/production/tasks/{id}/logs', 'production_task_log_create', true],
+    ['GET',    '/production/orders/{orderId}/items/{itemUid}/summary', 'production_item_summary', true],
     ['GET',    '/markings',         'markings_list',   true],
     ['POST',   '/markings',         'markings_create', true],
     ['DELETE', '/markings/{id}',    'markings_delete', true],
@@ -99,6 +107,14 @@ try {
         if (preg_match($regex, $path, $matches)) {
             $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
             $user   = $needsAuth ? require_auth() : null;
+            // Employee tokens are intentionally narrow: production task reads
+            // (and, later, production-log writes) are their only business API.
+            $employeeAllowed = ['POST /auth/logout', 'GET /auth/me', 'GET /production/tasks', 'GET /holidays'];
+            if ($user && ($user['role'] ?? '') === 'employee'
+                && !in_array($method . ' ' . $path, $employeeAllowed, true)
+                && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)) {
+                json_error('Employee access is limited to production tasks', 403);
+            }
             $body   = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? json_input() : [];
             $handler($params, $body, $user);
             exit;

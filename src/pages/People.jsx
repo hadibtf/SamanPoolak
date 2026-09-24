@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { peopleApi, ApiError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import JalaliDatePicker from "../components/JalaliDatePicker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
@@ -9,11 +10,14 @@ import MarkingsManager from '../components/MarkingsManager';
 import './People.css';
 
 const People = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState(null);
   const [markingsCustomer, setMarkingsCustomer] = useState(null);
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [employeeAccount, setEmployeeAccount] = useState({ enabled: false, username: '', password: '' });
 
   const people = useLiveQuery(() => db.people.toArray());
 
@@ -54,13 +58,20 @@ const People = () => {
 
   const [formData, setFormData] = useState(initialFormState);
 
-  const handleOpenModal = (person = null) => {
+  const handleOpenModal = async (person = null) => {
     if (person) {
       setEditingPerson(person);
       setFormData({ ...person, mCardNo: person.cardNo || '' });
+      if (isAdmin && person.category === 'EMPLOYEE') {
+        try {
+          const { employeeAccount: account } = await peopleApi.employeeAccount(person.id);
+          setEmployeeAccount({ enabled: !!account?.enabled, username: account?.username || '', password: '' });
+        } catch (error) { reportError(error); return; }
+      } else setEmployeeAccount({ enabled: false, username: '', password: '' });
     } else {
       setEditingPerson(null);
       setFormData(initialFormState);
+      setEmployeeAccount({ enabled: false, username: '', password: '' });
     }
     setIsModalOpen(true);
   };
@@ -69,6 +80,7 @@ const People = () => {
     setIsModalOpen(false);
     setEditingPerson(null);
     setFormData(initialFormState);
+    setEmployeeAccount({ enabled: false, username: '', password: '' });
   };
 
   const handleChange = (e) => {
@@ -106,6 +118,7 @@ const People = () => {
       ['id', 'createdAt', 'updatedAt', 'deletedAt', 'createdBy', 'updatedBy', 'syncStatus', 'mCardNo']
         .forEach((k) => delete payload[k]);
       payload.cardNo = (formData.mCardNo || '').trim();
+      if (isAdmin && formData.category === 'EMPLOYEE') payload.employeeAccount = employeeAccount;
       let person;
       if (editingPerson) {
         ({ person } = await peopleApi.update(editingPerson.id, payload));
@@ -228,6 +241,7 @@ const People = () => {
                   <input name="nationalCode" value={formData.nationalCode} onChange={handleChange} />
                 </div>
                 {formData.category === 'EMPLOYEE' && (
+                  <>
                   <div className="form-group">
                     <label>شناسه حضور و غیاب (کد کارت)</label>
                     <input
@@ -238,6 +252,20 @@ const People = () => {
                       placeholder="مثلا ۱۲"
                     />
                   </div>
+                  {isAdmin && (
+                    <div className="form-group full-width">
+                      <label>حساب ورود کارمند</label>
+                      <label className="toggle-row">
+                        <span>فعال بودن حساب</span>
+                        <input type="checkbox" checked={employeeAccount.enabled} onChange={(e) => setEmployeeAccount((prev) => ({ ...prev, enabled: e.target.checked }))} />
+                      </label>
+                      {employeeAccount.enabled && <>
+                        <input name="employeeUsername" value={employeeAccount.username} onChange={(e) => setEmployeeAccount((prev) => ({ ...prev, username: e.target.value }))} placeholder="نام کاربری" autoComplete="username" />
+                        <input type="password" name="employeePassword" value={employeeAccount.password} onChange={(e) => setEmployeeAccount((prev) => ({ ...prev, password: e.target.value }))} placeholder={editingPerson ? 'رمز عبور جدید (اختیاری)' : 'رمز عبور'} autoComplete="new-password" />
+                      </>}
+                    </div>
+                  )}
+                  </>
                 )}
                 <div className="form-group">
                   <label>تاریخ تولد</label>

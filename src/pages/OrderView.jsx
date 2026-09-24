@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import DateObject from 'react-date-object';
@@ -7,8 +7,9 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { db, computeWeights, deriveOrderStatus } from '../db';
-import { ordersApi, ApiError } from '../api/client';
+import { ordersApi, productionApi, ApiError } from '../api/client';
 import { useSettings } from '../context/SettingsContext';
+import { useAuth } from '../auth/AuthContext';
 import {
   ORDER_STATES,
   ORDER_STATE_LABELS,
@@ -54,11 +55,49 @@ const invoiceDescription = (item) => {
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
-const ItemPanel = ({ item, index, markingMap, onUpdate, onToast }) => {
+const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderDate, canAssign }) => {
   const { formatMoney } = useSettings();
   const [nextState, setNextState] = useState('');
   const [stageWeight, setStageWeight] = useState('');
   const [stateNote, setStateNote] = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [employeeUserId, setEmployeeUserId] = useState('');
+  const [assignQuantity, setAssignQuantity] = useState(String(item.quantity || ''));
+  const [assigning, setAssigning] = useState(false);
+  const [productionSummary, setProductionSummary] = useState(null);
+
+  const loadSummary = () => {
+    if (!canAssign) return;
+    productionApi.itemSummary(orderId, item.uid).then(setProductionSummary).catch(() => setProductionSummary(null));
+  };
+
+  useEffect(() => {
+    if (!canAssign) return;
+    productionApi.employees().then(({ employees: list }) => setEmployees(list || [])).catch(() => onToast('خطا در دریافت فهرست کارمندان.', 'error'));
+  }, [canAssign, onToast]);
+
+  useEffect(() => {
+    loadSummary();
+    if (!canAssign) return undefined;
+    const interval = window.setInterval(loadSummary, 15000);
+    return () => window.clearInterval(interval);
+  }, [canAssign, orderId, item.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const assignTask = async () => {
+    if (!employeeUserId || !assignQuantity || assigning) { onToast('کارمند و مقدار را انتخاب کنید.', 'error'); return; }
+    setAssigning(true);
+    try {
+      await productionApi.assignTask({
+        orderId, orderItemUid: item.uid, employeeUserId: Number(employeeUserId),
+        requiredQuantity: Number(assignQuantity), assignedDate: orderDate,
+      });
+      loadSummary();
+      setEmployeeUserId('');
+      onToast('وظیفه تولید تخصیص داده شد.');
+    } catch (error) {
+      onToast(error instanceof ApiError ? error.message : 'خطا در تخصیص وظیفه.', 'error');
+    } finally { setAssigning(false); }
+  };
 
   const weights = computeWeights({
     weightOf10: item.weightOf10,
@@ -142,6 +181,30 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast }) => {
       )}
 
       {item.description && <p className="item-desc">{item.description}</p>}
+
+      {canAssign && (
+        <>
+          <h4 className="sub-title">تخصیص تولید</h4>
+          <div className="state-form">
+            <select value={employeeUserId} onChange={(e) => setEmployeeUserId(e.target.value)}>
+              <option value="">انتخاب کارمند...</option>
+              {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+            </select>
+            <input type="number" min="0.001" step="0.001" dir="ltr" className="ltr-num" value={assignQuantity} onChange={(e) => setAssignQuantity(e.target.value)} placeholder="تعداد" />
+            <button type="button" className="primary-btn compact" disabled={assigning} onClick={assignTask}>{assigning ? 'در حال تخصیص...' : 'تخصیص'}</button>
+          </div>
+        </>
+      )}
+
+      {canAssign && productionSummary && (
+        <div className="production-summary">
+          <h4 className="sub-title">پیشرفت و سوابق تولید</h4>
+          <p>تولید کل: <strong>{fa(productionSummary.totalProduced)}</strong> از <strong>{fa(item.quantity)}</strong></p>
+          {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id}>{task.employeeName} — {fa(task.requiredQuantity)} عدد — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
+          {productionSummary.byEmployee.length > 0 && <div className="production-summary-list"><b>تولید هر کارمند</b>{productionSummary.byEmployee.map((row) => <div key={row.employeeUserId}>{row.employeeName}: <strong>{fa(row.quantity)} عدد</strong></div>)}</div>}
+          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => <div key={log.id}>{log.employeeName} — {fa(log.quantity)} عدد — {log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)} <small>{log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
+        </div>
+      )}
 
       {/* Weight & quantity */}
       <h4 className="sub-title">وزن و مقدار</h4>
@@ -240,6 +303,7 @@ const OrderView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { formatMoney } = useSettings();
+  const { user } = useAuth();
   const orderId = Number(id);
 
   const order = useLiveQuery(() => db.orders.get(orderId), [orderId]);
@@ -396,6 +460,9 @@ const OrderView = () => {
           markingMap={markingMap}
           onUpdate={updateItem}
           onToast={showToast}
+          orderId={orderId}
+          orderDate={order.date}
+          canAssign={user?.role === 'admin'}
         />
       ))}
 

@@ -13,7 +13,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
 import zlib from 'node:zlib';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -80,6 +79,7 @@ const FTP_WEB_DIR = env.FTP_WEB_DIR || 'public_html';
 const FTP_API_DIR = env.FTP_API_DIR || 'public_html/api';
 const FTP_LANDING_DIR = env.FTP_LANDING_DIR || 'samanpoolak.ir';
 const FTP_JOBS_DIR = env.FTP_JOBS_DIR || 'jobs';
+const FTP_EMPLOYEE_DIR = env.FTP_EMPLOYEE_DIR || 'employee';
 const API_URL = env.API_URL || 'https://samanpoolak.ir/api';
 const MANUAL_PACKAGE_DIR =
   env.MANUAL_PACKAGE_DIR || path.join(ROOT, 'deploy-manual');
@@ -496,8 +496,8 @@ function uploadTree(src, dest, excludes = []) {
   return failures.length === 0;
 }
 
-function build() {
-  console.log(`==> Building front-end (REACT_APP_API_URL=${API_URL})`);
+function build(surface = 'management') {
+  console.log(`==> Building ${surface} front-end (REACT_APP_API_URL=${API_URL})`);
 
   // shell:true is required so Windows can execute npm.cmd.
   const result = spawnSync('npm', ['run', 'build'], {
@@ -507,6 +507,7 @@ function build() {
     env: {
       ...process.env,
       REACT_APP_API_URL: API_URL,
+      REACT_APP_APP_SURFACE: surface,
       CI: 'true',
     },
   });
@@ -634,9 +635,9 @@ function createZip(src, zipFile) {
   fs.writeFileSync(zipFile, Buffer.concat([...chunks, ...central, end]));
 }
 
-function packageTarget({ name, label, source, dest, excludes, needsBuild }, outDir) {
+function packageTarget({ name, label, source, dest, excludes, needsBuild, surface }, outDir) {
   if (needsBuild) {
-    build();
+    build(surface);
   }
 
   const stageDir = path.join(os.tmpdir(), `samanpoolak_${name}_${process.pid}`);
@@ -659,7 +660,7 @@ function packageTarget({ name, label, source, dest, excludes, needsBuild }, outD
 }
 
 function deployWeb() {
-  build();
+  build('management');
 
   console.log(
     `==> Uploading build/ to ${FTP_WEB_DIR} ` +
@@ -693,6 +694,12 @@ function deployLanding() {
     '*.md',
     '.htaccess',
   ]);
+}
+
+function deployEmployee() {
+  build('employee');
+  console.log(`==> Uploading employee build/ to ${FTP_EMPLOYEE_DIR}`);
+  return uploadTree(path.join(ROOT, 'build'), FTP_EMPLOYEE_DIR, ['.htaccess']);
 }
 
 function deployJobs() {
@@ -740,6 +747,15 @@ const DEPLOY_TARGETS = {
     excludes: ['*.md', '.htaccess'],
     needsBuild: false,
   },
+  employee: {
+    name: 'employee',
+    label: 'Employee app',
+    source: path.join(ROOT, 'build'),
+    dest: FTP_EMPLOYEE_DIR,
+    excludes: ['.htaccess'],
+    needsBuild: true,
+    surface: 'employee',
+  },
 };
 
 function normalizeTarget(value) {
@@ -755,6 +771,7 @@ function targetsFor(value) {
       DEPLOY_TARGETS.platform,
       DEPLOY_TARGETS.landing,
       DEPLOY_TARGETS.jobs,
+      DEPLOY_TARGETS.employee,
     ];
   }
 
@@ -766,26 +783,7 @@ function targetsFor(value) {
 }
 
 async function chooseMode(cliMode) {
-  if (cliMode) return cliMode;
-
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  try {
-    const answer = (
-      await rl.question(
-        'Deploy mode? Type "automatic" for FTP upload or "manual" for zip packages [automatic]: ',
-      )
-    )
-      .trim()
-      .toLowerCase();
-
-    return answer || 'automatic';
-  } finally {
-    rl.close();
-  }
+  return cliMode || 'automatic';
 }
 
 function writeManualInstructions(outDir, packages) {
@@ -863,7 +861,7 @@ async function main() {
 
   if (!targets) {
     console.error(
-      'Usage: node scripts/deploy.mjs {api|platform|web|landing|jobs|all} [--mode=automatic|manual]',
+      'Usage: node scripts/deploy.mjs {api|platform|web|landing|jobs|employee|all} [--mode=automatic|manual]',
     );
     process.exit(2);
   }
@@ -879,13 +877,16 @@ async function main() {
       ok = deployLanding();
     } else if (target === 'jobs') {
       ok = deployJobs();
+    } else if (target === 'employee') {
+      ok = deployEmployee();
     } else if (target === 'all') {
       const apiOk = deployApi();
       const webOk = deployWeb();
       const landingOk = deployLanding();
       const jobsOk = deployJobs();
+      const employeeOk = deployEmployee();
 
-      ok = apiOk && webOk && landingOk && jobsOk;
+      ok = apiOk && webOk && landingOk && jobsOk && employeeOk;
     }
   } else {
     console.error('ERROR: deploy mode must be "automatic" or "manual".');

@@ -58,6 +58,18 @@ CREATE TABLE IF NOT EXISTS counters (
     value INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Links an EMPLOYEE People record to its employee login. Kept as a separate
+-- table because users is created before people and existing user accounts must
+-- stay untouched. The People route owns this one-to-one relationship.
+CREATE TABLE IF NOT EXISTS employee_accounts (
+    person_id       VARCHAR(32) PRIMARY KEY,
+    user_id         INT         NOT NULL UNIQUE,
+    created_at      DATETIME    NOT NULL,
+    updated_at      DATETIME    NOT NULL,
+    CONSTRAINT fk_employee_accounts_person FOREIGN KEY (person_id) REFERENCES people(id),
+    CONSTRAINT fk_employee_accounts_user FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS app_settings (
     name       VARCHAR(64) PRIMARY KEY,
     value      LONGTEXT     NULL,
@@ -227,6 +239,53 @@ CREATE TABLE IF NOT EXISTS holidays (
     INDEX idx_holidays_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Production: an assignment points to an existing order and its stable
+-- items[].uid. Product/customer/specification data stays on the order item;
+-- it is deliberately not copied into this table. An item can be split into
+-- multiple tasks, so (order_id, order_item_uid) is indexed but not unique.
+CREATE TABLE IF NOT EXISTS production_tasks (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    order_id         INT           NOT NULL,
+    order_item_uid   VARCHAR(128)  NOT NULL,
+    employee_user_id INT           NOT NULL,
+    required_quantity DECIMAL(14,3) NOT NULL,
+    assigned_date    VARCHAR(8)    NOT NULL DEFAULT '', -- Jalali YYYYMMDD
+    assigned_by      INT           NOT NULL,
+    status           VARCHAR(32)   NOT NULL DEFAULT 'ASSIGNED',
+    created_at       DATETIME      NOT NULL,
+    updated_at       DATETIME      NOT NULL,
+    completed_at     DATETIME      NULL,
+    deleted_at       DATETIME      NULL,
+    CONSTRAINT fk_production_tasks_order FOREIGN KEY (order_id) REFERENCES orders(id),
+    CONSTRAINT fk_production_tasks_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
+    CONSTRAINT fk_production_tasks_assigned_by FOREIGN KEY (assigned_by) REFERENCES users(id),
+    INDEX idx_production_tasks_employee_status (employee_user_id, status),
+    INDEX idx_production_tasks_order_item (order_id, order_item_uid),
+    INDEX idx_production_tasks_updated (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- One row per submitted partial-production record. order_id/order_item_uid and
+-- employee_user_id are copied from the authorized task by the API (not trusted
+-- from the client) so history remains directly auditable and fast to aggregate.
+CREATE TABLE IF NOT EXISTS production_logs (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    task_id             INT           NOT NULL,
+    employee_user_id    INT           NOT NULL,
+    order_id            INT           NOT NULL,
+    order_item_uid      VARCHAR(128)  NOT NULL,
+    quantity            DECIMAL(14,3) NOT NULL,
+    production_date     VARCHAR(8)    NOT NULL, -- Jalali YYYYMMDD
+    submission_key      CHAR(36)      NOT NULL,
+    created_at          DATETIME      NOT NULL,
+    CONSTRAINT fk_production_logs_task FOREIGN KEY (task_id) REFERENCES production_tasks(id),
+    CONSTRAINT fk_production_logs_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
+    CONSTRAINT fk_production_logs_order FOREIGN KEY (order_id) REFERENCES orders(id),
+    UNIQUE KEY uq_production_logs_submission (task_id, employee_user_id, submission_key),
+    INDEX idx_production_logs_employee_date (employee_user_id, production_date),
+    INDEX idx_production_logs_task (task_id),
+    INDEX idx_production_logs_order_item (order_id, order_item_uid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- ===========================================================================
 -- MIGRATION for an EXISTING live DB (the people table already exists, so the
 -- card_no column above is NOT added by CREATE TABLE IF NOT EXISTS). Run this
@@ -286,4 +345,11 @@ CREATE TABLE IF NOT EXISTS holidays (
 --       INDEX idx_job_applications_city (city),
 --       INDEX idx_job_applications_mobile (mobile)
 --   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+--
+-- Employee login mapping and production tables are created by the CREATE
+-- statements above.
+-- On the live database, after deploying the API routes that use them, run the
+-- three CREATE TABLE statements for employee_accounts, production_tasks, and
+-- production_logs above
+-- in phpMyAdmin. They are idempotent because they use IF NOT EXISTS.
 -- ===========================================================================

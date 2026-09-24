@@ -18,10 +18,16 @@ return [
     // so the platform origin must be allowed (cross-origin).
     'cors_allowed_origins' => [
         'https://platform.samanpoolak.ir',
+        'https://employee.samanpoolak.ir',
         'https://samanpoolak.ir',
         'https://jobs.samanpoolak.ir',
         'http://localhost:3000',
     ],
+
+    // Login surfaces are role-separated. These exact origins are checked when
+    // a browser signs in, in addition to the normal CORS allowlist above.
+    'management_app_origin' => 'https://platform.samanpoolak.ir',
+    'employee_app_origin' => 'https://employee.samanpoolak.ir',
 
     // One-time key that protects POST /setup/seed-admin. Use a long random string.
     // After you have created the first admin user, blank this out to disable the route.

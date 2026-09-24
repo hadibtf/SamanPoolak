@@ -34,10 +34,11 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = async (username, password) => {
-    const { token, user: me } = await authApi.login(username, password);
+  const login = async (username, password, surface = 'management') => {
+    const { token, user: me } = await authApi.login(username, password, surface);
     setToken(token);
     setUser(me);
+    return me;
   };
 
   const logout = async () => {

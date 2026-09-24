@@ -137,6 +137,17 @@ db.version(9).stores({
   issueNotes: 'id, date, customerName, receiverFirstName, receiverLastName, syncStatus'
 });
 
+// v10: production assignments are server-backed. Production logs intentionally
+// do not enter the general mirror; TODO 3/4 fetches them through scoped APIs.
+db.version(10).stores({
+  people: 'id, category, firstName, lastName, syncStatus', counters: 'name',
+  orders: '++id, orderNumber, date, customerId, syncStatus', markings: '++id, customerId, name',
+  expenses: '++id, date, category, syncStatus', attendanceScans: '++id, cardNo, dateKey, source',
+  attendanceEmployees: 'cardNo', personCards: 'personId', attendance: 'id, cardNo, dateKey, source, syncStatus',
+  holidays: 'id, dateKey, year', issueNotes: 'id, date, customerName, receiverFirstName, receiverLastName, syncStatus',
+  productionTasks: 'id, employeeUserId, orderId, orderItemUid, status, assignedDate, syncStatus'
+});
+
 /**
  * Generates a prefixed ID based on category:
  * 0-[AutoNumber] for Employees

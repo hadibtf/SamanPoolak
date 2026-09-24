@@ -10,7 +10,7 @@ const POLL_MS = 15000;
 // Bump this whenever a deployed client must rebuild its local server mirror.
 // A cursor can survive IndexedDB being cleared or migrated; without this reset,
 // a client would only request rows newer than that stale cursor.
-const MIRROR_REVISION = '2';
+const MIRROR_REVISION = '3';
 const MIRROR_REVISION_KEY = 'signit_mirror_revision';
 
 // After a resource is pulled, optionally bridge the mirror somewhere else.
@@ -72,12 +72,13 @@ const pullResource = async ({ table, key, cursorKey, list, onApplied }) => {
 // Mirrors all server-backed resources (people, orders, markings) into Dexie.
 export const useSyncEngine = () => {
   const runningRef = useRef(false);
+  const resources = RESOURCES;
 
   const syncData = async () => {
     if (runningRef.current || !getToken() || !navigator.onLine) return;
     runningRef.current = true;
     try {
-      for (const resource of RESOURCES) {
+      for (const resource of resources) {
         try {
           await pullResource(resource);
         } catch (error) {
@@ -98,7 +99,7 @@ export const useSyncEngine = () => {
     // One-time, safe full refresh for existing installs. The server remains the
     // source of truth, and each resource's first pull replaces its local set.
     if (localStorage.getItem(MIRROR_REVISION_KEY) !== MIRROR_REVISION) {
-      RESOURCES.forEach(({ cursorKey }) => localStorage.removeItem(cursorKey));
+      resources.forEach(({ cursorKey }) => localStorage.removeItem(cursorKey));
       localStorage.setItem(MIRROR_REVISION_KEY, MIRROR_REVISION);
     }
     syncData();

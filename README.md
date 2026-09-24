@@ -83,10 +83,12 @@ npm run deploy:platform # same as deploy:web, clearer name
 npm run deploy:api     # upload server/ → api/ (api.samanpoolak.ir)
 npm run deploy:landing # upload landing/ → samanpoolak.ir/ (static marketing site)
 npm run deploy:jobs    # upload jobs/ → jobs/ (jobs.samanpoolak.ir)
+npm run deploy:employee # build + upload employee app → employee/ (employee.samanpoolak.ir)
 npm run deploy:all     # api + platform + landing + jobs
 ```
 
-Each deploy command asks for `automatic` FTP upload or `manual` zip packaging.
+Deploy commands upload automatically. For manual zip packaging, append `:manual`
+(for example, `npm run deploy:api:manual`).
 Credentials live in a gitignored `deploy.env` (copy `deploy.env.sample`). When
 a backend change adds a DB table/column, run the matching SQL once in
 phpMyAdmin. Full details in [DEPLOY.md](DEPLOY.md).

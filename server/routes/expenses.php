@@ -40,6 +40,7 @@ function expenses_from_wire($body)
 // GET /expenses?updatedAfter=<iso>
 function expenses_list($params, $body, $user)
 {
+    require_management($user);
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
@@ -57,6 +58,7 @@ function expenses_list($params, $body, $user)
 // POST /expenses
 function expenses_create($params, $body, $user)
 {
+    require_management($user);
     require_fields($body, ['title']);
     $cols = expenses_from_wire($body);
     $now = now_utc();
@@ -82,6 +84,7 @@ function expenses_create($params, $body, $user)
 // PUT /expenses/{id}
 function expenses_update($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $stmt = db()->prepare('SELECT id FROM expenses WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
@@ -109,6 +112,7 @@ function expenses_update($params, $body, $user)
 // DELETE /expenses/{id}  -> soft delete
 function expenses_delete($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $now = now_utc();
     $stmt = db()->prepare(

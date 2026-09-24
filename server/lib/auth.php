@@ -89,3 +89,13 @@ function require_admin($user)
     }
     return $user;
 }
+
+// Legacy `user` accounts retain the existing management access. The new
+// employee role is explicitly limited to its production endpoints.
+function require_management($user)
+{
+    if (($user['role'] ?? '') === 'employee') {
+        json_error('Management access required', 403);
+    }
+    return $user;
+}

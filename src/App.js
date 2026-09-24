@@ -60,6 +60,10 @@ function App() {
     return <Login />;
   }
 
+  if (user.role === 'employee') {
+    return <div className="app-shell"><main className="app-container"><div className="empty-state"><p>دسترسی به این سامانه مجاز نیست.</p></div></main></div>;
+  }
+
   return <AppShell />;
 }
 

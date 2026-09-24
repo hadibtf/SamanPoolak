@@ -63,6 +63,7 @@ function save_marking_image($customerId, $dataUrl)
 // GET /markings?updatedAfter=<iso>
 function markings_list($params, $body, $user)
 {
+    require_management($user);
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
@@ -81,6 +82,7 @@ function markings_list($params, $body, $user)
 // Names are auto-numerated per customer to stay unique (name.jpeg -> name-2.jpeg).
 function markings_create($params, $body, $user)
 {
+    require_management($user);
     require_fields($body, ['customerId', 'name']);
     $customerId = (string) $body['customerId'];
     $name = trim((string) $body['name']);
@@ -124,6 +126,7 @@ function markings_create($params, $body, $user)
 // DELETE /markings/{id}  -> soft delete
 function markings_delete($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $now = now_utc();
     $stmt = db()->prepare(

@@ -42,6 +42,7 @@ function orders_from_wire($body)
 // GET /orders?updatedAfter=<iso>
 function orders_list($params, $body, $user)
 {
+    require_management($user);
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
@@ -59,6 +60,7 @@ function orders_list($params, $body, $user)
 // GET /orders/{id}
 function orders_get($params, $body, $user)
 {
+    require_management($user);
     $stmt = db()->prepare(ORDERS_SELECT . ' WHERE o.id = :id LIMIT 1');
     $stmt->execute([':id' => $params['id']]);
     $row = $stmt->fetch();
@@ -71,6 +73,7 @@ function orders_get($params, $body, $user)
 // POST /orders  -> creates with a server-generated YYMMN order number
 function orders_create($params, $body, $user)
 {
+    require_management($user);
     require_fields($body, ['date']);
     $date = (string) $body['date'];
     $prefix = strlen($date) >= 6 ? substr($date, 2, 4) : '';   // YYMM
@@ -114,6 +117,7 @@ function orders_create($params, $body, $user)
 // PUT /orders/{id}  -> order number is preserved
 function orders_update($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $stmt = db()->prepare('SELECT id FROM orders WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
@@ -141,6 +145,7 @@ function orders_update($params, $body, $user)
 // DELETE /orders/{id}  -> soft delete
 function orders_delete($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $now = now_utc();
     $stmt = db()->prepare(

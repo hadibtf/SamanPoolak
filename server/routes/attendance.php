@@ -36,6 +36,7 @@ function attendance_from_wire($body)
 // GET /attendance?updatedAfter=<iso>
 function attendance_list($params, $body, $user)
 {
+    require_management($user);
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
@@ -53,6 +54,7 @@ function attendance_list($params, $body, $user)
 // POST /attendance  -> single manual scan
 function attendance_create($params, $body, $user)
 {
+    require_management($user);
     require_fields($body, ['cardNo', 'dateKey', 'time']);
     $cols = attendance_from_wire($body);
     if (empty($cols['source'])) {
@@ -74,6 +76,7 @@ function attendance_create($params, $body, $user)
 // PUT /attendance/{id}
 function attendance_update($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $stmt = db()->prepare('SELECT id FROM attendance WHERE id = :id LIMIT 1');
     $stmt->execute([':id' => $id]);
@@ -101,6 +104,7 @@ function attendance_update($params, $body, $user)
 // DELETE /attendance/{id}  -> soft delete
 function attendance_delete($params, $body, $user)
 {
+    require_management($user);
     $id = $params['id'];
     $now = now_utc();
     $stmt = db()->prepare(
@@ -151,6 +155,7 @@ function attendance_upsert_row($cols)
 // people.card_no on the client).
 function attendance_import($params, $body, $user)
 {
+    require_management($user);
     $records = isset($body['records']) && is_array($body['records']) ? $body['records'] : [];
     if (!$records) {
         json_error('No records to import', 422);

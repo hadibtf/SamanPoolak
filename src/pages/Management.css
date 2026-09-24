@@ -1038,6 +1038,13 @@
   border-radius: 10px;
 }
 
+.production-summary { margin-top: 16px; padding: 0 2px; }
+.production-summary > p { background: rgba(52, 199, 89, .1); padding: 10px 12px; border-radius: 10px; }
+.production-summary-list { margin-top: 10px; font-size: 13px; }
+.production-summary-list > b { display: block; margin-bottom: 5px; }
+.production-summary-list > div { padding: 7px 0; border-bottom: 1px dashed rgba(0,0,0,.12); }
+.production-summary-list small { display: block; color: #8e8e93; margin-top: 2px; }
+
 /* ===================== Invoice (PDF source) ===================== */
 .invoice-offscreen {
   position: fixed;

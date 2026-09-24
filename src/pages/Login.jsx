@@ -19,7 +19,7 @@ const Login = () => {
     setBusy(true);
     setError('');
     try {
-      await login(username.trim(), password);
+      await login(username.trim(), password, 'management');
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError('نام کاربری یا گذرواژه اشتباه است.');

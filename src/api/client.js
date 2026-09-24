@@ -93,7 +93,7 @@ export const api = {
 // --- Convenience wrappers -------------------------------------------------
 
 export const authApi = {
-  login: (username, password) => api.post('/auth/login', { username, password }),
+  login: (username, password, surface = 'management') => api.post('/auth/login', { username, password, surface }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
 };
@@ -111,6 +111,7 @@ export const peopleApi = {
   get: (id) => api.get(`/people/${encodeURIComponent(id)}`),
   create: (person) => api.post('/people', person),
   update: (id, patch) => api.put(`/people/${encodeURIComponent(id)}`, patch),
+  employeeAccount: (id) => api.get(`/people/${encodeURIComponent(id)}/employee-account`),
   remove: (id) => api.del(`/people/${encodeURIComponent(id)}`),
 };
 
@@ -136,6 +137,15 @@ export const expensesApi = {
   create: (expense) => api.post('/expenses', expense),
   update: (id, patch) => api.put(`/expenses/${encodeURIComponent(id)}`, patch),
   remove: (id) => api.del(`/expenses/${encodeURIComponent(id)}`),
+};
+
+export const productionApi = {
+  employees: () => api.get('/production/employees'),
+  listTasks: (updatedAfter) => api.get(`/production/tasks${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  assignTask: (task) => api.post('/production/tasks', task),
+  taskLogs: (taskId) => api.get(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
+  logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
+  itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),
 };
 
 export const issueNotesApi = {
