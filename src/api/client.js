@@ -53,6 +53,10 @@ async function request(method, path, body) {
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
+      // Be explicit for the separate employee origin and never reuse a stale
+      // cross-origin response after an API/CORS deployment.
+      mode: 'cors',
+      cache: 'no-store',
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
