@@ -138,7 +138,7 @@ function production_tasks_create($params, $body, $user)
             $sourceStmt->execute([':id' => $splitFromTaskId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
             $source = $sourceStmt->fetch();
             if (!$source || (int) $source['employee_user_id'] === $employeeId) { db()->rollBack(); json_error('Invalid source assignment for split', 422); }
-            $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id');
+            $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id AND deleted_at IS NULL');
             $producedStmt->execute([':id' => $splitFromTaskId]);
             $produced = (float) $producedStmt->fetchColumn();
             $sourceQuantity = round((float) $source['required_quantity'] - $deficit, 3);
@@ -187,7 +187,7 @@ function production_task_update($params, $body, $user)
         $usedStmt = db()->prepare('SELECT COALESCE(SUM(required_quantity), 0) FROM production_tasks WHERE order_id = :orderId AND order_item_uid = :uid AND id <> :id AND deleted_at IS NULL');
         $usedStmt->execute([':orderId' => $orderId, ':uid' => $task['order_item_uid'], ':id' => $taskId]);
         if ((float) $usedStmt->fetchColumn() + $quantity > $itemQuantity + 0.00001) { db()->rollBack(); json_error('Assigned quantity exceeds the remaining order-item quantity', 422); }
-        $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id');
+        $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id AND deleted_at IS NULL');
         $producedStmt->execute([':id' => $taskId]); $produced = (float) $producedStmt->fetchColumn();
         if ($quantity + 0.00001 < $produced) { db()->rollBack(); json_error('Assigned quantity cannot be less than already produced quantity', 422); }
         $status = $produced + 0.00001 >= $quantity ? 'COMPLETED' : ($produced > 0 ? 'IN_PROGRESS' : 'ASSIGNED');
@@ -267,13 +267,14 @@ function production_logs_to_wire($row)
     return ['id' => (int) $row['id'], 'taskId' => (int) $row['task_id'], 'employeeUserId' => (int) $row['employee_user_id'],
         'employeeName' => $row['employee_name'] ?? '', 'orderId' => (int) $row['order_id'], 'orderItemUid' => $row['order_item_uid'],
         'quantity' => (float) $row['quantity'], 'totalWeightGrams' => (float) $row['total_weight_grams'],
-        'productionDate' => $row['production_date'], 'createdAt' => to_iso($row['created_at'])];
+        'productionDate' => $row['production_date'], 'createdAt' => to_iso($row['created_at']),
+        'updatedAt' => to_iso($row['updated_at']), 'deletedAt' => to_iso($row['deleted_at'])];
 }
 
 function production_task_logs_list($params, $body, $user)
 {
     require_employee($user); $task = production_task_for_employee((int) $params['id'], $user);
-    $stmt = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.task_id = :taskId ORDER BY l.created_at DESC');
+    $stmt = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.task_id = :taskId AND l.deleted_at IS NULL ORDER BY l.created_at DESC');
     $stmt->execute([':taskId' => $task['id']]); json_response(['productionLogs' => array_map('production_logs_to_wire', $stmt->fetchAll())]);
 }
 
@@ -294,11 +295,12 @@ function production_task_log_create($params, $body, $user)
         $taskStmt->execute([':id' => (int) $params['id'], ':employee' => $user['id']]);
         $task = $taskStmt->fetch();
         if (!$task) { db()->rollBack(); json_error('Production task not found', 404); }
-        $existing = db()->prepare('SELECT id, total_weight_grams, production_date FROM production_logs WHERE task_id = :taskId AND employee_user_id = :employee AND submission_key = :key LIMIT 1');
+        $existing = db()->prepare('SELECT id, total_weight_grams, production_date, deleted_at FROM production_logs WHERE task_id = :taskId AND employee_user_id = :employee AND submission_key = :key LIMIT 1');
         $existing->execute([':taskId' => $task['id'], ':employee' => $user['id'], ':key' => $key]);
         $previous = $existing->fetch();
         if ($previous) {
             db()->rollBack();
+            if ($previous['deleted_at'] !== null) json_error('This submission key belongs to a deleted log', 409);
             if (abs((float) $previous['total_weight_grams'] - $weightKg * 1000) > 0.00001 || $previous['production_date'] !== $date) json_error('Submission key already used for different production', 409);
             production_log_response((int) $previous['id'], (int) $task['id'], 200);
         }
@@ -308,7 +310,7 @@ function production_task_log_create($params, $body, $user)
         $quantity = production_pieces_from_weight($weightKg, $weightOf10);
         if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
         $totalWeight = $weightKg * 1000;
-        $total = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId');
+        $total = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId AND deleted_at IS NULL');
         $total->execute([':taskId' => $task['id']]);
         if ((float) $total->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) { db()->rollBack(); json_error('Produced quantity exceeds the task quantity', 422); }
         $now = now_utc();
@@ -317,7 +319,7 @@ function production_task_log_create($params, $body, $user)
         // Capture the generated ID before later UPDATE statements, which do
         // not have an insert ID on MySQL.
         $id = (int) db()->lastInsertId();
-        $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId'); $sum->execute([':taskId' => $task['id']]); $newTotal = (float) $sum->fetchColumn();
+        $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId AND deleted_at IS NULL'); $sum->execute([':taskId' => $task['id']]); $newTotal = (float) $sum->fetchColumn();
         $status = $newTotal + 0.00001 >= (float) $task['required_quantity'] ? 'COMPLETED' : 'IN_PROGRESS';
         $update = db()->prepare('UPDATE production_tasks SET status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
         $update->execute([':status' => $status, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
@@ -332,9 +334,115 @@ function production_task_log_create($params, $body, $user)
     production_log_response($id, (int) $task['id'], 201);
 }
 
+function production_locked_employee_task($taskId, $user)
+{
+    $stmt = db()->prepare('SELECT * FROM production_tasks WHERE id = :id AND employee_user_id = :employee AND deleted_at IS NULL FOR UPDATE');
+    $stmt->execute([':id' => $taskId, ':employee' => $user['id']]);
+    $task = $stmt->fetch();
+    if (!$task) { db()->rollBack(); json_error('Production task not found', 404); }
+    return $task;
+}
+
+function production_refresh_task_status($task)
+{
+    $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId AND deleted_at IS NULL');
+    $sum->execute([':taskId' => $task['id']]);
+    $produced = (float) $sum->fetchColumn();
+    $status = $produced + 0.00001 >= (float) $task['required_quantity'] ? 'COMPLETED' : ($produced > 0 ? 'IN_PROGRESS' : 'ASSIGNED');
+    $now = now_utc();
+    $update = db()->prepare('UPDATE production_tasks SET status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
+    $update->execute([':status' => $status, ':completedAt' => $status === 'COMPLETED' ? $now : null,
+        ':updatedAt' => $now, ':id' => $task['id']]);
+}
+
+function production_task_wire_after_log_change($taskId)
+{
+    $stmt = db()->prepare('SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id');
+    $stmt->execute([':id' => $taskId]);
+    return production_task_to_wire($stmt->fetch());
+}
+
+function production_task_log_update($params, $body, $user)
+{
+    require_employee($user); require_fields($body, ['weightKg', 'productionDate']);
+    $weightKg = (float) production_normalize_digits($body['weightKg']);
+    $date = production_normalize_digits($body['productionDate']);
+    if (!production_valid_quantity($body['weightKg']) || $weightKg * 1000 > 99999999999.999 || !production_valid_date($date)) {
+        json_error('Invalid production log', 422);
+    }
+    $taskId = (int) $params['id']; $logId = (int) $params['logId'];
+    db()->beginTransaction();
+    try {
+        $task = production_locked_employee_task($taskId, $user);
+        $stmt = db()->prepare('SELECT id FROM production_logs WHERE id = :id AND task_id = :taskId AND employee_user_id = :employee AND deleted_at IS NULL FOR UPDATE');
+        $stmt->execute([':id' => $logId, ':taskId' => $taskId, ':employee' => $user['id']]);
+        if (!$stmt->fetch()) { db()->rollBack(); json_error('Production log not found', 404); }
+        if ((float) ($task['weight_of_10_grams'] ?? 0) <= 0) { db()->rollBack(); json_error('Record the 10-piece weight before editing this log', 422); }
+        $quantity = production_pieces_from_weight($weightKg, (float) $task['weight_of_10_grams']);
+        if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId AND id <> :logId AND deleted_at IS NULL');
+        $sum->execute([':taskId' => $taskId, ':logId' => $logId]);
+        if ((float) $sum->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) {
+            db()->rollBack(); json_error('Produced quantity exceeds the task quantity', 422);
+        }
+        $update = db()->prepare('UPDATE production_logs SET quantity = :quantity, total_weight_grams = :weight, production_date = :date, updated_at = :updated WHERE id = :id');
+        $update->execute([':quantity' => $quantity, ':weight' => $weightKg * 1000, ':date' => $date, ':updated' => now_utc(), ':id' => $logId]);
+        production_refresh_task_status($task);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to edit production log', 500, $e->getMessage());
+    }
+    $log = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.id = :id');
+    $log->execute([':id' => $logId]);
+    json_response(['productionLog' => production_logs_to_wire($log->fetch()), 'productionTask' => production_task_wire_after_log_change($taskId)]);
+}
+
+function production_task_log_delete($params, $body, $user)
+{
+    require_employee($user);
+    $taskId = (int) $params['id']; $logId = (int) $params['logId'];
+    db()->beginTransaction();
+    try {
+        $task = production_locked_employee_task($taskId, $user);
+        $update = db()->prepare('UPDATE production_logs SET deleted_at = :deleted, updated_at = :updated
+            WHERE id = :id AND task_id = :taskId AND employee_user_id = :employee AND deleted_at IS NULL');
+        $now = now_utc();
+        $update->execute([':deleted' => $now, ':updated' => $now, ':id' => $logId, ':taskId' => $taskId, ':employee' => $user['id']]);
+        if ($update->rowCount() !== 1) { db()->rollBack(); json_error('Production log not found', 404); }
+        production_refresh_task_status($task);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to delete production log', 500, $e->getMessage());
+    }
+    json_response(['ok' => true, 'productionTask' => production_task_wire_after_log_change($taskId)]);
+}
+
+function production_task_logs_clear($params, $body, $user)
+{
+    require_employee($user);
+    $taskId = (int) $params['id'];
+    db()->beginTransaction();
+    try {
+        $task = production_locked_employee_task($taskId, $user);
+        $update = db()->prepare('UPDATE production_logs SET deleted_at = :deleted, updated_at = :updated
+            WHERE task_id = :taskId AND employee_user_id = :employee AND deleted_at IS NULL');
+        $now = now_utc();
+        $update->execute([':deleted' => $now, ':updated' => $now, ':taskId' => $taskId, ':employee' => $user['id']]);
+        $count = $update->rowCount();
+        production_refresh_task_status($task);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to clear production logs', 500, $e->getMessage());
+    }
+    json_response(['deletedCount' => $count, 'productionTask' => production_task_wire_after_log_change($taskId)]);
+}
+
 function production_log_response($id, $taskId, $status)
 {
-    $log = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.id = :id'); $log->execute([':id' => $id]);
+    $log = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.id = :id AND l.deleted_at IS NULL'); $log->execute([':id' => $id]);
     $taskRow = db()->prepare("SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id"); $taskRow->execute([':id' => $taskId]);
     json_response(['productionLog' => production_logs_to_wire($log->fetch()), 'productionTask' => production_task_to_wire($taskRow->fetch())], $status);
 }
@@ -358,7 +466,7 @@ function production_employee_month_statistics($params, $body, $user)
     [$year, $month, $prefix] = production_statistics_month_params();
     $stmt = db()->prepare('SELECT production_date, SUM(quantity) AS total_quantity
         FROM production_logs
-        WHERE employee_user_id = :employee AND production_date >= :startDate AND production_date <= :endDate
+        WHERE employee_user_id = :employee AND deleted_at IS NULL AND production_date >= :startDate AND production_date <= :endDate
         GROUP BY production_date ORDER BY production_date ASC');
     $stmt->execute([
         ':employee' => $user['id'],
@@ -388,7 +496,7 @@ function production_employee_day_statistics($params, $body, $user)
         FROM production_logs l
         JOIN production_tasks t ON t.id = l.task_id
         JOIN orders o ON o.id = l.order_id
-        WHERE l.employee_user_id = :employee AND l.production_date = :productionDate
+        WHERE l.employee_user_id = :employee AND l.deleted_at IS NULL AND l.production_date = :productionDate
         ORDER BY l.created_at ASC, l.id ASC');
     $stmt->execute([':employee' => $user['id'], ':productionDate' => $date]);
     $records = [];
@@ -458,7 +566,7 @@ function production_management_month_statistics($params, $body, $user)
     if ($employeeId !== null) $bind[':employee'] = $employeeId;
 
     $dailyStmt = db()->prepare('SELECT l.production_date, SUM(l.quantity) AS total_quantity
-        FROM production_logs l WHERE l.production_date >= :startDate AND l.production_date <= :endDate' . $filter . '
+        FROM production_logs l WHERE l.deleted_at IS NULL AND l.production_date >= :startDate AND l.production_date <= :endDate' . $filter . '
         GROUP BY l.production_date ORDER BY l.production_date ASC');
     $dailyStmt->execute($bind);
     $daily = array_map(fn ($row) => [
@@ -472,7 +580,7 @@ function production_management_month_statistics($params, $body, $user)
         FROM users u
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id
         LEFT JOIN people p ON p.id = ea.person_id
-        LEFT JOIN production_logs l ON l.employee_user_id = u.id
+        LEFT JOIN production_logs l ON l.employee_user_id = u.id AND l.deleted_at IS NULL
             AND l.production_date >= :startDate AND l.production_date <= :endDate
         WHERE u.role = 'employee'" . $employeeUserFilter . "
         GROUP BY u.id, p.first_name, p.last_name, u.display_name, u.username
@@ -508,7 +616,7 @@ function production_management_day_statistics($params, $body, $user)
         JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id
         LEFT JOIN people p ON p.id = ea.person_id
-        WHERE l.production_date = :productionDate" . $filter . "
+        WHERE l.deleted_at IS NULL AND l.production_date = :productionDate" . $filter . "
         ORDER BY l.created_at ASC, l.id ASC");
     $stmt->execute($bind);
     $records = [];
@@ -545,10 +653,10 @@ function production_item_summary($params, $body, $user)
 {
     require_management($user); $orderId = (int) $params['orderId']; $uid = (string) $params['itemUid'];
     $tasks = db()->prepare("SELECT t.*, COALESCE(CONCAT(p.first_name, ' ', p.last_name), u.display_name, u.username) AS employee_name, COALESCE(SUM(l.quantity),0) AS produced_quantity
-        FROM production_tasks t JOIN users u ON u.id=t.employee_user_id LEFT JOIN employee_accounts ea ON ea.user_id=u.id LEFT JOIN people p ON p.id=ea.person_id LEFT JOIN production_logs l ON l.task_id=t.id
+        FROM production_tasks t JOIN users u ON u.id=t.employee_user_id LEFT JOIN employee_accounts ea ON ea.user_id=u.id LEFT JOIN people p ON p.id=ea.person_id LEFT JOIN production_logs l ON l.task_id=t.id AND l.deleted_at IS NULL
         WHERE t.order_id=:orderId AND t.order_item_uid=:uid AND t.deleted_at IS NULL GROUP BY t.id ORDER BY t.created_at ASC");
     $tasks->execute([':orderId' => $orderId, ':uid' => $uid]); $taskRows = $tasks->fetchAll();
-    $logs = db()->prepare("SELECT l.*, COALESCE(CONCAT(p.first_name, ' ', p.last_name), u.display_name, u.username) AS employee_name FROM production_logs l JOIN users u ON u.id=l.employee_user_id LEFT JOIN employee_accounts ea ON ea.user_id=u.id LEFT JOIN people p ON p.id=ea.person_id WHERE l.order_id=:orderId AND l.order_item_uid=:uid ORDER BY l.created_at DESC");
+    $logs = db()->prepare("SELECT l.*, COALESCE(CONCAT(p.first_name, ' ', p.last_name), u.display_name, u.username) AS employee_name FROM production_logs l JOIN users u ON u.id=l.employee_user_id LEFT JOIN employee_accounts ea ON ea.user_id=u.id LEFT JOIN people p ON p.id=ea.person_id WHERE l.order_id=:orderId AND l.order_item_uid=:uid AND l.deleted_at IS NULL ORDER BY l.created_at DESC");
     $logs->execute([':orderId' => $orderId, ':uid' => $uid]); $logRows = $logs->fetchAll();
     $byEmployee = []; foreach ($logRows as $log) { $id = (int) $log['employee_user_id']; if (!isset($byEmployee[$id])) $byEmployee[$id] = ['employeeUserId'=>$id,'employeeName'=>$log['employee_name'],'quantity'=>0]; $byEmployee[$id]['quantity'] += (float) $log['quantity']; }
     json_response(['tasks' => array_map('production_task_to_wire', $taskRows), 'totalProduced' => array_sum(array_map(fn($l)=>(float)$l['quantity'],$logRows)), 'byEmployee' => array_values($byEmployee), 'logs' => array_map('production_logs_to_wire',$logRows)]);

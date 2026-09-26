@@ -104,7 +104,20 @@
 .employee-tasks .weight-preview strong { font-size: 18px; }
 .employee-tasks .weight-preview small { color: #4a7058; }
 .employee-tasks .task-logs { margin-top: 28px; }
-.employee-tasks .task-logs > div { padding: 13px 2px; border-bottom-color: rgba(120,120,128,.14); }
+.employee-tasks .task-logs-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 12px; border-bottom: 1px solid rgba(120,120,128,.15); }
+.employee-tasks .task-logs .log-clear { border: 0; background: transparent; color: #ba3030; font: inherit; font-size: 12px; cursor: pointer; }
+.employee-tasks .task-log-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; border-bottom: 1px solid rgba(120,120,128,.14); }
+.employee-tasks .log-summary { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+.employee-tasks .log-summary small { width: 100%; }
+.employee-tasks .log-actions { display: flex; gap: 6px; }
+.employee-tasks .log-actions button { border: 1px solid #cbd8e7; border-radius: 8px; background: #f3f8ff; color: #1765ae; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.employee-tasks .log-actions button.danger { background: #fff4f4; border-color: #f1c9c9; color: #b72c2c; }
+.employee-tasks .log-actions button:disabled,.employee-tasks .log-clear:disabled { opacity: .5; cursor: default; }
+.employee-tasks .log-edit-form { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; width: 100%; }
+.employee-tasks .log-edit-form label { display: grid; gap: 5px; font-size: 12px; color: #526071; }
+.employee-tasks .log-edit-form input,.employee-tasks .log-edit-form .rmdp-input { width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid #d7dfe9; border-radius: 8px; padding: 7px 10px; background: #fff; color: #1c1c1e; font: inherit; }
+.employee-tasks .log-edit-form .full-width-date-picker,.employee-tasks .log-edit-form .rmdp-container { width: 100%; }
+.employee-tasks .log-edit-form .log-actions { grid-column: 1 / -1; }
 
 @media (max-width: 480px) {
   .employee-tasks { padding: 22px 14px 42px; }
@@ -112,4 +125,6 @@
   .employee-tasks .task-detail { padding: 2px 14px 17px; }
   .employee-tasks .task-title h2 { font-size: 20px; }
   .employee-tasks .production-item-trigger { flex-wrap: wrap; }
+  .employee-tasks .task-log-row { align-items: flex-start; flex-direction: column; }
+  .employee-tasks .log-edit-form { grid-template-columns: 1fr; }
 }

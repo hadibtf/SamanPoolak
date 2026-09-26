@@ -217,6 +217,14 @@ Employee-list refinement: show estimated remaining production weight from the
 remaining pieces and measured per-piece weight; use «لیست تولید» and a
 single-open accordion instead of separate selection cards and detail panel.
 
+Log corrections: employees can edit or soft-delete their own individual logs,
+or clear all their own logs for the selected production item. Changes recompute
+task status, remaining quantity, and all log-derived statistics. The API and
+employee UI are implemented locally but **must not be deployed** until
+`server/migrations/2026-09-26-production-log-edit-delete.sql` is applied to the
+live DB and the new flow is verified. Weight placeholders contain units only,
+without «مثلاً».
+
 
 - [ ] Test the full workflow: `Existing Order Item -> Assign Employee -> Employee Produces -> Production Log -> Statistics`.
 - [ ] Verify role-based authorization for admin, employee, and legacy generic-user accounts.

@@ -249,7 +249,7 @@ const People = () => {
                       value={formData.mCardNo}
                       onChange={handleChange}
                       inputMode="numeric"
-                      placeholder="مثلا ۱۲"
+                      placeholder="۱۲"
                     />
                   </div>
                   {isAdmin && (

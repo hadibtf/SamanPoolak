@@ -13,6 +13,10 @@ const fa = (value) => Number(value || 0).toLocaleString('fa-IR');
 const stamp = (value) => value ? new Date(value).toLocaleString('fa-IR') : '';
 const key = () => window.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
 const taskStatus = (status) => ({ ASSIGNED: 'تخصیص داده شده', IN_PROGRESS: 'در حال تولید', COMPLETED: 'تکمیل شده' }[status] || status);
+const dateObject = (date) => /^\d{8}$/.test(date) ? new DateObject({
+  calendar: persian, locale: persian_fa,
+  year: Number(date.slice(0, 4)), month: Number(date.slice(4, 6)), day: Number(date.slice(6, 8)),
+}) : '';
 // Keep the exact weekday ordering used by the platform's HR date picker.
 const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 export default function EmployeeTasks() {
@@ -26,12 +30,14 @@ export default function EmployeeTasks() {
   const [productionDate, setProductionDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [savingWeight, setSavingWeight] = useState(false);
+  const [editingLogId, setEditingLogId] = useState(null);
+  const [editWeightKg, setEditWeightKg] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [mutatingLog, setMutatingLog] = useState(false);
   const [error, setError] = useState('');
   const selected = useMemo(() => tasks.find((task) => task.id === selectedId) || null, [tasks, selectedId]);
-  const pickerDate = useMemo(() => /^\d{8}$/.test(productionDate) ? new DateObject({
-    calendar: persian, locale: persian_fa,
-    year: Number(productionDate.slice(0, 4)), month: Number(productionDate.slice(4, 6)), day: Number(productionDate.slice(6, 8)),
-  }) : '', [productionDate]);
+  const pickerDate = useMemo(() => dateObject(productionDate), [productionDate]);
+  const editPickerDate = useMemo(() => dateObject(editDate), [editDate]);
 
   const loadTasks = useCallback(async () => {
     setTasksLoading(true);
@@ -91,13 +97,57 @@ export default function EmployeeTasks() {
     finally { setBusy(false); }
   };
 
+  const beginEdit = (log) => {
+    setEditingLogId(log.id);
+    setEditWeightKg(String(Number(log.totalWeightGrams || 0) / 1000));
+    setEditDate(log.productionDate);
+    setError('');
+  };
+
+  const saveEdit = async (event) => {
+    event.preventDefault();
+    if (!selected || !editingLogId || mutatingLog) return;
+    setMutatingLog(true); setError('');
+    try {
+      const { productionLog, productionTask } = await productionApi.updateProductionLog(selected.id, editingLogId, { weightKg: Number(editWeightKg), productionDate: editDate });
+      setLogs((previous) => previous.map((log) => log.id === editingLogId ? productionLog : log));
+      setTasks((previous) => previous.map((task) => task.id === selected.id ? { ...task, ...productionTask } : task));
+      setEditingLogId(null);
+    } catch (err) { setError(err instanceof ApiError ? err.message : 'ویرایش ثبت تولید انجام نشد.'); }
+    finally { setMutatingLog(false); }
+  };
+
+  const deleteLog = async (log) => {
+    if (!selected || mutatingLog || !window.confirm(`ثبت ${fa(log.quantity)} عدد برای ${log.productionDate} حذف شود؟`)) return;
+    setMutatingLog(true); setError('');
+    try {
+      const { productionTask } = await productionApi.deleteProductionLog(selected.id, log.id);
+      setLogs((previous) => previous.filter((entry) => entry.id !== log.id));
+      setTasks((previous) => previous.map((task) => task.id === selected.id ? { ...task, ...productionTask } : task));
+      setEditingLogId(null);
+    } catch (err) { setError(err instanceof ApiError ? err.message : 'حذف ثبت تولید انجام نشد.'); }
+    finally { setMutatingLog(false); }
+  };
+
+  const clearLogs = async () => {
+    if (!selected || !logs.length || mutatingLog || !window.confirm(`همه ${fa(logs.length)} ثبت تولید این مورد حذف شود؟ این کار آمار تولید و مقدار باقی‌مانده را تغییر می‌دهد.`)) return;
+    setMutatingLog(true); setError('');
+    try {
+      const { productionTask } = await productionApi.clearProductionLogs(selected.id);
+      setLogs([]);
+      setTasks((previous) => previous.map((task) => task.id === selected.id ? { ...task, ...productionTask } : task));
+      setEditingLogId(null);
+    } catch (err) { setError(err instanceof ApiError ? err.message : 'پاک کردن سوابق تولید انجام نشد.'); }
+    finally { setMutatingLog(false); }
+  };
+
   if (tasksLoading) return <div className="employee-tasks empty-state"><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
   if (tasksError) return <div className="employee-tasks empty-state"><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
   if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>موردی در لیست تولید شما نیست.</p></div>;
   return <div className="employee-tasks">
     <header><h1>لیست تولید</h1><span>{fa(tasks.length)} مورد</span></header>
     <div className="task-list">{tasks.map((task) => <section className={`production-item glass-card ${task.id === selectedId ? 'open' : ''}`} key={task.id}>
-      <button type="button" className="production-item-trigger" aria-expanded={task.id === selectedId} disabled={busy || savingWeight} onClick={() => { setSelectedId((current) => current === task.id ? null : task.id); setLogs([]); setWeightKg(''); setError(''); }}>
+      <button type="button" className="production-item-trigger" aria-expanded={task.id === selectedId} disabled={busy || savingWeight || mutatingLog} onClick={() => { setSelectedId((current) => current === task.id ? null : task.id); setLogs([]); setWeightKg(''); setEditingLogId(null); setError(''); }}>
         <span className="production-item-name"><strong>{task.productName}</strong><small>سفارش {task.orderNumber}</small></span>
         <span className="production-item-meta"><em>{taskStatus(task.status)}</em><i className={`fa-solid fa-chevron-${task.id === selectedId ? 'up' : 'down'}`} aria-hidden="true" /></span>
       </button>
@@ -106,10 +156,10 @@ export default function EmployeeTasks() {
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
       <div className="task-specs"><span>تعداد تخصیص: <b>{fa(selected.requiredQuantity)} عدد</b></span><span>باقی‌مانده: <b>{fa(remaining)} عدد</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن کل مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span><span>وزن تخمینی باقی‌مانده: <b>{weights?.unitWeight ? `${fa(remaining * weights.unitWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
       {(selected.thickness || selected.diameter || selected.hardeningIntensity || selected.description) && <p className="task-description">ابعاد: {selected.thickness || '—'} × {selected.diameter || '—'} میلی‌متر {selected.isHardened ? `• سخت‌کاری ${selected.hardeningIntensity || ''}` : ''}<br />{selected.description}</p>}
-      {remaining > 0 && !selected.weightOf10 && <form onSubmit={saveWeight} className="production-form weight-first">
+      {!selected.weightOf10 && <form onSubmit={saveWeight} className="production-form weight-first">
         <h3>مرحله ۱ · وزن‌کشی نمونه</h3>
         <label htmlFor="weight-of-10">وزن ۱۰ عدد (گرم)</label>
-        <input id="weight-of-10" value={weightOf10Grams} onChange={(event) => setWeightOf10Grams(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="مثلاً ۳۰۰ گرم" required />
+        <input id="weight-of-10" value={weightOf10Grams} onChange={(event) => setWeightOf10Grams(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="۰.۰ گرم" required />
         <button className="production-submit" disabled={savingWeight}>{savingWeight ? 'در حال ثبت...' : 'ثبت وزن ۱۰ عدد'}</button>
         <small>پس از ثبت، وزن هر عدد و وزن کل مورد انتظار محاسبه می‌شود.</small>
         {error && <p className="task-error">{error}</p>}
@@ -117,13 +167,23 @@ export default function EmployeeTasks() {
       {remaining > 0 && Boolean(selected.weightOf10) && <form onSubmit={submit} className="production-form">
         <h3>مرحله ۲ · ثبت وزن تولید</h3>
         <label htmlFor="production-weight">وزن تولید این نوبت (کیلوگرم)</label>
-        <input id="production-weight" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="مثلاً ۰٫۳ یا ۱٫۵ یا ۱۰ کیلوگرم" required />
+        <input id="production-weight" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="۰.۰ کیلوگرم" required />
         {estimatedPieces > 0 && <div className="weight-preview"><span>تعداد برآوردی این ثبت</span><strong>{fa(estimatedPieces)} عدد</strong><small>از {fa(remaining)} عدد باقی‌مانده</small></div>}
         <JalaliDatePicker value={pickerDate} onChange={(date) => setProductionDate(productionDateKey(date))} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" />
         <button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>
         {error && <p className="task-error">{error}</p>}
       </form>}
-      <div className="task-logs"><h3>سوابق ثبت تولید</h3>{logs.length ? logs.map((log) => <div key={log.id}><b>{fa(log.quantity)} عدد</b><span>{fa(Number(log.totalWeightGrams || 0) / 1000)} کیلوگرم</span><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.createdAt)}</small></div>) : <p>هنوز تولیدی ثبت نشده است.</p>}</div>
+      <div className="task-logs">
+        <div className="task-logs-heading"><h3>سوابق ثبت تولید</h3>{logs.length > 0 && <button type="button" className="log-clear" disabled={mutatingLog} onClick={clearLogs}>پاک کردن همه سوابق این مورد</button>}</div>
+        {logs.length ? logs.map((log) => <div className="task-log-row" key={log.id}>
+          {editingLogId === log.id ? <form className="log-edit-form" onSubmit={saveEdit}>
+            <label>وزن تولید (کیلوگرم)<input type="number" min="0.001" step="0.001" inputMode="decimal" value={editWeightKg} onChange={(event) => setEditWeightKg(event.target.value)} placeholder="۰.۰ کیلوگرم" required /></label>
+            <label>تاریخ تولید<JalaliDatePicker value={editPickerDate} onChange={(date) => setEditDate(productionDateKey(date))} calendar={persian} locale={persian_fa} weekDays={weekDays} calendarPosition="bottom-right" containerClassName="full-width-date-picker" /></label>
+            <div className="log-actions"><button type="submit" disabled={mutatingLog}>ذخیره</button><button type="button" disabled={mutatingLog} onClick={() => setEditingLogId(null)}>انصراف</button></div>
+          </form> : <><div className="log-summary"><b>{fa(log.quantity)} عدد</b><span>{log.totalWeightGrams ? `${fa(Number(log.totalWeightGrams) / 1000)} کیلوگرم` : 'وزن ثبت نشده'}</span><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.updatedAt || log.createdAt)}{log.updatedAt ? ' · ویرایش‌شده' : ''}</small></div><div className="log-actions"><button type="button" disabled={mutatingLog} onClick={() => beginEdit(log)}>ویرایش</button><button type="button" className="danger" disabled={mutatingLog} onClick={() => deleteLog(log)}>حذف</button></div></>}
+        </div>) : <p>هنوز تولیدی ثبت نشده است.</p>}
+        {error && <p className="task-error">{error}</p>}
+      </div>
       </div>}
     </section>)}</div>
   </div>;

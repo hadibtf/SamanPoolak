@@ -61,6 +61,9 @@ $routes = [
     ['GET',    '/production/statistics/management/day', 'production_management_day_statistics', true],
     ['GET',    '/production/tasks/{id}/logs', 'production_task_logs_list', true],
     ['POST',   '/production/tasks/{id}/logs', 'production_task_log_create', true],
+    ['DELETE', '/production/tasks/{id}/logs', 'production_task_logs_clear', true],
+    ['PUT',    '/production/tasks/{id}/logs/{logId}', 'production_task_log_update', true],
+    ['DELETE', '/production/tasks/{id}/logs/{logId}', 'production_task_log_delete', true],
     ['GET',    '/production/orders/{orderId}/items/{itemUid}/summary', 'production_item_summary', true],
     ['GET',    '/markings',         'markings_list',   true],
     ['POST',   '/markings',         'markings_create', true],
@@ -123,6 +126,8 @@ try {
             if ($user && ($user['role'] ?? '') === 'employee'
                 && !in_array($method . ' ' . $path, $employeeAllowed, true)
                 && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)
+                && !preg_match('#^DELETE /production/tasks/[^/]+/logs$#', $method . ' ' . $path)
+                && !preg_match('#^(PUT|DELETE) /production/tasks/[^/]+/logs/[^/]+$#', $method . ' ' . $path)
                 && !preg_match('#^PUT /production/tasks/[^/]+/weight$#', $method . ' ' . $path)) {
                 json_error('Employee access is limited to production tasks', 403);
             }

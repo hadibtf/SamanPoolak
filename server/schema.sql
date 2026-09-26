@@ -279,6 +279,8 @@ CREATE TABLE IF NOT EXISTS production_logs (
     production_date     VARCHAR(8)    NOT NULL, -- Jalali YYYYMMDD
     submission_key      CHAR(36)      NOT NULL,
     created_at          DATETIME      NOT NULL,
+    updated_at          DATETIME      NULL,
+    deleted_at          DATETIME      NULL,
     CONSTRAINT fk_production_logs_task FOREIGN KEY (task_id) REFERENCES production_tasks(id),
     CONSTRAINT fk_production_logs_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
     CONSTRAINT fk_production_logs_order FOREIGN KEY (order_id) REFERENCES orders(id),
