@@ -1,7 +1,7 @@
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { productionMonthDays, productionFaYear, productionDateKey, productionPiecesFromWeight } from './productionStatistics';
+import { productionMonthDays, productionFaYear, productionDateKey, productionPiecesFromWeight, productionBarHeight } from './productionStatistics';
 
 test('every supported Jalali month has all valid dates and zero-filled days', () => {
   for (let year = 1405; year <= 1499; year++) {
@@ -44,4 +44,11 @@ test('batch weight in kilograms estimates pieces from ten-piece grams', () => {
   expect(productionPiecesFromWeight(1.5, 300)).toBe(50);
   expect(productionPiecesFromWeight(10, 300)).toBe(333);
   expect(productionPiecesFromWeight('', 300)).toBe(0);
+});
+
+test('daily bar heights stay proportional below the plot ceiling', () => {
+  expect(productionBarHeight(1493, 1493)).toBe(236);
+  expect(productionBarHeight(1381, 1493)).toBeLessThan(236);
+  expect(productionBarHeight(1381, 1493)).toBeGreaterThan(200);
+  expect(productionBarHeight(0, 1493)).toBe(2);
 });

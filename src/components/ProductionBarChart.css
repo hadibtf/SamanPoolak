@@ -1,6 +1,6 @@
 .production-chart { position: relative; padding: 26px 0 0; }
 .chart-viewport { display: flex; direction: ltr; align-items: flex-start; }
-.chart-scale { position: relative; flex: 0 0 46px; height: 260px; color: #8a909a; font-size: 10px; font-weight: 600; }
+.chart-scale { position: relative; flex: 0 0 46px; height: 236px; color: #8a909a; font-size: 10px; font-weight: 600; }
 .chart-scale span { position: absolute; left: 0; white-space: nowrap; transform: translateY(-50%); }
 .chart-scale span:first-child { top: 0; transform: none; }
 .chart-scale span:last-child { top: 50%; }
@@ -8,7 +8,7 @@
 .chart-grid { position: relative; min-width: calc(var(--day-count) * 38px); height: 260px; border-bottom: 1px solid #cfd5df; }
 .chart-guide { position: absolute; right: 0; left: 0; border-top: 1px dashed rgba(107,114,128,.2); pointer-events: none; }
 .chart-guide-top { top: 0; }
-.chart-guide-mid { top: 50%; }
+.chart-guide-mid { top: 118px; }
 .chart-bars { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--day-count), minmax(34px, 1fr)); align-items: end; }
 .chart-bar { position: relative; height: 100%; padding: 0 5px 24px; border: 0; background: transparent; cursor: pointer; font: inherit; }
 .chart-bar-fill { position: absolute; right: 7px; bottom: 24px; left: 7px; height: var(--bar-height); min-height: 2px; border-radius: 7px 7px 3px 3px; background: linear-gradient(180deg,#37a2ff,#087cf0); transition: height .25s ease, filter .18s ease, transform .18s ease; }

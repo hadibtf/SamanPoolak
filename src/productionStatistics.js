@@ -20,6 +20,10 @@ export function productionPiecesFromWeight(weightKg, weightOf10Grams) {
   return kg > 0 && gramsPerTen > 0 ? Math.round(kg * 1000 * 10 / gramsPerTen) : 0;
 }
 
+export function productionBarHeight(quantity, maximum, plotHeight = 236) {
+  return Number(quantity) > 0 ? Math.max(5, Number(quantity) / Math.max(1, Number(maximum)) * plotHeight) : 2;
+}
+
 export function currentProductionMonth() {
   const date = new DateObject({ calendar: persian, locale: persian_fa });
   return { year: Math.min(1499, Math.max(1405, date.year)), month: date.month.number };
