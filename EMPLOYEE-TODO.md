@@ -206,17 +206,26 @@ TODO's acceptance criteria can be marked complete.
 - [ ] Verify management-only assignment/statistics actions are protected.
 - [ ] Test partial production across multiple days.
 - [ ] Test multiple products/tasks logged on the same day.
-- [ ] Test zero-production days and months with no production.
-- [ ] Test Jalali month lengths, leap-year boundaries, and supported years `1405–1499`.
+- [x] Test zero-production days and months with no production (calendar zero-fill regression test).
+- [x] Test Jalali month lengths, leap-year boundaries, and supported years `1405–1499` (PHP validator and shared calendar regression tests).
 - [ ] Test production aggregation queries.
 - [ ] Test duplicate-submission idempotency using identical submission UUIDs and legitimate repeated partial logs using distinct UUIDs.
-- [ ] Test quantity validation and transaction behavior.
-- [ ] Verify the reused 10-piece weight calculation matches the existing order view.
+- [ ] Test quantity validation and transaction behavior (validation unit-tested; concurrent database transaction test still needed).
+- [x] Verify the reused 10-piece weight calculation matches the existing order view (both call `computeWeights()` from `src/db.js`).
 - [ ] Verify responsive behavior on desktop and mobile.
-- [ ] Add/update automated tests following the project's existing testing conventions.
-- [ ] Remove mock data, temporary code, duplicate logic, and dead code introduced during implementation.
-- [ ] Run linting, type checks, tests, and production build.
-- [ ] Update this file so all completed TODOs use `- [x]`.
+- [x] Add/update automated tests following the project's existing testing conventions (Jest and PHP CLI validation tests).
+- [x] Remove mock data, temporary code, duplicate logic, and dead code introduced during implementation (unused employee-sync hook removed).
+- [x] Run available linting, tests, and production build (`CI=true` CRA build/lint, Jest, PHP lint; no TypeScript/typecheck script exists).
+- [x] Update this file so all completed TODOs use `- [x]`.
+
+Hardening changes: assignment and log writes lock their parent rows before checking
+remaining quantity; a repeated submission key with the same content returns its
+original log, while a changed payload is rejected. The server now rejects invalid
+Jalali dates and quantities that MySQL would round. Employee daily details retain
+historical logs even if an order item was subsequently removed. The remaining
+unchecked items require an admin session, a second employee account, controlled
+live writes/concurrency tests, and desktop/mobile UI acceptance; do not infer
+those checks from unit tests alone.
 
 ### Final Acceptance Criteria
 

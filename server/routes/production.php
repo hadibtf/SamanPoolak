@@ -1,5 +1,5 @@
 <?php
-// Production task assignment. Logging is intentionally implemented in TODO 3.
+// Production task assignment, logging, and statistics.
 
 function require_employee($user)
 {
@@ -103,9 +103,9 @@ function production_tasks_create($params, $body, $user)
     require_admin($user);
     require_fields($body, ['orderId', 'orderItemUid', 'employeeUserId', 'requiredQuantity', 'assignedDate']);
     $orderId = (int) $body['orderId']; $itemUid = trim((string) $body['orderItemUid']);
-    $employeeId = (int) $body['employeeUserId']; $quantity = (float) $body['requiredQuantity'];
-    $assignedDate = (string) $body['assignedDate'];
-    if ($orderId <= 0 || $itemUid === '' || !is_finite($quantity) || $quantity <= 0 || !preg_match('/^\d{8}$/', $assignedDate)) {
+    $employeeId = (int) $body['employeeUserId']; $quantity = (float) production_normalize_digits($body['requiredQuantity']);
+    $assignedDate = production_normalize_digits($body['assignedDate']);
+    if ($orderId <= 0 || $itemUid === '' || !production_valid_quantity($body['requiredQuantity']) || !production_valid_date($assignedDate)) {
         json_error('Invalid production task', 422);
     }
     db()->beginTransaction();
@@ -114,7 +114,8 @@ function production_tasks_create($params, $body, $user)
             WHERE ea.user_id = :id AND u.role = 'employee' AND u.disabled = 0 LIMIT 1");
         $employee->execute([':id' => $employeeId]);
         if (!$employee->fetch()) json_error('Employee not found or disabled', 422);
-        $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+        // Serialize assignments for this order before checking its remaining quantity.
+        $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
         $orderStmt->execute([':id' => $orderId]); $order = $orderStmt->fetch();
         if (!$order) json_error('Order not found', 404);
         $item = null;
@@ -154,7 +155,19 @@ function production_normalize_digits($value)
 function production_valid_date($value)
 {
     if (!preg_match('/^(\d{4})(\d{2})(\d{2})$/', (string) $value, $m)) return false;
-    return (int) $m[2] >= 1 && (int) $m[2] <= 12 && (int) $m[3] >= 1 && (int) $m[3] <= 31;
+    $year = (int) $m[1]; $month = (int) $m[2]; $day = (int) $m[3];
+    if ($year < 1405 || $year > 1499 || $month < 1 || $month > 12 || $day < 1) return false;
+    // Matches react-date-object's Persian calendar for the supported year range.
+    $leapYears = [1408,1412,1416,1420,1424,1428,1432,1436,1441,1445,1449,1453,1457,1461,1465,1469,1473,1478,1482,1486,1490,1494,1498];
+    return $day <= ($month <= 6 ? 31 : ($month <= 11 ? 30 : (in_array($year, $leapYears, true) ? 30 : 29)));
+}
+
+function production_valid_quantity($value)
+{
+    $normalized = production_normalize_digits($value);
+    // MySQL stores DECIMAL(14,3); reject values that would round or overflow.
+    return preg_match('/^(?:0|[1-9]\d{0,10})(?:\.\d{1,3})?$/', $normalized) === 1
+        && (float) $normalized > 0;
 }
 
 function production_task_for_employee($taskId, $user)
@@ -183,19 +196,31 @@ function production_task_logs_list($params, $body, $user)
 function production_task_log_create($params, $body, $user)
 {
     require_employee($user); require_fields($body, ['quantity', 'productionDate', 'submissionKey']);
-    $quantity = (float) $body['quantity'];
+    $quantity = (float) production_normalize_digits($body['quantity']);
     // react-multi-date-picker can format a Jalali date with Persian digits.
     // Persist dates in the server's canonical ASCII YYYYMMDD format.
     $date = production_normalize_digits($body['productionDate']);
     $key = trim((string) $body['submissionKey']);
-    if (!is_finite($quantity) || $quantity <= 0 || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)) json_error('Invalid production log', 422);
+    if (!production_valid_quantity($body['quantity']) || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)) json_error('Invalid production log', 422);
     db()->beginTransaction();
     try {
-        $task = production_task_for_employee((int) $params['id'], $user);
-        if ($task['status'] === 'COMPLETED') json_error('Production task is already completed', 422);
+        // Lock the task before reading its logs so concurrent submissions cannot overproduce.
+        $taskStmt = db()->prepare('SELECT * FROM production_tasks WHERE id = :id AND employee_user_id = :employee AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
+        $taskStmt->execute([':id' => (int) $params['id'], ':employee' => $user['id']]);
+        $task = $taskStmt->fetch();
+        if (!$task) { db()->rollBack(); json_error('Production task not found', 404); }
+        $existing = db()->prepare('SELECT id, quantity, production_date FROM production_logs WHERE task_id = :taskId AND employee_user_id = :employee AND submission_key = :key LIMIT 1');
+        $existing->execute([':taskId' => $task['id'], ':employee' => $user['id'], ':key' => $key]);
+        $previous = $existing->fetch();
+        if ($previous) {
+            db()->rollBack();
+            if ((float) $previous['quantity'] !== $quantity || $previous['production_date'] !== $date) json_error('Submission key already used for different production', 409);
+            production_log_response((int) $previous['id'], (int) $task['id'], 200);
+        }
+        if ($task['status'] === 'COMPLETED') { db()->rollBack(); json_error('Production task is already completed', 422); }
         $total = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId');
         $total->execute([':taskId' => $task['id']]);
-        if ((float) $total->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) json_error('Produced quantity exceeds the task quantity', 422);
+        if ((float) $total->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) { db()->rollBack(); json_error('Produced quantity exceeds the task quantity', 422); }
         $now = now_utc();
         $insert = db()->prepare('INSERT INTO production_logs (task_id, employee_user_id, order_id, order_item_uid, quantity, production_date, submission_key, created_at) VALUES (:taskId,:employeeId,:orderId,:itemUid,:quantity,:date,:key,:createdAt)');
         $insert->execute([':taskId' => $task['id'], ':employeeId' => $user['id'], ':orderId' => $task['order_id'], ':itemUid' => $task['order_item_uid'], ':quantity' => $quantity, ':date' => $date, ':key' => $key, ':createdAt' => $now]);
@@ -214,15 +239,23 @@ function production_task_log_create($params, $body, $user)
     } catch (Throwable $e) {
         if (db()->inTransaction()) db()->rollBack(); json_error('Failed to save production log', 500, $e->getMessage());
     }
+    production_log_response($id, (int) $task['id'], 201);
+}
+
+function production_log_response($id, $taskId, $status)
+{
     $log = db()->prepare('SELECT l.*, u.display_name AS employee_name FROM production_logs l JOIN users u ON u.id = l.employee_user_id WHERE l.id = :id'); $log->execute([':id' => $id]);
-    $taskRow = db()->prepare("SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id"); $taskRow->execute([':id' => $task['id']]);
-    json_response(['productionLog' => production_logs_to_wire($log->fetch()), 'productionTask' => production_task_to_wire($taskRow->fetch())], 201);
+    $taskRow = db()->prepare("SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id"); $taskRow->execute([':id' => $taskId]);
+    json_response(['productionLog' => production_logs_to_wire($log->fetch()), 'productionTask' => production_task_to_wire($taskRow->fetch())], $status);
 }
 
 function production_statistics_month_params()
 {
-    $year = (int) production_normalize_digits($_GET['year'] ?? '');
-    $month = (int) production_normalize_digits($_GET['month'] ?? '');
+    $rawYear = production_normalize_digits($_GET['year'] ?? '');
+    $rawMonth = production_normalize_digits($_GET['month'] ?? '');
+    if (!preg_match('/^\d{4}$/', $rawYear) || !preg_match('/^\d{1,2}$/', $rawMonth)) json_error('Invalid production statistics month', 422);
+    $year = (int) $rawYear;
+    $month = (int) $rawMonth;
     if ($year < 1405 || $year > 1499 || $month < 1 || $month > 12) {
         json_error('Invalid production statistics month', 422);
     }
@@ -274,12 +307,11 @@ function production_employee_day_statistics($params, $body, $user)
         foreach (($row['items'] ? json_decode($row['items'], true) : []) as $candidate) {
             if (($candidate['uid'] ?? '') === $row['order_item_uid']) { $item = $candidate; break; }
         }
-        if (!$item) continue;
         $records[] = [
             'id' => (int) $row['id'],
             'taskId' => (int) $row['task_id'],
             'orderNumber' => $row['order_number'],
-            'productName' => $item['productName'] ?? '',
+            'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
             'productionDate' => $row['production_date'],
             'createdAt' => to_iso($row['created_at']),
