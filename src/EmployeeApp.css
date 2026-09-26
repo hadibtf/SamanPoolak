@@ -1,0 +1,38 @@
+.employee-nav {
+  position: fixed;
+  z-index: 1000;
+  right: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(50%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(76px, 1fr));
+  width: min(420px, calc(100% - 24px));
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 20px;
+  background: rgba(248,249,252,.82);
+  box-shadow: 0 12px 35px rgba(31,38,55,.18);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+.employee-nav a,
+.employee-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #6b7280;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.employee-nav i { font-size: 18px; }
+.employee-nav a.active { background: #fff; color: #007aff; box-shadow: 0 3px 12px rgba(31,38,55,.1); }
+.employee-nav button { color: #c5221f; }

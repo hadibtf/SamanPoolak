@@ -15,11 +15,11 @@ This file is the execution tracker for the employee production/task/statistics f
 
 ## Progress
 
-- [ ] EMERGENCY — Separate employee application at employee.samanpoolak.ir
+- [x] EMERGENCY — Separate employee application at employee.samanpoolak.ir
 - [x] TODO 1 — Inspect existing architecture and define the production domain
 - [x] TODO 2 — Implement production task assignment from existing orders
 - [x] TODO 3 — Build the employee task and production logging workflow
-- [ ] TODO 4 — Build employee monthly production statistics and daily drill-down
+- [x] TODO 4 — Build employee monthly production statistics and daily drill-down
 - [ ] TODO 5 — Build management statistics for individual and all employees
 - [ ] TODO 6 — Harden, test, and verify the complete workflow
 
@@ -27,8 +27,7 @@ This file is the execution tracker for the employee production/task/statistics f
 
 ## EMERGENCY — Separate Employee Application at employee.samanpoolak.ir
 
-- [ ] Build and deploy a distinct employee web application to `employee.samanpoolak.ir`.
-  - Code/build separation is complete; live deployment awaits cPanel subdomain creation.
+- [x] Build and deploy a distinct employee web application to `employee.samanpoolak.ir`.
 - [x] Make the employee build render only employee login/tasks routes; it must not include or route to management screens.
 - [x] Make the manager platform reject employee logins with a clear link to the employee site.
 - [x] Make the employee site reject admin/general-user logins with a clear link to the manager platform.
@@ -42,10 +41,9 @@ This file is the execution tracker for the employee production/task/statistics f
 - The server continues enforcing employee-only API access regardless of URL.
 - Each subdomain deploys independently.
 
-Status: both build variants compile successfully. Before live deployment, create
-the `employee.samanpoolak.ir` cPanel subdomain with document root `employee/`,
-copy the standard SPA `.htaccess` there, add the employee origin to the live
-API CORS allowlist, then run `npm run deploy:employee`.
+Status: the employee application is live at `employee.samanpoolak.ir`, deploys
+independently, and the API accepts only its configured employee-app origin for
+employee-surface login.
 
 ---
 
@@ -141,19 +139,23 @@ one-to-one `employee_accounts` mapping—not as disconnected accounts in Setting
 
 ## TODO 4 — Build Employee Monthly Production Statistics and Daily Drill-Down
 
-- [ ] Add the employee `Statistics` page.
-- [ ] Add a year selector covering `1405` through `1499`.
-- [ ] Add a month selector using the platform's existing Jalali/Persian calendar implementation.
-- [ ] Build a responsive, touch-friendly shared bar-chart component using the existing React/CSS stack. The repository currently has no shadcn/Recharts dependency; do not claim to reuse one.
-- [ ] Use day-of-month on the X-axis and total produced quantity on the Y-axis.
-- [ ] Provide employee-authorized aggregation/detail API endpoints calculated from `SUM(production_logs.quantity)` for the authenticated employee. Do not download other employees’ logs to the browser.
-- [ ] Generate every valid Jalali day for the selected month (including zero-production days) using the existing `react-date-object` calendar utilities.
-- [ ] Add tooltip information for date and quantity.
-- [ ] Make every daily bar clickable/tappable.
-- [ ] On bar selection, show the underlying production records for that date.
-- [ ] Show product/part, order reference, task, produced quantity, and relevant production information in the daily detail view.
-- [ ] Add loading, empty, and error states.
-- [ ] Ensure the page is touch-friendly and usable on phones.
+- [x] Add the employee `Statistics` page.
+- [x] Add a year selector covering `1405` through `1499`.
+- [x] Add a month selector using the platform's existing Jalali/Persian calendar implementation.
+- [x] Build a responsive, touch-friendly shared bar-chart component using the existing React/CSS stack. The repository currently has no shadcn/Recharts dependency; do not claim to reuse one.
+- [x] Use day-of-month on the X-axis and total produced quantity on the Y-axis.
+- [x] Provide employee-authorized aggregation/detail API endpoints calculated from `SUM(production_logs.quantity)` for the authenticated employee. Do not download other employees’ logs to the browser.
+- [x] Generate every valid Jalali day for the selected month (including zero-production days) using the existing `react-date-object` calendar utilities.
+- [x] Add tooltip information for date and quantity.
+- [x] Make every daily bar clickable/tappable.
+- [x] On bar selection, show the underlying production records for that date.
+- [x] Show product/part, order reference, task, produced quantity, and relevant production information in the daily detail view.
+- [x] Add loading, empty, and error states.
+- [x] Ensure the page is touch-friendly and usable on phones.
+
+Implementation verified live with the employee account: مهر ۱۴۰۵ monthly total
+matched the production-log sum, and selecting ۱۴۰۵/۰۷/۰۴ returned the exact
+underlying product, order, task, quantity, status, dimensions, and timestamp.
 
 ### Acceptance Criteria
 

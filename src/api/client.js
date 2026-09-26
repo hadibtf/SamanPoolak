@@ -149,6 +149,8 @@ export const productionApi = {
   assignTask: (task) => api.post('/production/tasks', task),
   taskLogs: (taskId) => api.get(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
   logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
+  employeeMonthStatistics: (year, month) => api.get(`/production/statistics/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`),
+  employeeDayStatistics: (date) => api.get(`/production/statistics/day?date=${encodeURIComponent(date)}`),
   itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),
 };
 

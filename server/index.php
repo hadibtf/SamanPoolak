@@ -52,6 +52,8 @@ $routes = [
     ['GET',    '/production/employees', 'production_employees', true],
     ['GET',    '/production/tasks', 'production_tasks_list', true],
     ['POST',   '/production/tasks', 'production_tasks_create', true],
+    ['GET',    '/production/statistics/month', 'production_employee_month_statistics', true],
+    ['GET',    '/production/statistics/day', 'production_employee_day_statistics', true],
     ['GET',    '/production/tasks/{id}/logs', 'production_task_logs_list', true],
     ['POST',   '/production/tasks/{id}/logs', 'production_task_log_create', true],
     ['GET',    '/production/orders/{orderId}/items/{itemUid}/summary', 'production_item_summary', true],
@@ -109,7 +111,10 @@ try {
             $user   = $needsAuth ? require_auth() : null;
             // Employee tokens are intentionally narrow: production task reads
             // (and, later, production-log writes) are their only business API.
-            $employeeAllowed = ['POST /auth/logout', 'GET /auth/me', 'GET /production/tasks', 'GET /holidays'];
+            $employeeAllowed = [
+                'POST /auth/logout', 'GET /auth/me', 'GET /production/tasks', 'GET /holidays',
+                'GET /production/statistics/month', 'GET /production/statistics/day',
+            ];
             if ($user && ($user['role'] ?? '') === 'employee'
                 && !in_array($method . ' ' . $path, $employeeAllowed, true)
                 && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)) {

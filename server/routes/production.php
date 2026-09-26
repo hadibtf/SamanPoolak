@@ -219,6 +219,84 @@ function production_task_log_create($params, $body, $user)
     json_response(['productionLog' => production_logs_to_wire($log->fetch()), 'productionTask' => production_task_to_wire($taskRow->fetch())], 201);
 }
 
+function production_statistics_month_params()
+{
+    $year = (int) production_normalize_digits($_GET['year'] ?? '');
+    $month = (int) production_normalize_digits($_GET['month'] ?? '');
+    if ($year < 1405 || $year > 1499 || $month < 1 || $month > 12) {
+        json_error('Invalid production statistics month', 422);
+    }
+    return [$year, $month, sprintf('%04d%02d', $year, $month)];
+}
+
+function production_employee_month_statistics($params, $body, $user)
+{
+    require_employee($user);
+    [$year, $month, $prefix] = production_statistics_month_params();
+    $stmt = db()->prepare('SELECT production_date, SUM(quantity) AS total_quantity
+        FROM production_logs
+        WHERE employee_user_id = :employee AND production_date >= :startDate AND production_date <= :endDate
+        GROUP BY production_date ORDER BY production_date ASC');
+    $stmt->execute([
+        ':employee' => $user['id'],
+        ':startDate' => $prefix . '01',
+        ':endDate' => $prefix . '31',
+    ]);
+    $daily = array_map(fn ($row) => [
+        'date' => $row['production_date'],
+        'quantity' => (float) $row['total_quantity'],
+    ], $stmt->fetchAll());
+    json_response([
+        'year' => $year,
+        'month' => $month,
+        'total' => array_sum(array_column($daily, 'quantity')),
+        'daily' => $daily,
+    ]);
+}
+
+function production_employee_day_statistics($params, $body, $user)
+{
+    require_employee($user);
+    $date = production_normalize_digits($_GET['date'] ?? '');
+    if (!production_valid_date($date) || (int) substr($date, 0, 4) < 1405 || (int) substr($date, 0, 4) > 1499) {
+        json_error('Invalid production statistics date', 422);
+    }
+    $stmt = db()->prepare('SELECT l.*, t.required_quantity, t.status AS task_status, o.order_number, o.items
+        FROM production_logs l
+        JOIN production_tasks t ON t.id = l.task_id
+        JOIN orders o ON o.id = l.order_id
+        WHERE l.employee_user_id = :employee AND l.production_date = :productionDate
+        ORDER BY l.created_at ASC, l.id ASC');
+    $stmt->execute([':employee' => $user['id'], ':productionDate' => $date]);
+    $records = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $item = null;
+        foreach (($row['items'] ? json_decode($row['items'], true) : []) as $candidate) {
+            if (($candidate['uid'] ?? '') === $row['order_item_uid']) { $item = $candidate; break; }
+        }
+        if (!$item) continue;
+        $records[] = [
+            'id' => (int) $row['id'],
+            'taskId' => (int) $row['task_id'],
+            'orderNumber' => $row['order_number'],
+            'productName' => $item['productName'] ?? '',
+            'quantity' => (float) $row['quantity'],
+            'productionDate' => $row['production_date'],
+            'createdAt' => to_iso($row['created_at']),
+            'taskRequiredQuantity' => (float) $row['required_quantity'],
+            'taskStatus' => $row['task_status'],
+            'material' => $item['material'] ?? '',
+            'thickness' => $item['thickness'] ?? null,
+            'diameter' => $item['diameter'] ?? null,
+        ];
+    }
+    json_response([
+        'date' => $date,
+        'total' => array_sum(array_column($records, 'quantity')),
+        'records' => $records,
+    ]);
+}
+
 function production_item_summary($params, $body, $user)
 {
     require_management($user); $orderId = (int) $params['orderId']; $uid = (string) $params['itemUid'];

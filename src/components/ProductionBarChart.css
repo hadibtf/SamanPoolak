@@ -1,0 +1,18 @@
+.production-chart { position: relative; padding: 8px 0 0; }
+.chart-scroll { overflow-x: auto; overflow-y: hidden; padding: 38px 2px 6px; scrollbar-width: thin; }
+.chart-grid { position: relative; min-width: calc(var(--day-count) * 38px); height: 260px; border-bottom: 1px solid #cfd5df; }
+.chart-guide { position: absolute; right: 0; left: 0; border-top: 1px dashed rgba(107,114,128,.2); pointer-events: none; }
+.chart-guide-top { top: 0; }
+.chart-guide-mid { top: 50%; }
+.chart-guide span { position: absolute; left: 2px; top: -20px; color: #8a909a; font-size: 10px; }
+.chart-bars { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--day-count), minmax(34px, 1fr)); align-items: end; }
+.chart-bar { position: relative; height: 100%; padding: 0 5px 24px; border: 0; background: transparent; cursor: pointer; font: inherit; }
+.chart-bar-fill { position: absolute; right: 7px; bottom: 24px; left: 7px; min-height: 2px; border-radius: 7px 7px 3px 3px; background: linear-gradient(180deg,#37a2ff,#087cf0); transition: height .25s ease, filter .18s ease, transform .18s ease; }
+.chart-bar:hover .chart-bar-fill,.chart-bar:focus .chart-bar-fill,.chart-bar.selected .chart-bar-fill { filter: saturate(1.18); transform: scaleX(1.1); }
+.chart-bar.selected .chart-bar-fill { background: linear-gradient(180deg,#ffb340,#ff8a00); }
+.chart-day { position: absolute; right: 0; bottom: 2px; left: 0; color: #626975; font-size: 11px; }
+.chart-tooltip { position: absolute; z-index: 3; right: 50%; bottom: calc(100% + 7px); transform: translateX(50%); width: max-content; padding: 7px 9px; border-radius: 9px; background: #1f2937; color: #fff; box-shadow: 0 7px 20px rgba(0,0,0,.18); font-size: 11px; line-height: 1.6; pointer-events: none; }
+.chart-tooltip b { display: block; }
+.chart-y-label,.chart-x-label { color: #6b7280; font-size: 12px; font-weight: 600; }
+.chart-y-label { position: absolute; right: 0; top: 0; }
+.chart-x-label { text-align: center; margin-top: 7px; }
