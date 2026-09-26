@@ -91,17 +91,23 @@
 .employee-tasks .production-form h3,
 .employee-tasks .task-logs h3 { color: #1c1c1e; font-size: 19px; }
 .employee-tasks .production-form input,
-.employee-tasks .production-form .rmdp-input {
+.employee-tasks .production-form .full-width-date-picker .rmdp-input {
   height: 52px;
-  padding: 0 14px;
-  border: 1px solid rgba(120,120,128,.24);
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 12px 15px !important;
+  border: 1px solid #e2e8f0 !important;
   border-radius: 12px;
-  background: rgba(255,255,255,.88);
+  background: #fcfcfc !important;
   color: #1c1c1e;
   text-align: right;
 }
-.employee-tasks .production-form .rmdp-container { width: 100%; }
-.employee-tasks .production-form .rmdp-input { width: 100%; }
+.employee-tasks .production-form .full-width-date-picker {
+  display: flex !important;
+  flex: 1 1 0% !important;
+  width: 100% !important;
+}
+.employee-tasks .production-form .full-width-date-picker .rmdp-container { display: flex !important; width: 100% !important; }
 .employee-tasks .production-form button {
   min-height: 52px;
   border-radius: 13px;
