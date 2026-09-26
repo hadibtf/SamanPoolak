@@ -15,6 +15,8 @@ function production_task_to_wire($row)
         'id' => (int) $row['id'], 'orderId' => (int) $row['order_id'],
         'orderItemUid' => $row['order_item_uid'], 'employeeUserId' => (int) $row['employee_user_id'],
         'employeeName' => $row['employee_name'] ?? '', 'requiredQuantity' => (float) $row['required_quantity'],
+        'weightOf10' => $row['weight_of_10_grams'] === null ? null : (float) $row['weight_of_10_grams'],
+        'producedQuantity' => isset($row['produced_quantity']) ? (float) $row['produced_quantity'] : null,
         'assignedDate' => $row['assigned_date'], 'assignedBy' => (int) $row['assigned_by'],
         'status' => $row['status'], 'createdAt' => to_iso($row['created_at']),
         'updatedAt' => to_iso($row['updated_at']), 'completedAt' => to_iso($row['completed_at']),
@@ -47,7 +49,7 @@ function production_task_projection($task)
         'material' => $item['material'] ?? '', 'thickness' => $item['thickness'] ?? null,
         'diameter' => $item['diameter'] ?? null, 'isHardened' => !empty($item['isHardened']),
         'hardeningIntensity' => $item['hardeningIntensity'] ?? '', 'description' => $item['description'] ?? '',
-        'weightOf10' => $item['weightOf10'] ?? null,
+        'weightOf10' => $task['weightOf10'],
         'markingName' => $marking['name'] ?? ($item['markingName'] ?? ''),
         'markingSrc' => $marking['src'] ?? null,
     ];
@@ -105,6 +107,7 @@ function production_tasks_create($params, $body, $user)
     $orderId = (int) $body['orderId']; $itemUid = trim((string) $body['orderItemUid']);
     $employeeId = (int) $body['employeeUserId']; $quantity = (float) production_normalize_digits($body['requiredQuantity']);
     $assignedDate = production_normalize_digits($body['assignedDate']);
+    $splitFromTaskId = isset($body['splitFromTaskId']) ? (int) $body['splitFromTaskId'] : null;
     if ($orderId <= 0 || $itemUid === '' || !production_valid_quantity($body['requiredQuantity']) || !production_valid_date($assignedDate)) {
         json_error('Invalid production task', 422);
     }
@@ -127,7 +130,24 @@ function production_tasks_create($params, $body, $user)
         $usedStmt = db()->prepare('SELECT COALESCE(SUM(required_quantity), 0) FROM production_tasks
             WHERE order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL');
         $usedStmt->execute([':orderId' => $orderId, ':itemUid' => $itemUid]);
-        if ((float) $usedStmt->fetchColumn() + $quantity > $orderQuantity + 0.00001) json_error('Assigned quantity exceeds the remaining order-item quantity', 422);
+        $assigned = (float) $usedStmt->fetchColumn();
+        $deficit = round(max(0, $assigned + $quantity - $orderQuantity), 3);
+        if ($deficit > 0) {
+            if (!$splitFromTaskId) { db()->rollBack(); json_error('Assigned quantity exceeds the remaining order-item quantity', 422); }
+            $sourceStmt = db()->prepare('SELECT * FROM production_tasks WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL FOR UPDATE');
+            $sourceStmt->execute([':id' => $splitFromTaskId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
+            $source = $sourceStmt->fetch();
+            if (!$source || (int) $source['employee_user_id'] === $employeeId) { db()->rollBack(); json_error('Invalid source assignment for split', 422); }
+            $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id');
+            $producedStmt->execute([':id' => $splitFromTaskId]);
+            $produced = (float) $producedStmt->fetchColumn();
+            $sourceQuantity = round((float) $source['required_quantity'] - $deficit, 3);
+            if ($sourceQuantity <= 0 || $sourceQuantity + 0.00001 < $produced) { db()->rollBack(); json_error('The first employee has already produced too much to transfer this quantity', 422); }
+            $sourceStatus = $produced + 0.00001 >= $sourceQuantity ? 'COMPLETED' : ($produced > 0 ? 'IN_PROGRESS' : 'ASSIGNED');
+            $sourceUpdate = db()->prepare('UPDATE production_tasks SET required_quantity = :quantity, status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
+            $sourceUpdate->execute([':quantity' => $sourceQuantity, ':status' => $sourceStatus,
+                ':completedAt' => $sourceStatus === 'COMPLETED' ? now_utc() : null, ':updatedAt' => now_utc(), ':id' => $splitFromTaskId]);
+        }
         $now = now_utc();
         $insert = db()->prepare('INSERT INTO production_tasks (order_id, order_item_uid, employee_user_id, required_quantity, assigned_date, assigned_by, status, created_at, updated_at)
             VALUES (:orderId, :itemUid, :employeeId, :quantity, :assignedDate, :assignedBy, :status, :createdAt, :updatedAt)');
@@ -140,6 +160,46 @@ function production_tasks_create($params, $body, $user)
     }
     $stmt = db()->prepare("SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id");
     $stmt->execute([':id' => $id]); json_response(['productionTask' => production_task_to_wire($stmt->fetch())], 201);
+}
+
+function production_task_update($params, $body, $user)
+{
+    require_admin($user); require_fields($body, ['requiredQuantity']);
+    if (!production_valid_quantity($body['requiredQuantity'])) json_error('Invalid production task quantity', 422);
+    $quantity = (float) production_normalize_digits($body['requiredQuantity']);
+    $taskId = (int) $params['id'];
+    $lookup = db()->prepare('SELECT order_id FROM production_tasks WHERE id = :id AND deleted_at IS NULL');
+    $lookup->execute([':id' => $taskId]); $orderId = $lookup->fetchColumn();
+    if (!$orderId) json_error('Production task not found', 404);
+    db()->beginTransaction();
+    try {
+        $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL FOR UPDATE');
+        $orderStmt->execute([':id' => $orderId]); $order = $orderStmt->fetch();
+        if (!$order) { db()->rollBack(); json_error('Order not found', 404); }
+        $taskStmt = db()->prepare('SELECT * FROM production_tasks WHERE id = :id AND deleted_at IS NULL FOR UPDATE');
+        $taskStmt->execute([':id' => $taskId]); $task = $taskStmt->fetch();
+        if (!$task || (int) $task['order_id'] !== (int) $orderId) { db()->rollBack(); json_error('Production task not found', 404); }
+        $itemQuantity = null;
+        foreach (($order['items'] ? json_decode($order['items'], true) : []) as $candidate) {
+            if (($candidate['uid'] ?? '') === $task['order_item_uid']) { $itemQuantity = (float) ($candidate['quantity'] ?? 0); break; }
+        }
+        if ($itemQuantity === null) { db()->rollBack(); json_error('Order item not found', 422); }
+        $usedStmt = db()->prepare('SELECT COALESCE(SUM(required_quantity), 0) FROM production_tasks WHERE order_id = :orderId AND order_item_uid = :uid AND id <> :id AND deleted_at IS NULL');
+        $usedStmt->execute([':orderId' => $orderId, ':uid' => $task['order_item_uid'], ':id' => $taskId]);
+        if ((float) $usedStmt->fetchColumn() + $quantity > $itemQuantity + 0.00001) { db()->rollBack(); json_error('Assigned quantity exceeds the remaining order-item quantity', 422); }
+        $producedStmt = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :id');
+        $producedStmt->execute([':id' => $taskId]); $produced = (float) $producedStmt->fetchColumn();
+        if ($quantity + 0.00001 < $produced) { db()->rollBack(); json_error('Assigned quantity cannot be less than already produced quantity', 422); }
+        $status = $produced + 0.00001 >= $quantity ? 'COMPLETED' : ($produced > 0 ? 'IN_PROGRESS' : 'ASSIGNED');
+        $update = db()->prepare('UPDATE production_tasks SET required_quantity = :quantity, status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
+        $update->execute([':quantity' => $quantity, ':status' => $status, ':completedAt' => $status === 'COMPLETED' ? now_utc() : null, ':updatedAt' => now_utc(), ':id' => $taskId]);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to update production task', 500, $e->getMessage());
+    }
+    $result = db()->prepare('SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id');
+    $result->execute([':id' => $taskId]); json_response(['productionTask' => production_task_to_wire($result->fetch())]);
 }
 
 function production_normalize_digits($value)
@@ -170,6 +230,11 @@ function production_valid_quantity($value)
         && (float) $normalized > 0;
 }
 
+function production_log_weight_grams($quantity, $weightOf10Grams)
+{
+    return round($quantity * $weightOf10Grams / 10, 3);
+}
+
 function production_task_for_employee($taskId, $user)
 {
     $stmt = db()->prepare('SELECT * FROM production_tasks WHERE id = :id AND employee_user_id = :employee AND deleted_at IS NULL LIMIT 1');
@@ -183,7 +248,8 @@ function production_logs_to_wire($row)
 {
     return ['id' => (int) $row['id'], 'taskId' => (int) $row['task_id'], 'employeeUserId' => (int) $row['employee_user_id'],
         'employeeName' => $row['employee_name'] ?? '', 'orderId' => (int) $row['order_id'], 'orderItemUid' => $row['order_item_uid'],
-        'quantity' => (float) $row['quantity'], 'productionDate' => $row['production_date'], 'createdAt' => to_iso($row['created_at'])];
+        'quantity' => (float) $row['quantity'], 'totalWeightGrams' => (float) $row['total_weight_grams'],
+        'productionDate' => $row['production_date'], 'createdAt' => to_iso($row['created_at'])];
 }
 
 function production_task_logs_list($params, $body, $user)
@@ -202,6 +268,7 @@ function production_task_log_create($params, $body, $user)
     $date = production_normalize_digits($body['productionDate']);
     $key = trim((string) $body['submissionKey']);
     if (!production_valid_quantity($body['quantity']) || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)) json_error('Invalid production log', 422);
+    $submittedWeight = $body['weightOf10Kg'] ?? null;
     db()->beginTransaction();
     try {
         // Lock the task before reading its logs so concurrent submissions cannot overproduce.
@@ -218,19 +285,28 @@ function production_task_log_create($params, $body, $user)
             production_log_response((int) $previous['id'], (int) $task['id'], 200);
         }
         if ($task['status'] === 'COMPLETED') { db()->rollBack(); json_error('Production task is already completed', 422); }
+        $weightOf10 = $task['weight_of_10_grams'] === null ? null : (float) $task['weight_of_10_grams'];
+        if ($weightOf10 === null) {
+            if (!production_valid_quantity($submittedWeight) || (float) production_normalize_digits($submittedWeight) * 1000 > 99999999999) {
+                db()->rollBack(); json_error('A valid 10-piece weight in kilograms is required before logging production', 422);
+            }
+            $weightOf10 = (float) production_normalize_digits($submittedWeight) * 1000;
+        }
+        $totalWeight = production_log_weight_grams($quantity, $weightOf10);
+        if ($totalWeight <= 0 || $totalWeight > 99999999999.999) { db()->rollBack(); json_error('Production weight is out of range', 422); }
         $total = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId');
         $total->execute([':taskId' => $task['id']]);
         if ((float) $total->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) { db()->rollBack(); json_error('Produced quantity exceeds the task quantity', 422); }
         $now = now_utc();
-        $insert = db()->prepare('INSERT INTO production_logs (task_id, employee_user_id, order_id, order_item_uid, quantity, production_date, submission_key, created_at) VALUES (:taskId,:employeeId,:orderId,:itemUid,:quantity,:date,:key,:createdAt)');
-        $insert->execute([':taskId' => $task['id'], ':employeeId' => $user['id'], ':orderId' => $task['order_id'], ':itemUid' => $task['order_item_uid'], ':quantity' => $quantity, ':date' => $date, ':key' => $key, ':createdAt' => $now]);
+        $insert = db()->prepare('INSERT INTO production_logs (task_id, employee_user_id, order_id, order_item_uid, quantity, total_weight_grams, production_date, submission_key, created_at) VALUES (:taskId,:employeeId,:orderId,:itemUid,:quantity,:weight,:date,:key,:createdAt)');
+        $insert->execute([':taskId' => $task['id'], ':employeeId' => $user['id'], ':orderId' => $task['order_id'], ':itemUid' => $task['order_item_uid'], ':quantity' => $quantity, ':weight' => $totalWeight, ':date' => $date, ':key' => $key, ':createdAt' => $now]);
         // Capture the generated ID before later UPDATE statements, which do
         // not have an insert ID on MySQL.
         $id = (int) db()->lastInsertId();
         $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId'); $sum->execute([':taskId' => $task['id']]); $newTotal = (float) $sum->fetchColumn();
         $status = $newTotal + 0.00001 >= (float) $task['required_quantity'] ? 'COMPLETED' : 'IN_PROGRESS';
-        $update = db()->prepare('UPDATE production_tasks SET status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
-        $update->execute([':status' => $status, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
+        $update = db()->prepare('UPDATE production_tasks SET status = :status, weight_of_10_grams = :weightOf10, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
+        $update->execute([':status' => $status, ':weightOf10' => $weightOf10, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
         db()->commit();
     } catch (PDOException $e) {
         if (db()->inTransaction()) db()->rollBack();
@@ -313,6 +389,7 @@ function production_employee_day_statistics($params, $body, $user)
             'orderNumber' => $row['order_number'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
+            'totalWeightGrams' => (float) $row['total_weight_grams'],
             'productionDate' => $row['production_date'],
             'createdAt' => to_iso($row['created_at']),
             'taskRequiredQuantity' => (float) $row['required_quantity'],
@@ -433,6 +510,7 @@ function production_management_day_statistics($params, $body, $user)
             'orderNumber' => $row['order_number'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
+            'totalWeightGrams' => (float) $row['total_weight_grams'],
             'productionDate' => $row['production_date'],
             'createdAt' => to_iso($row['created_at']),
             'taskRequiredQuantity' => (float) $row['required_quantity'],

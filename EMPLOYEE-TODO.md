@@ -200,6 +200,14 @@ TODO's acceptance criteria can be marked complete.
 
 ## TODO 6 — Harden, Test, and Verify the Complete Workflow
 
+### Follow-up from live testing: assignment splits and measured weight
+
+- [x] Add manager editing of an assignment's quantity, rejecting any reduction below already logged production or increase beyond order capacity.
+- [x] When a new assignment exceeds free capacity, offer a confirmation to transfer the deficit from a selected earlier employee's unproduced quantity; never rewrite historical logs.
+- [x] Require the employee's measured 10-piece weight in kilograms before the first production log for a task; store grams on the task and a calculated weight snapshot on each log.
+- [ ] Apply `server/migrations/2026-09-26-production-weight.sql` to the live database, then deploy API, platform, and employee builds and verify both flows live. These changes are intentionally not deployed before the migration.
+
+
 - [ ] Test the full workflow: `Existing Order Item -> Assign Employee -> Employee Produces -> Production Log -> Statistics`.
 - [ ] Verify role-based authorization for admin, employee, and legacy generic-user accounts.
 - [ ] Verify employees cannot access or modify another employee's tasks or logs.

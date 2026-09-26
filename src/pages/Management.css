@@ -1044,6 +1044,12 @@
 .production-summary-list > b { display: block; margin-bottom: 5px; }
 .production-summary-list > div { padding: 7px 0; border-bottom: 1px dashed rgba(0,0,0,.12); }
 .production-summary-list small { display: block; color: #8e8e93; margin-top: 2px; }
+.production-split-source { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; font-size: 13px; color: #606873; }
+.production-split-source select { min-height: 38px; flex: 1 1 220px; border: 1px solid #d7dce6; border-radius: 9px; padding: 5px 10px; background: #fff; }
+.production-assignment-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.production-assignment-row button { border: 1px solid #cdd9ec; color: #0875df; background: #f6faff; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+.production-assignment-edit { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.production-assignment-edit input { width: 100px; min-height: 34px; border: 1px solid #cdd9ec; border-radius: 8px; padding: 4px 8px; }
 
 /* ===================== Invoice (PDF source) ===================== */
 .invoice-offscreen {

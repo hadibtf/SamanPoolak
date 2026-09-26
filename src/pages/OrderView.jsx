@@ -64,6 +64,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderD
   const [employeeUserId, setEmployeeUserId] = useState('');
   const [assignQuantity, setAssignQuantity] = useState(String(item.quantity || ''));
   const [assigning, setAssigning] = useState(false);
+  const [splitFromTaskId, setSplitFromTaskId] = useState('');
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editingQuantity, setEditingQuantity] = useState('');
   const [productionSummary, setProductionSummary] = useState(null);
 
   const loadSummary = () => {
@@ -85,17 +88,44 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderD
 
   const assignTask = async () => {
     if (!employeeUserId || !assignQuantity || assigning) { onToast('کارمند و مقدار را انتخاب کنید.', 'error'); return; }
+    const requested = Number(assignQuantity);
+    if (!Number.isFinite(requested) || requested <= 0) { onToast('تعداد معتبر وارد کنید.', 'error'); return; }
+    const assigned = (productionSummary?.tasks || []).reduce((sum, task) => sum + Number(task.requiredQuantity), 0);
+    const deficit = Math.max(0, assigned + requested - Number(item.quantity));
+    let sourceId = null;
+    if (deficit > 0) {
+      const eligible = (productionSummary?.tasks || []).filter((task) =>
+        task.employeeUserId !== Number(employeeUserId) && Number(task.requiredQuantity) - Number(task.producedQuantity || 0) >= deficit);
+      const source = eligible.find((task) => String(task.id) === splitFromTaskId) || (eligible.length === 1 ? eligible[0] : null);
+      if (!source) { onToast('برای تقسیم تولید، یک تخصیص قبلی با مقدار آزاد کافی انتخاب کنید.', 'error'); return; }
+      if (!window.confirm(`آیا می‌خواهید ${fa(deficit)} عدد از وظیفه ${source.employeeName} کم شود و بین دو کارمند تقسیم گردد؟ مقدار تولید ثبت‌شده قبلی تغییر نمی‌کند.`)) return;
+      sourceId = source.id;
+    }
     setAssigning(true);
     try {
       await productionApi.assignTask({
         orderId, orderItemUid: item.uid, employeeUserId: Number(employeeUserId),
-        requiredQuantity: Number(assignQuantity), assignedDate: orderDate,
+        requiredQuantity: requested, assignedDate: orderDate,
+        ...(sourceId ? { splitFromTaskId: sourceId } : {}),
       });
       loadSummary();
       setEmployeeUserId('');
+      setSplitFromTaskId('');
       onToast('وظیفه تولید تخصیص داده شد.');
     } catch (error) {
       onToast(error instanceof ApiError ? error.message : 'خطا در تخصیص وظیفه.', 'error');
+    } finally { setAssigning(false); }
+  };
+
+  const saveTaskQuantity = async (taskId) => {
+    const value = Number(editingQuantity);
+    if (!Number.isFinite(value) || value <= 0) { onToast('تعداد معتبر وارد کنید.', 'error'); return; }
+    setAssigning(true);
+    try {
+      await productionApi.updateTask(taskId, { requiredQuantity: value });
+      setEditingTaskId(null); loadSummary(); onToast('تعداد وظیفه به‌روزرسانی شد.');
+    } catch (error) {
+      onToast(error instanceof ApiError ? error.message : 'ویرایش وظیفه انجام نشد.', 'error');
     } finally { setAssigning(false); }
   };
 
@@ -193,6 +223,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderD
             <input type="number" min="0.001" step="0.001" dir="ltr" className="ltr-num" value={assignQuantity} onChange={(e) => setAssignQuantity(e.target.value)} placeholder="تعداد" />
             <button type="button" className="primary-btn compact" disabled={assigning} onClick={assignTask}>{assigning ? 'در حال تخصیص...' : 'تخصیص'}</button>
           </div>
+          {productionSummary?.tasks?.length > 1 && <label className="production-split-source">در صورت تقسیم، از کدام وظیفه کم شود؟
+            <select value={splitFromTaskId} onChange={(event) => setSplitFromTaskId(event.target.value)}><option value="">انتخاب تخصیص قبلی...</option>{productionSummary.tasks.map((task) => <option key={task.id} value={task.id}>{task.employeeName} — {fa(task.requiredQuantity - (task.producedQuantity || 0))} عدد آزاد</option>)}</select>
+          </label>}
         </>
       )}
 
@@ -200,9 +233,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderD
         <div className="production-summary">
           <h4 className="sub-title">پیشرفت و سوابق تولید</h4>
           <p>تولید کل: <strong>{fa(productionSummary.totalProduced)}</strong> از <strong>{fa(item.quantity)}</strong></p>
-          {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id}>{task.employeeName} — {fa(task.requiredQuantity)} عدد — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
+          {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
           {productionSummary.byEmployee.length > 0 && <div className="production-summary-list"><b>تولید هر کارمند</b>{productionSummary.byEmployee.map((row) => <div key={row.employeeUserId}>{row.employeeName}: <strong>{fa(row.quantity)} عدد</strong></div>)}</div>}
-          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => <div key={log.id}>{log.employeeName} — {fa(log.quantity)} عدد — {log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)} <small>{log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
+          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => <div key={log.id}>{log.employeeName} — {fa(log.quantity)} عدد — {log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم — ` : ''}{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)} <small>{log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
         </div>
       )}
 

@@ -21,6 +21,7 @@ export default function EmployeeTasks() {
   const [selectedId, setSelectedId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [quantity, setQuantity] = useState('');
+  const [weightOf10Kg, setWeightOf10Kg] = useState('');
   const [productionDate, setProductionDate] = useState(today());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -57,11 +58,12 @@ export default function EmployeeTasks() {
     setError('');
     const value = Number(quantity);
     if (!Number.isFinite(value) || value <= 0 || value > remaining) { setError('تعداد واردشده معتبر نیست یا از مقدار باقی‌مانده بیشتر است.'); return; }
+    if (!selected.weightOf10 && (!Number.isFinite(Number(weightOf10Kg)) || Number(weightOf10Kg) <= 0)) { setError('ابتدا وزن ۱۰ عدد را به کیلوگرم وارد کنید.'); return; }
     setBusy(true);
     try {
-      const { productionLog, productionTask } = await productionApi.logProduction(selected.id, { quantity: value, productionDate, submissionKey: key() });
+      const { productionLog, productionTask } = await productionApi.logProduction(selected.id, { quantity: value, productionDate, submissionKey: key(), ...(!selected.weightOf10 ? { weightOf10Kg: Number(weightOf10Kg) } : {}) });
       setTasks((previous) => previous.map((task) => task.id === selected.id ? { ...task, ...productionTask } : task));
-      setLogs((previous) => [productionLog, ...previous]); setQuantity('');
+      setLogs((previous) => [productionLog, ...previous]); setQuantity(''); setWeightOf10Kg('');
     } catch (err) { setError(err instanceof ApiError ? err.message : 'ثبت تولید انجام نشد.'); }
     finally { setBusy(false); }
   };
@@ -78,8 +80,8 @@ export default function EmployeeTasks() {
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
       <div className="task-specs"><span>تعداد وظیفه: <b>{fa(selected.requiredQuantity)}</b></span><span>باقی‌مانده: <b>{fa(remaining)}</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
       {(selected.thickness || selected.diameter || selected.hardeningIntensity || selected.description) && <p className="task-description">ابعاد: {selected.thickness || '—'} × {selected.diameter || '—'} میلی‌متر {selected.isHardened ? `• سخت‌کاری ${selected.hardeningIntensity || ''}` : ''}<br />{selected.description}</p>}
-      {remaining > 0 && <form onSubmit={submit} className="production-form"><h3>ثبت تولید</h3><input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="تعداد تولیدشده" /><JalaliDatePicker value={productionDate} onChange={(date) => setProductionDate(date?.format?.('YYYYMMDD') || today())} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" /><button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>{error && <p className="task-error">{error}</p>}</form>}
-      <div className="task-logs"><h3>سوابق ثبت تولید</h3>{logs.length ? logs.map((log) => <div key={log.id}><b>{fa(log.quantity)} عدد</b><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.createdAt)}</small></div>) : <p>هنوز تولیدی ثبت نشده است.</p>}</div>
+      {remaining > 0 && <form onSubmit={submit} className="production-form"><h3>ثبت تولید</h3>{!selected.weightOf10 && <div className="weight-first"><label htmlFor="weight-of-10">ابتدا ۱۰ عدد را وزن کنید و وزن آن‌ها را به کیلوگرم وارد کنید</label><input id="weight-of-10" value={weightOf10Kg} onChange={(e) => setWeightOf10Kg(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="مثلاً ۰٫۳ یا ۱٫۵ کیلوگرم" /><small>این اندازه‌گیری برای محاسبه وزن تمام ثبت‌های همین وظیفه استفاده می‌شود.</small></div>}<input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="تعداد تولیدشده" /><JalaliDatePicker value={productionDate} onChange={(date) => setProductionDate(date?.format?.('YYYYMMDD') || today())} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" /><button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>{error && <p className="task-error">{error}</p>}</form>}
+      <div className="task-logs"><h3>سوابق ثبت تولید</h3>{logs.length ? logs.map((log) => <div key={log.id}><b>{fa(log.quantity)} عدد</b><span>{fa(Number(log.totalWeightGrams || 0) / 1000)} کیلوگرم</span><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.createdAt)}</small></div>) : <p>هنوز تولیدی ثبت نشده است.</p>}</div>
     </section>}
   </div>;
 }

@@ -52,6 +52,7 @@ $routes = [
     ['GET',    '/production/employees', 'production_employees', true],
     ['GET',    '/production/tasks', 'production_tasks_list', true],
     ['POST',   '/production/tasks', 'production_tasks_create', true],
+    ['PUT',    '/production/tasks/{id}', 'production_task_update', true],
     ['GET',    '/production/statistics/month', 'production_employee_month_statistics', true],
     ['GET',    '/production/statistics/day', 'production_employee_day_statistics', true],
     ['GET',    '/production/statistics/management/employees', 'production_management_statistics_employees', true],

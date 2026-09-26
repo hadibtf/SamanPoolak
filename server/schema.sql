@@ -249,6 +249,7 @@ CREATE TABLE IF NOT EXISTS production_tasks (
     order_item_uid   VARCHAR(128)  NOT NULL,
     employee_user_id INT           NOT NULL,
     required_quantity DECIMAL(14,3) NOT NULL,
+    weight_of_10_grams DECIMAL(14,3) NULL, -- measured by employee before first log
     assigned_date    VARCHAR(8)    NOT NULL DEFAULT '', -- Jalali YYYYMMDD
     assigned_by      INT           NOT NULL,
     status           VARCHAR(32)   NOT NULL DEFAULT 'ASSIGNED',
@@ -274,6 +275,7 @@ CREATE TABLE IF NOT EXISTS production_logs (
     order_id            INT           NOT NULL,
     order_item_uid      VARCHAR(128)  NOT NULL,
     quantity            DECIMAL(14,3) NOT NULL,
+    total_weight_grams  DECIMAL(14,3) NOT NULL, -- snapshot from task's 10-piece measurement
     production_date     VARCHAR(8)    NOT NULL, -- Jalali YYYYMMDD
     submission_key      CHAR(36)      NOT NULL,
     created_at          DATETIME      NOT NULL,

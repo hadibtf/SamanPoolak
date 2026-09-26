@@ -25,4 +25,6 @@ foreach (['1', '0.001', '123.456', '99999999999.999', '۱۲.۳۴۵'] as $quantit
 foreach (['0', '-1', '1.0001', '1e3', 'foo', '100000000000', '0.000'] as $quantity) {
     check(!production_valid_quantity($quantity), "Accepted invalid quantity: $quantity");
 }
+check(production_log_weight_grams(10, 300) === 300.0, '10 pieces must weigh the measured amount');
+check(production_log_weight_grams(500, 300) === 15000.0, '500 pieces at 0.3 kg per 10 must weigh 15 kg');
 echo "Production validation passed\n";

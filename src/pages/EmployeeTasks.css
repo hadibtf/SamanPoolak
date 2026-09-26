@@ -115,6 +115,9 @@
   box-shadow: 0 10px 22px rgba(10,132,255,.23);
 }
 .employee-tasks .task-error { padding: 10px 12px; border-radius: 10px; background: #fff0f0; color: #c81e1e; font-weight: 600; }
+.employee-tasks .weight-first { display: grid; gap: 8px; border: 1px solid #afd2f7; border-radius: 13px; padding: 14px; background: #eff7ff; }
+.employee-tasks .weight-first label { font-weight: 700; color: #1a4571; }
+.employee-tasks .weight-first small { color: #52677d; }
 .employee-tasks .task-logs { margin-top: 28px; }
 .employee-tasks .task-logs > div { padding: 13px 2px; border-bottom-color: rgba(120,120,128,.14); }
 
