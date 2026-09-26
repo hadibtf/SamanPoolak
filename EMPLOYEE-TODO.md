@@ -213,6 +213,10 @@ The corrected gram-first / kilogram-per-log flow is deployed to the API and
 employee app. Unit tests and production build pass; live weight submission and
 calculated-piece behavior still need a real employee test.
 
+Employee-list refinement: show estimated remaining production weight from the
+remaining pieces and measured per-piece weight; use «لیست تولید» and a
+single-open accordion instead of separate selection cards and detail panel.
+
 
 - [ ] Test the full workflow: `Existing Order Item -> Assign Employee -> Employee Produces -> Production Log -> Statistics`.
 - [ ] Verify role-based authorization for admin, employee, and legacy generic-user accounts.

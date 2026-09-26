@@ -27,7 +27,7 @@ export default function EmployeeTasks() {
   const [busy, setBusy] = useState(false);
   const [savingWeight, setSavingWeight] = useState(false);
   const [error, setError] = useState('');
-  const selected = useMemo(() => tasks.find((task) => task.id === selectedId) || tasks[0] || null, [tasks, selectedId]);
+  const selected = useMemo(() => tasks.find((task) => task.id === selectedId) || null, [tasks, selectedId]);
   const pickerDate = useMemo(() => /^\d{8}$/.test(productionDate) ? new DateObject({
     calendar: persian, locale: persian_fa,
     year: Number(productionDate.slice(0, 4)), month: Number(productionDate.slice(4, 6)), day: Number(productionDate.slice(6, 8)),
@@ -48,10 +48,12 @@ export default function EmployeeTasks() {
 
   useEffect(() => { loadTasks(); }, [loadTasks]);
 
-  useEffect(() => { if (selected && selected.id !== selectedId) setSelectedId(selected.id); }, [selected, selectedId]);
   useEffect(() => {
-    if (!selected) return;
-    productionApi.taskLogs(selected.id).then(({ productionLogs }) => setLogs(productionLogs || [])).catch(() => setLogs([]));
+    if (!selected) { setLogs([]); return undefined; }
+    let active = true;
+    setLogs([]);
+    productionApi.taskLogs(selected.id).then(({ productionLogs }) => { if (active) setLogs(productionLogs || []); }).catch(() => { if (active) setLogs([]); });
+    return () => { active = false; };
   }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const produced = logs.reduce((sum, log) => sum + Number(log.quantity || 0), 0);
@@ -91,15 +93,18 @@ export default function EmployeeTasks() {
 
   if (tasksLoading) return <div className="employee-tasks empty-state"><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
   if (tasksError) return <div className="employee-tasks empty-state"><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
-  if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>وظیفه تولید فعالی ندارید.</p></div>;
+  if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>موردی در لیست تولید شما نیست.</p></div>;
   return <div className="employee-tasks">
-    <header><h1>وظایف تولید</h1><span>{fa(tasks.length)} وظیفه</span></header>
-    <div className="task-list">{tasks.map((task) => <button type="button" key={task.id} onClick={() => setSelectedId(task.id)} className={task.id === selected?.id ? 'active' : ''}><strong>{task.productName}</strong><span>سفارش {task.orderNumber}</span><em>{taskStatus(task.status)}</em></button>)}</div>
-    {selected && <section className="task-detail glass-card">
-      <div className="task-title"><div><h2>{selected.productName}</h2><span>سفارش {selected.orderNumber}</span></div><b>{taskStatus(selected.status)}</b></div>
+    <header><h1>لیست تولید</h1><span>{fa(tasks.length)} مورد</span></header>
+    <div className="task-list">{tasks.map((task) => <section className={`production-item glass-card ${task.id === selectedId ? 'open' : ''}`} key={task.id}>
+      <button type="button" className="production-item-trigger" aria-expanded={task.id === selectedId} disabled={busy || savingWeight} onClick={() => { setSelectedId((current) => current === task.id ? null : task.id); setLogs([]); setWeightKg(''); setError(''); }}>
+        <span className="production-item-name"><strong>{task.productName}</strong><small>سفارش {task.orderNumber}</small></span>
+        <span className="production-item-meta"><em>{taskStatus(task.status)}</em><i className={`fa-solid fa-chevron-${task.id === selectedId ? 'up' : 'down'}`} aria-hidden="true" /></span>
+      </button>
+      {task.id === selected?.id && <div className="task-detail">
       {selected.markingSrc && <img className="task-marking" src={selected.markingSrc} alt={selected.markingName || 'مارک'} />}
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
-      <div className="task-specs"><span>تعداد وظیفه: <b>{fa(selected.requiredQuantity)}</b></span><span>باقی‌مانده: <b>{fa(remaining)}</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
+      <div className="task-specs"><span>تعداد تخصیص: <b>{fa(selected.requiredQuantity)} عدد</b></span><span>باقی‌مانده: <b>{fa(remaining)} عدد</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن کل مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span><span>وزن تخمینی باقی‌مانده: <b>{weights?.unitWeight ? `${fa(remaining * weights.unitWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
       {(selected.thickness || selected.diameter || selected.hardeningIntensity || selected.description) && <p className="task-description">ابعاد: {selected.thickness || '—'} × {selected.diameter || '—'} میلی‌متر {selected.isHardened ? `• سخت‌کاری ${selected.hardeningIntensity || ''}` : ''}<br />{selected.description}</p>}
       {remaining > 0 && !selected.weightOf10 && <form onSubmit={saveWeight} className="production-form weight-first">
         <h3>مرحله ۱ · وزن‌کشی نمونه</h3>
@@ -119,6 +124,7 @@ export default function EmployeeTasks() {
         {error && <p className="task-error">{error}</p>}
       </form>}
       <div className="task-logs"><h3>سوابق ثبت تولید</h3>{logs.length ? logs.map((log) => <div key={log.id}><b>{fa(log.quantity)} عدد</b><span>{fa(Number(log.totalWeightGrams || 0) / 1000)} کیلوگرم</span><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.createdAt)}</small></div>) : <p>هنوز تولیدی ثبت نشده است.</p>}</div>
-    </section>}
+      </div>}
+    </section>)}</div>
   </div>;
 }
