@@ -147,12 +147,11 @@ Recorded here for rebuilding on a fresh host:
    ```
    Then blank `setup_key` in `config.php` to disable the route. (Further users
    are added in-app: **Settings → user management**, admin only.)
-10. **Front-ends** — `npm run deploy:web` uploads the manager build to `platform/`;
-   `npm run deploy:employee` uploads the employee build to `employee/`. Both
-   deploys **skip `.htaccess`**, so seed each doc root once with the SPA rewrite
-   from [`public/.htaccess`](public/.htaccess) (serve `index.html` for unknown
-   paths) — otherwise refreshing a deep route
-   (e.g. `/orders/list`) 404s.
+10. **Front-ends** — `npm run deploy:web` uploads the manager build to `platform/`
+   and preserves its server-owned `.htaccess`. Seed that doc root once with the
+   SPA rewrite from [`public/.htaccess`](public/.htaccess). `npm run
+   deploy:employee` uploads that rewrite with the employee build, so refreshing
+   `/tasks` or `/statistics` continues to serve the SPA.
 
 ---
 

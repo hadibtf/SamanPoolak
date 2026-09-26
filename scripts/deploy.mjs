@@ -699,7 +699,13 @@ function deployLanding() {
 function deployEmployee() {
   build('employee');
   console.log(`==> Uploading employee build/ to ${FTP_EMPLOYEE_DIR}`);
-  return uploadTree(path.join(ROOT, 'build'), FTP_EMPLOYEE_DIR, ['.htaccess']);
+  const uploaded = uploadTree(path.join(ROOT, 'build'), FTP_EMPLOYEE_DIR);
+  if (!uploaded) return false;
+  // WinSCP synchronize skips this hidden dotfile on the host. Upload it
+  // explicitly so BrowserRouter deep links survive a hard refresh.
+  const rewrite = uploadFile(path.join(ROOT, 'build', '.htaccess'), '.htaccess', FTP_EMPLOYEE_DIR);
+  if (!rewrite.ok) console.error(`Employee SPA rewrite upload failed: ${rewrite.error}`);
+  return rewrite.ok;
 }
 
 function deployJobs() {
@@ -752,7 +758,7 @@ const DEPLOY_TARGETS = {
     label: 'Employee app',
     source: path.join(ROOT, 'build'),
     dest: FTP_EMPLOYEE_DIR,
-    excludes: ['.htaccess'],
+    excludes: [],
     needsBuild: true,
     surface: 'employee',
   },
