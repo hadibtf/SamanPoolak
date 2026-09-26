@@ -4,7 +4,7 @@ How the **front-end** is built and why, for a developer new to React/web but
 comfortable with **Android (Kotlin, Compose, Room)**. "🤖 Android analogy"
 callouts map web ideas to things you know. For the API see
 [server/DOC.md](server/DOC.md); for hosting see [DEPLOY.md](DEPLOY.md);
-for the quick operational map see [CLAUDE.md](CLAUDE.md).
+for the quick operational map see [AGENTS.md](AGENTS.md).
 
 ---
 
@@ -38,6 +38,11 @@ you read the mirror with `useLiveQuery`, and a background **sync engine** keeps
 the mirror fresh. Writes call the API, then upsert the canonical row into the
 mirror so the UI updates instantly.
 
+Production screens are an exception: `productionApi` calls the server directly
+and stores responses in local React state. Employee logs are not mirrored through
+the management sync engine. See [the production domain](EMPLOYEE-PRODUCTION-DOMAIN.md)
+for units, ownership, edits/deletes, dates, and aggregation rules.
+
 🤖 **Analogy:** like a Room cache fed by a Retrofit-backed repository with a
 WorkManager sync — except there's no explicit repository/VM; components call the
 API client and read Room (`useLiveQuery`) directly.
@@ -45,6 +50,13 @@ API client and read Room (`useLiveQuery`) directly.
 ---
 
 ## 2. Boot & auth gate
+
+`src/index.js` selects the employee app at build time when
+`REACT_APP_APP_SURFACE=employee`; otherwise it loads the management app shown
+below. Employee routes are `/tasks` (single-open production-list accordion) and
+`/statistics`. Its login reuses the platform presentation with title
+«سامانه آمار تولید کارکنان», without management links or routes. Employee login
+credentials are maintained through the management People add/edit screen.
 
 ```
 src/index.js
@@ -73,14 +85,14 @@ A `fetch` wrapper that prefixes `REACT_APP_API_URL`, attaches
 `Authorization: Bearer <token>`, parses JSON, throws a typed `ApiError`
 (`status: 0` means network/offline), and on `401` clears the token and notifies
 listeners. It exports per-entity helpers: `authApi`, `usersApi`, `peopleApi`,
-`ordersApi`, `markingsApi`, `expensesApi`.
+`ordersApi`, `markingsApi`, `expensesApi`, and `productionApi`.
 
 🤖 **Analogy:** Retrofit interface + an OkHttp auth interceptor + a 401
 authenticator, in one file.
 
 ### 3.2 Local mirror — [`src/db.js`](src/db.js) (Dexie)
 Stores: `people`, `orders`, `markings`, `expenses`, `counters`, mirrored from the
-server. Schema is versioned (currently **v6**); each `db.version(n)` is like a
+server. Schema is versioned (currently **v10**); each `db.version(n)` is like a
 Room migration (the v5 upgrade wrapped legacy single-product orders into the
 `items[]` array). Also holds pure helpers: `jalaliDateKey`, `yymmPrefix`,
 `deriveOrderStatus`, `computeWeights`, `newUid`.

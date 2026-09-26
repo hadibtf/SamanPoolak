@@ -15,13 +15,19 @@ This file is the execution tracker for the employee production/task/statistics f
 
 ## Progress
 
+Release accepted by the owner on 2026-09-26 after iterative live testing. TODOs
+1–6 are closed for this release. The unchecked verification items below remain
+an explicit test-coverage backlog, not claims that those tests passed. This
+owner acceptance supersedes the original all-criteria checkbox rule for closure.
+The shipped contract is in `EMPLOYEE-PRODUCTION-DOMAIN.md`; `/todo/` is unrelated.
+
 - [x] EMERGENCY — Separate employee application at employee.samanpoolak.ir
 - [x] TODO 1 — Inspect existing architecture and define the production domain
 - [x] TODO 2 — Implement production task assignment from existing orders
 - [x] TODO 3 — Build the employee task and production logging workflow
 - [x] TODO 4 — Build employee monthly production statistics and daily drill-down
-- [ ] TODO 5 — Build management statistics for individual and all employees
-- [ ] TODO 6 — Harden, test, and verify the complete workflow
+- [x] TODO 5 — Build management statistics for individual and all employees (owner accepted)
+- [x] TODO 6 — Harden, test, and verify the complete workflow (release accepted; coverage limits below)
 
 ---
 
@@ -29,8 +35,8 @@ This file is the execution tracker for the employee production/task/statistics f
 
 - [x] Build and deploy a distinct employee web application to `employee.samanpoolak.ir`.
 - [x] Make the employee build render only employee login/tasks routes; it must not include or route to management screens.
-- [x] Make the manager platform reject employee logins with a clear link to the employee site.
-- [x] Make the employee site reject admin/general-user logins with a clear link to the manager platform.
+- [x] Make the manager platform reject employee logins.
+- [x] Make the employee site reject admin/general-user logins without exposing any management URL or link.
 - [x] Add dedicated automatic/manual deploy commands and configurable `FTP_EMPLOYEE_DIR`.
 - [x] Document the one-time cPanel subdomain setup and API CORS allowlist addition.
 
@@ -56,16 +62,15 @@ employee-surface login.
 - [x] Locate and understand the existing 10-piece weight calculation.
 - [x] Locate the current Jalali/Persian calendar and date utilities.
 - [x] Inspect the existing bottom navigation and employee navigation.
-- [x] Inspect the existing shadcn/Recharts setup and reusable chart components.
+- [x] Inspect chart infrastructure; confirmed there is no shadcn/Recharts setup.
 - [x] Define the minimum required `ProductionTask` and `ProductionLog` relationships without duplicating existing order data.
 - [x] Create required schema/database migrations using existing project conventions.
 
 Implementation notes: the production-domain contract is documented in
 [`EMPLOYEE-PRODUCTION-DOMAIN.md`](EMPLOYEE-PRODUCTION-DOMAIN.md). The schema uses the
 project’s existing `schema.sql` + manual phpMyAdmin convention; live deployment
-will require running the three new `CREATE TABLE` statements after the production
-API routes are implemented and deployed. No production endpoints/UI are part of
-this TODO.
+required creating the three new tables before dependent API deployment. These
+notes describe the original domain milestone; the completed workflow is now live.
 
 Architecture correction: the existing app has no submitted-order state, no
 employee-specific navigation, and no shadcn/Recharts setup. Employee logins are
@@ -89,7 +94,7 @@ one-to-one `employee_accounts` mapping—not as disconnected accounts in Setting
 - [x] Add admin-only ability to assign an existing, non-deleted order item to an employee. The current platform has no `submitted` state, so validate the live order and stable `items[].uid` rather than inventing one.
 - [x] Store only task relationship data: assigned employee user, order id, item uid, required quantity, Jalali assignment date, assigning user, and task status (`ASSIGNED`, `IN_PROGRESS`, `COMPLETED`).
 - [x] Prevent active-task quantities for an order item from exceeding that item’s required quantity; allow deliberate split assignments only when the remaining quantity permits it.
-- [x] Add server routes, API client wrappers, Dexie stores/migrations, and sync resources for production tasks. Do not mirror unrestricted production logs to employee devices.
+- [x] Add server routes and API client wrappers. Production screens use direct API/local React state; the unused employee sync hook was removed. Do not mirror unrestricted production logs to employee devices.
 - [x] Return a server-side employee task projection containing only product/part data, marking image/name, production specifications, required quantity, order reference, and expected weight—never customer contacts, prices, costs, invoices, or administration data.
 - [x] Reuse `computeWeights()` from `src/db.js` for 10-piece weight display; do not duplicate its formula.
 - [x] Preserve traceability from `orders.id + items[].uid -> production_tasks -> employee_accounts/users`.
@@ -112,9 +117,9 @@ one-to-one `employee_accounts` mapping—not as disconnected accounts in Setting
 - [x] Show product, marking image/name, required quantity, production specifications, order reference, task status, and expected weight information.
 - [x] Allow partial production to be logged multiple times across one or more days.
 - [x] Require production to be logged per task/product record rather than as one vague daily total.
-- [x] Create production logs only on the server. Derive employee, order, and item references from the authorized task; accept only task id, positive quantity, Jalali production date, and a client submission UUID.
+- [x] Create production logs only on the server. Derive employee/order/item references from the authorized task; accept batch weight in kg, Jalali production date, and a submission UUID. Calculate pieces from the task's saved 10-piece gram measurement.
 - [x] Validate that the caller has role `employee`, owns the active task, quantity is finite and positive, date is an eight-digit valid Jalali date, and the new total does not exceed task quantity.
-- [x] Prevent accidental duplicate submissions with the task/employee/submission-key unique constraint and idempotent conflict response.
+- [x] Prevent duplicates with the task/employee/submission-key unique constraint: identical retry returns the original log, changed content conflicts.
 - [x] In one transaction, insert the log, derive task progress from `SUM(production_logs.quantity)`, and change state to `IN_PROGRESS` or `COMPLETED` as appropriate.
 - [x] Allow a task to remain incomplete when only part of the required quantity has been produced.
 - [x] Update the task state appropriately when production begins or reaches the required quantity.
@@ -146,7 +151,7 @@ one-to-one `employee_accounts` mapping—not as disconnected accounts in Setting
 - [x] Use day-of-month on the X-axis and total produced quantity on the Y-axis.
 - [x] Provide employee-authorized aggregation/detail API endpoints calculated from `SUM(production_logs.quantity)` for the authenticated employee. Do not download other employees’ logs to the browser.
 - [x] Generate every valid Jalali day for the selected month (including zero-production days) using the existing `react-date-object` calendar utilities.
-- [x] Add tooltip information for date and quantity.
+- [x] Show quantity-only tooltips, ungrouped years, visible scale labels while scrolling, and bar heights proportional to the actual plot area.
 - [x] Make every daily bar clickable/tappable.
 - [x] On bar selection, show the underlying production records for that date.
 - [x] Show product/part, order reference, task, produced quantity, and relevant production information in the daily detail view.
@@ -184,8 +189,8 @@ underlying product, order, task, quantity, status, dimensions, and timestamp.
 
 Implementation is deployed. PHP syntax and both production builds pass; the
 live manager statistics endpoints reject employee tokens with HTTP 403.
-An admin session and visual desktop/mobile check are still needed before this
-TODO's acceptance criteria can be marked complete.
+The owner subsequently accepted the release. Exhaustive authenticated admin and
+desktop/mobile checks were not independently completed by the agent.
 
 ### Acceptance Criteria
 

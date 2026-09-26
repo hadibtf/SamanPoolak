@@ -3,7 +3,10 @@
 Read this first. It's the operational map of the project: what it is, how it's
 wired, how to ship it, and the traps that have already bitten us. For depth see
 [DOC.md](DOC.md) (frontend deep-dive), [server/DOC.md](server/DOC.md) (API
-reference), [DEPLOY.md](DEPLOY.md) (hosting/deploy, web + api), and [todo/](todo/).
+reference), and [DEPLOY.md](DEPLOY.md) (hosting/deploy, web + api).
+Employee work is documented in [EMPLOYEE-TODO.md](EMPLOYEE-TODO.md) and
+[EMPLOYEE-PRODUCTION-DOMAIN.md](EMPLOYEE-PRODUCTION-DOMAIN.md). The `/todo/`
+directory is unrelated to the employee scope; do not use it to drive that work.
 
 ## What this is
 **سامان پولک (Saman Poolak)** — a Persian/RTL business-management web app for a
@@ -27,6 +30,14 @@ reading works offline from the mirror. There is **no Redux/Context store** for
 data — the DB mirror is the shared state. Auth is per-user (bearer tokens); the
 whole app is gated behind a login.
 
+This mirror pattern describes management resources. Employee production screens
+and production statistics call `productionApi` directly and keep local React
+state; do not add unrestricted log mirroring. `src/index.js` selects the separate
+employee build with `REACT_APP_APP_SURFACE=employee`, served at
+`https://employee.samanpoolak.ir`. Employee bundles must contain no management
+screens, links, or management URL disclosure. Login surface/origin checks and the
+API employee-route allowlist enforce separation alongside handler ownership checks.
+
 ## The golden rules (read before you touch anything)
 
 1. **Deploy is LOCAL, not CI.** The host blocks FTP from GitHub's runners
@@ -37,14 +48,16 @@ whole app is gated behind a login.
    - `npm run deploy:landing` — upload `landing/` → `samanpoolak.ir/` (the static
      marketing site at the bare samanpoolak.ir domain; see [landing/README.md](landing/README.md))
    - `npm run deploy:jobs` — upload `jobs/` → `jobs/` (jobs.samanpoolak.ir)
-   - `npm run deploy:all` — api + platform + landing + jobs
-   These ask for `automatic` FTP upload or `manual` zip packaging. Automatic
-   deploy uses Node + `curl` over FTPS ([scripts/deploy.mjs](scripts/deploy.mjs))
+   - `npm run deploy:employee` — employee build → `employee/`
+   - `npm run deploy:all` — api + platform + landing + jobs + employee
+   These default to automatic upload; append `:manual` for ZIP packaging.
+   Automatic deploy uses Node + WinSCP over FTPS, with an explicit curl upload
+   for the employee SPA `.htaccess` ([scripts/deploy.mjs](scripts/deploy.mjs))
    with credentials in **`deploy.env`** (gitignored). Transient single-file FTP
    failures happen — just re-run or use manual mode.
 
 2. **Adding a DB table/column needs a manual step.** `server/schema.sql` is
-   `CREATE TABLE IF NOT EXISTS`. After deploying new backend code, the table
+   `CREATE TABLE IF NOT EXISTS`. Before deploying dependent backend code, the table
    must be created on the **live** DB via cPanel → phpMyAdmin (run the new
    `CREATE`/`ALTER`). The API 500s with "table doesn't exist" until you do.
    DB name on the host: `hadibt_business_platform`.
@@ -90,10 +103,10 @@ whole app is gated behind a login.
 ## Where things live
 - Frontend: `src/` — `pages/` (one per screen), `components/`, `context/`
   (theme+currency), `auth/` (AuthContext), `hooks/useSyncEngine.js`,
-  `api/client.js`, `db.js` (Dexie v6 + helpers), `constants.js`.
+  `api/client.js`, `db.js` (Dexie v10 + helpers), `constants.js`.
 - Backend: `server/` — `index.php` (front controller + route table), `lib/`
   (config/db/http/auth), `routes/` (auth, users, people, orders, markings,
-  expenses, admin=backup/restore), `schema.sql`.
+  expenses, production, admin=backup/restore), `schema.sql`, `migrations/`, `tests/`.
 - Deploy: `scripts/deploy.mjs`, `deploy.env` (gitignored), `deploy.env.sample`.
 - Careers site: `jobs/` — standalone static site for `jobs.samanpoolak.ir`.
 - Plans/backlog: `todo/` (open feature todos with `DECIDED`/`OPEN` markers).
@@ -101,9 +114,29 @@ whole app is gated behind a login.
 ## Current state
 Done & live: auth + admin user management, people + markings, multi-item orders
 + invoices, payroll + salary slip, expenses, settings (dark theme, global
-currency, backup/restore). **Not built yet** (see `todo/`): statistics page,
-kg-weights + extra workflow states, production photo/packaging/جفت‌گونی,
-produced-quantity invoicing, view-mark lightbox, full offline outbox.
+currency, backup/restore), separate employee app, assignment editing/splitting,
+measured-weight production logs with edit/soft-delete, and employee/management
+production statistics. The owner accepted the employee release; outstanding
+integration-test coverage is recorded in `EMPLOYEE-TODO.md`.
+
+## Employee production rules
+
+- Provision employee usernames/passwords through People add/edit. Never expose passwords.
+- First save the measured weight of 10 pieces in **grams**. Later log batch weight
+  in **kilograms**; the API derives pieces, rounded to the nearest whole piece.
+  Show expected total and estimated remaining weight from the saved measurement.
+- Edits and deletes apply only to the authenticated employee's logs. Bulk clear
+  applies only to the selected task/item. All progress/statistics exclude soft-deleted logs.
+- Assignment splits transfer only unproduced capacity after explicit confirmation.
+- Reuse `JalaliDatePicker` with a Jalali DateObject; compact date strings are storage
+  values, not picker values. Valid past production dates must remain selectable.
+  Scope form/button CSS so it cannot restyle the calendar's navigation buttons.
+- Shared chart bar heights use the actual 236px plot inside a 260px cell with a
+  24px label gutter. Keep CSS and `productionBarHeight` aligned to avoid clipped bars.
+- Employee deploys must include `public/.htaccess` for refreshes on `/tasks` and
+  `/statistics`. Build platform and employee sequentially: both write `build/`.
+- Checks: `php server/tests/production_validation.php`, PHP lint, Jest via
+  `npm test -- --watch=false --runInBand` with `CI=true`, and both app builds.
 
 > Legacy naming: the API health response and `localStorage` keys still use
 > `signit*`/`signit-api`. These are internal-only and intentionally left

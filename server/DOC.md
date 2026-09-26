@@ -5,7 +5,7 @@ React clients read from and write to. Plain **PHP 8 + PDO + MySQL/MariaDB**, no
 framework or dependencies.
 
 - **Base URL (production):** `https://api.samanpoolak.ir` (its own subdomain; the
-  front-end at `platform.samanpoolak.ir` calls it cross-origin)
+  front-ends at `platform.samanpoolak.ir` and `employee.samanpoolak.ir` call it cross-origin)
 - **Format:** JSON in / JSON out, UTF-8. Wire field names are `camelCase`.
 - **Auth:** bearer tokens — send `Authorization: Bearer <token>` on every
   endpoint except public endpoints: `GET /`, `POST /setup/seed-admin`,
@@ -39,6 +39,7 @@ server/
     orders.php       order CRUD + server-side YYMMN number + createdByName join
     markings.php     per-customer marking directory + image-file upload
     expenses.php     expense CRUD
+    production.php   assignments, measured-weight logs, corrections, statistics
     inquiries.php    landing-page request capture + back-office status
     job_applications.php careers form capture + authenticated HR status
     admin.php        backup / restore (admin-only)
@@ -80,11 +81,52 @@ JSON · 401 auth · 403 admin/setup · 404 not found · 409 conflict · 422 vali
   `201 { ok, id }`. One-time; guarded by `setup_key` in config (blank it after).
 
 ### Auth
-- `POST /auth/login` `{ username, password }` → `{ token, user }`.
+- `POST /auth/login` `{ username, password, surface }` → `{ token, user }`.
+  `surface` is `management` (default) or `employee`; login validates role and
+  the supplied browser origin against the configured app origin.
 - `POST /auth/logout` *(auth)* → `{ ok }` (invalidates the token).
 - `GET /auth/me` *(auth)* → `{ user }`.
 
-`user` = `{ id, username, displayName, role }` (`role`: `admin` | `user`).
+`user` = `{ id, username, displayName, role }` (`role`: `admin` | `user` | `employee`).
+Employee tokens are restricted by the front controller's route allowlist and
+handler ownership checks. The general authenticated management routes below
+are not available to employees. Employee credentials are managed through People.
+
+### Production
+
+Implemented in `routes/production.php`; relationships and units are documented
+in [the production domain](../EMPLOYEE-PRODUCTION-DOMAIN.md).
+
+- `GET /production/employees` *(admin)* lists eligible employees.
+- `GET /production/tasks` returns admin tasks or the employee's own safe task projection.
+- `POST /production/tasks` *(admin)* accepts `orderId, orderItemUid,
+  employeeUserId, requiredQuantity, assignedDate, splitFromTaskId?`.
+- `PUT /production/tasks/{id}` *(admin)* changes `requiredQuantity`.
+- `GET /production/orders/{orderId}/items/{itemUid}/summary` *(management)*
+  returns assignments, progress, per-employee totals, and logs.
+- `PUT /production/tasks/{id}/weight` *(own employee task)* saves
+  `{ weightOf10Grams }` once; an existing measurement returns 409.
+- `GET /production/tasks/{id}/logs` *(own employee task)* lists active logs.
+- `POST /production/tasks/{id}/logs` *(own employee task)* accepts
+  `{ weightKg, productionDate, submissionKey }`, returning 201
+  `{ productionLog, productionTask }`, or 200 for an identical UUID retry.
+- `PUT /production/tasks/{id}/logs/{logId}` *(own employee log)* accepts
+  `{ weightKg, productionDate }` and returns the updated log/task.
+- `DELETE /production/tasks/{id}/logs/{logId}` soft-deletes the employee's log.
+- `DELETE /production/tasks/{id}/logs` clears only the employee's selected task
+  logs, returning `{ deletedCount, productionTask }`.
+- `GET /production/statistics/month?year&month` and `/day?date` return the
+  authenticated employee's aggregates and daily details.
+- `GET /production/statistics/management/employees`, `/month?year&month`, and
+  `/day?date` *(admin)* support combined statistics; month/day accept optional
+  `employeeUserId` to restrict results to one employee.
+
+Batch kg are stored as `total_weight_grams`; piece quantity is rounded from the
+task's saved 10-piece gram measurement. Past Jalali dates are accepted within
+1405–1499. All aggregates exclude `deleted_at` rows. Transactions lock parent
+rows, enforce capacity, and recalculate status after changes. An identical UUID
+retry returns the original log; changed content or a deleted key returns 409.
+Employee projections exclude customer contacts, pricing, and administrative data.
 
 ### Users *(admin only)*
 - `GET /users` → `{ users: [user] }`.
@@ -174,12 +216,14 @@ createdBy, createdByName, createdAt, updatedAt, deletedAt`.
   never uploaded by the deploy script.
 - CORS is locked to `cors_allowed_origins` in `config.php`. The front-end
   (`platform.samanpoolak.ir`) and API (`api.samanpoolak.ir`) are **different
-  origins**, so `https://platform.samanpoolak.ir` must be in the allowlist; the
+  origins**, so both management and employee app origins must be in the allowlist; the
   handler answers `OPTIONS` preflight.
 - Uploaded marking/product images are saved under `/uploads` and stored as
   **absolute** URLs (`https://api.samanpoolak.ir/uploads/…`) so they load from
   the cross-origin front-end.
 
 ## Not yet on the server
-Statistics aggregation is computed client-side from the mirror today; offline
-write queue is future work. See [../todo/](../todo/).
+Production statistics are aggregated on the server from active production logs.
+An offline write queue remains future work; current production writes require
+a connection. Release acceptance and remaining test coverage are recorded in
+[../EMPLOYEE-TODO.md](../EMPLOYEE-TODO.md).

@@ -7,7 +7,7 @@ shared host that serves several domains on one account: the
 **api.samanpoolak.ir** subdomain (the API), **samanpoolak.ir** (the static
 marketing/landing site — see [`landing/`](landing/)), and **hadibtf.ir** (the
 owner's personal use — not this app). Each domain has its own doc root in
-`/home/hadibt`: `platform/`, `api/`, and `samanpoolak.ir/` respectively.
+`/home/hadibt`; the application doc roots are listed below.
 
 - **Site (front-end):** `https://platform.samanpoolak.ir` → `platform/` (doc root)
 - **Employee site:** `https://employee.samanpoolak.ir` → `employee/` (doc root)
@@ -20,7 +20,8 @@ owner's personal use — not this app). Each domain has its own doc root in
 > **Cross-origin:** the front-end (`platform.samanpoolak.ir`) and the API
 > (`api.samanpoolak.ir`) are different origins, so the API's
 > `cors_allowed_origins` (in the live `api/config.php`) must include
-> `https://platform.samanpoolak.ir`. Auth uses bearer tokens (not cookies), the
+> `https://platform.samanpoolak.ir` and `https://employee.samanpoolak.ir`.
+> Auth uses bearer tokens (not cookies), the
 > CORS handler answers preflight, and uploaded image URLs are **absolute**
 > (`https://api.samanpoolak.ir/uploads/…`) so they load cross-origin.
 
@@ -41,7 +42,7 @@ npm run deploy:api      # upload server/ → api/ (api.samanpoolak.ir)
 npm run deploy:landing  # upload landing/ → samanpoolak.ir/ (static marketing site)
 npm run deploy:jobs     # upload jobs/ → jobs/ (jobs.samanpoolak.ir)
 npm run deploy:employee # build + upload employee app → employee/ (employee.samanpoolak.ir)
-npm run deploy:all      # api + platform + landing + jobs
+npm run deploy:all      # api + platform + landing + jobs + employee
 ```
 
 - Implemented in [`scripts/deploy.mjs`](scripts/deploy.mjs) using **WinSCP**
@@ -55,6 +56,10 @@ npm run deploy:all      # api + platform + landing + jobs
   `deploy-manual/`, and write `UPLOAD-INSTRUCTIONS.md` beside them. For example:
   `npm run deploy:all:manual`.
 - The underlying script also accepts `--mode=automatic` or `--mode=manual`.
+- Build platform and employee sequentially: they share the `build/` directory.
+- Employee deploy explicitly uploads the SPA `.htaccess` through curl after
+  WinSCP synchronization; its manual ZIP includes that file too. Verify refreshes
+  on `/tasks` and `/statistics`, since a root-page check does not catch missing rewrites.
 - `deploy:web` builds first; the build runs with `CI=true`, so **any lint
   warning fails it**. Fix warnings before deploying.
 - Platform and landing deploys **do not upload** `.htaccess` because the server's
@@ -88,9 +93,14 @@ teleclip.hadibtf.ir → /home/hadibt/teleclip
 
 ### Adding a DB table or column
 `server/schema.sql` uses `CREATE TABLE IF NOT EXISTS`, so deploying backend code
-does **not** change the live schema. After `deploy:api`, run the new
+does **not** change the live schema. Before deploying dependent API code, run the new
 `CREATE`/`ALTER` once in **cPanel → phpMyAdmin → (select `hadibt_business_platform`)
-→ SQL**. Until then the endpoint 500s with "table doesn't exist".
+→ SQL**. Selecting the database first avoids MySQL error `#1046 No database selected`.
+`CREATE TABLE IF NOT EXISTS` does not add columns to existing tables.
+
+The production-weight and log edit/delete migrations under `server/migrations/`
+dated `2026-09-26` were confirmed applied by the owner. Fresh installs use the
+current schema; do not rerun `ADD COLUMN` migrations blindly on an existing DB.
 
 ---
 
