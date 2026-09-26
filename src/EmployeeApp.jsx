@@ -3,10 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import EmployeeTasks from './pages/EmployeeTasks';
 import EmployeeLogin from './pages/EmployeeLogin';
 import { useAuth } from './auth/AuthContext';
-import { useEmployeeSync } from './hooks/useEmployeeSync';
 
 function EmployeeShell() {
-  useEmployeeSync();
   return <div className="app-shell"><main className="app-container"><Routes><Route path="/" element={<Navigate to="/tasks" replace />} /><Route path="/tasks" element={<EmployeeTasks />} /><Route path="*" element={<Navigate to="/tasks" replace />} /></Routes></main></div>;
 }
 

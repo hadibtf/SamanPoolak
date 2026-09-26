@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
-import { db, computeWeights } from '../db';
+import { computeWeights } from '../db';
 import { productionApi, ApiError } from '../api/client';
 import './EmployeeTasks.css';
 
@@ -12,11 +11,10 @@ const today = () => new DateObject({ calendar: persian, locale: persian_fa }).fo
 const fa = (value) => Number(value || 0).toLocaleString('fa-IR');
 const stamp = (value) => value ? new Date(value).toLocaleString('fa-IR') : '';
 const key = () => window.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
-const EMPTY_TASKS = [];
-
 export default function EmployeeTasks() {
-  const taskRows = useLiveQuery(() => db.productionTasks.orderBy('updatedAt').reverse().toArray(), []);
-  const tasks = taskRows || EMPTY_TASKS;
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [tasksError, setTasksError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [quantity, setQuantity] = useState('');
@@ -24,6 +22,21 @@ export default function EmployeeTasks() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const selected = useMemo(() => tasks.find((task) => task.id === selectedId) || tasks[0] || null, [tasks, selectedId]);
+
+  const loadTasks = useCallback(async () => {
+    setTasksLoading(true);
+    setTasksError('');
+    try {
+      const { productionTasks } = await productionApi.listTasks();
+      setTasks(productionTasks || []);
+    } catch (err) {
+      setTasksError(err instanceof ApiError ? err.message : 'دریافت وظایف تولید انجام نشد.');
+    } finally {
+      setTasksLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadTasks(); }, [loadTasks]);
 
   useEffect(() => { if (selected && selected.id !== selectedId) setSelectedId(selected.id); }, [selected, selectedId]);
   useEffect(() => {
@@ -44,12 +57,14 @@ export default function EmployeeTasks() {
     setBusy(true);
     try {
       const { productionLog, productionTask } = await productionApi.logProduction(selected.id, { quantity: value, productionDate, submissionKey: key() });
-      await db.productionTasks.put({ ...selected, ...productionTask });
+      setTasks((previous) => previous.map((task) => task.id === selected.id ? { ...task, ...productionTask } : task));
       setLogs((previous) => [productionLog, ...previous]); setQuantity('');
     } catch (err) { setError(err instanceof ApiError ? err.message : 'ثبت تولید انجام نشد.'); }
     finally { setBusy(false); }
   };
 
+  if (tasksLoading) return <div className="employee-tasks empty-state"><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
+  if (tasksError) return <div className="employee-tasks empty-state"><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
   if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>وظیفه تولید فعالی ندارید.</p></div>;
   return <div className="employee-tasks">
     <header><h1>وظایف تولید</h1><span>{fa(tasks.length)} وظیفه</span></header>
