@@ -118,6 +118,9 @@
 .employee-tasks .weight-first { display: grid; gap: 8px; border: 1px solid #afd2f7; border-radius: 13px; padding: 14px; background: #eff7ff; }
 .employee-tasks .weight-first label { font-weight: 700; color: #1a4571; }
 .employee-tasks .weight-first small { color: #52677d; }
+.employee-tasks .weight-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 12px 14px; border-radius: 11px; background: #e8f4ed; color: #20583a; }
+.employee-tasks .weight-preview strong { font-size: 18px; }
+.employee-tasks .weight-preview small { color: #4a7058; }
 .employee-tasks .task-logs { margin-top: 28px; }
 .employee-tasks .task-logs > div { padding: 13px 2px; border-bottom-color: rgba(120,120,128,.14); }
 

@@ -148,6 +148,7 @@ export const productionApi = {
   listTasks: (updatedAfter) => api.get(`/production/tasks${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
   assignTask: (task) => api.post('/production/tasks', task),
   updateTask: (taskId, patch) => api.put(`/production/tasks/${encodeURIComponent(taskId)}`, patch),
+  setTaskWeight: (taskId, weightOf10Grams) => api.put(`/production/tasks/${encodeURIComponent(taskId)}/weight`, { weightOf10Grams }),
   taskLogs: (taskId) => api.get(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
   logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
   employeeMonthStatistics: (year, month) => api.get(`/production/statistics/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`),

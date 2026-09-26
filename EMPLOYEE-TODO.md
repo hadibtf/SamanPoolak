@@ -204,10 +204,14 @@ TODO's acceptance criteria can be marked complete.
 
 - [x] Add manager editing of an assignment's quantity, rejecting any reduction below already logged production or increase beyond order capacity.
 - [x] When a new assignment exceeds free capacity, offer a confirmation to transfer the deficit from a selected earlier employee's unproduced quantity; never rewrite historical logs.
-- [x] Require the employee's measured 10-piece weight in kilograms before the first production log for a task; store grams on the task and a calculated weight snapshot on each log.
+- [x] Require the employee to save the measured 10-piece weight in grams with a separate action before logging. Derive unit and expected total weight from it. Each later log accepts batch weight in kilograms, stores that measured weight, and estimates pieces server-side (nearest whole piece) while enforcing remaining task capacity.
 - [x] Fix the employee task date picker so an earlier Jalali day can be selected and sent unchanged for delayed production logging.
 - [x] Apply `server/migrations/2026-09-26-production-weight.sql` to the live database (user confirmed), then deploy API, platform, and employee builds.
 - [ ] Verify assignment editing/splitting, measured-weight logging, and past-day selection with real accounts. Read-only live checks passed (both app roots HTTP 200; production API requires authentication), but no production records were created for testing.
+
+The corrected gram-first / kilogram-per-log flow is deployed to the API and
+employee app. Unit tests and production build pass; live weight submission and
+calculated-piece behavior still need a real employee test.
 
 
 - [ ] Test the full workflow: `Existing Order Item -> Assign Employee -> Employee Produces -> Production Log -> Statistics`.

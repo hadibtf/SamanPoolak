@@ -14,6 +14,12 @@ export function productionDateKey(date) {
   return `${date.year}${String(date.month.number).padStart(2, '0')}${String(date.day).padStart(2, '0')}`;
 }
 
+export function productionPiecesFromWeight(weightKg, weightOf10Grams) {
+  const kg = Number(weightKg);
+  const gramsPerTen = Number(weightOf10Grams);
+  return kg > 0 && gramsPerTen > 0 ? Math.round(kg * 1000 * 10 / gramsPerTen) : 0;
+}
+
 export function currentProductionMonth() {
   const date = new DateObject({ calendar: persian, locale: persian_fa });
   return { year: Math.min(1499, Math.max(1405, date.year)), month: date.month.number };

@@ -53,6 +53,7 @@ $routes = [
     ['GET',    '/production/tasks', 'production_tasks_list', true],
     ['POST',   '/production/tasks', 'production_tasks_create', true],
     ['PUT',    '/production/tasks/{id}', 'production_task_update', true],
+    ['PUT',    '/production/tasks/{id}/weight', 'production_task_weight_set', true],
     ['GET',    '/production/statistics/month', 'production_employee_month_statistics', true],
     ['GET',    '/production/statistics/day', 'production_employee_day_statistics', true],
     ['GET',    '/production/statistics/management/employees', 'production_management_statistics_employees', true],
@@ -121,7 +122,8 @@ try {
             ];
             if ($user && ($user['role'] ?? '') === 'employee'
                 && !in_array($method . ' ' . $path, $employeeAllowed, true)
-                && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)) {
+                && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)
+                && !preg_match('#^PUT /production/tasks/[^/]+/weight$#', $method . ' ' . $path)) {
                 json_error('Employee access is limited to production tasks', 403);
             }
             $body   = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? json_input() : [];

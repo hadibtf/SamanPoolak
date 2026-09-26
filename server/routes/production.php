@@ -230,9 +230,27 @@ function production_valid_quantity($value)
         && (float) $normalized > 0;
 }
 
-function production_log_weight_grams($quantity, $weightOf10Grams)
+function production_pieces_from_weight($weightKg, $weightOf10Grams)
 {
-    return round($quantity * $weightOf10Grams / 10, 3);
+    return (int) round($weightKg * 1000 * 10 / $weightOf10Grams);
+}
+
+function production_task_weight_set($params, $body, $user)
+{
+    require_employee($user); require_fields($body, ['weightOf10Grams']);
+    if (!production_valid_quantity($body['weightOf10Grams'])) json_error('Invalid 10-piece weight in grams', 422);
+    $taskId = (int) $params['id'];
+    $weight = (float) production_normalize_digits($body['weightOf10Grams']);
+    $update = db()->prepare('UPDATE production_tasks SET weight_of_10_grams = :weight, updated_at = :updated
+        WHERE id = :id AND employee_user_id = :employee AND deleted_at IS NULL AND weight_of_10_grams IS NULL');
+    $update->execute([':weight' => $weight, ':updated' => now_utc(), ':id' => $taskId, ':employee' => $user['id']]);
+    if ($update->rowCount() !== 1) {
+        production_task_for_employee($taskId, $user);
+        json_error('The 10-piece weight is already recorded for this task', 409);
+    }
+    $result = db()->prepare('SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id');
+    $result->execute([':id' => $taskId]);
+    json_response(['productionTask' => production_task_to_wire($result->fetch())]);
 }
 
 function production_task_for_employee($taskId, $user)
@@ -261,14 +279,14 @@ function production_task_logs_list($params, $body, $user)
 
 function production_task_log_create($params, $body, $user)
 {
-    require_employee($user); require_fields($body, ['quantity', 'productionDate', 'submissionKey']);
-    $quantity = (float) production_normalize_digits($body['quantity']);
+    require_employee($user); require_fields($body, ['weightKg', 'productionDate', 'submissionKey']);
+    $weightKg = (float) production_normalize_digits($body['weightKg']);
     // react-multi-date-picker can format a Jalali date with Persian digits.
     // Persist dates in the server's canonical ASCII YYYYMMDD format.
     $date = production_normalize_digits($body['productionDate']);
     $key = trim((string) $body['submissionKey']);
-    if (!production_valid_quantity($body['quantity']) || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)) json_error('Invalid production log', 422);
-    $submittedWeight = $body['weightOf10Kg'] ?? null;
+    if (!production_valid_quantity($body['weightKg']) || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)
+        || $weightKg * 1000 > 99999999999.999) json_error('Invalid production log', 422);
     db()->beginTransaction();
     try {
         // Lock the task before reading its logs so concurrent submissions cannot overproduce.
@@ -276,24 +294,20 @@ function production_task_log_create($params, $body, $user)
         $taskStmt->execute([':id' => (int) $params['id'], ':employee' => $user['id']]);
         $task = $taskStmt->fetch();
         if (!$task) { db()->rollBack(); json_error('Production task not found', 404); }
-        $existing = db()->prepare('SELECT id, quantity, production_date FROM production_logs WHERE task_id = :taskId AND employee_user_id = :employee AND submission_key = :key LIMIT 1');
+        $existing = db()->prepare('SELECT id, total_weight_grams, production_date FROM production_logs WHERE task_id = :taskId AND employee_user_id = :employee AND submission_key = :key LIMIT 1');
         $existing->execute([':taskId' => $task['id'], ':employee' => $user['id'], ':key' => $key]);
         $previous = $existing->fetch();
         if ($previous) {
             db()->rollBack();
-            if ((float) $previous['quantity'] !== $quantity || $previous['production_date'] !== $date) json_error('Submission key already used for different production', 409);
+            if (abs((float) $previous['total_weight_grams'] - $weightKg * 1000) > 0.00001 || $previous['production_date'] !== $date) json_error('Submission key already used for different production', 409);
             production_log_response((int) $previous['id'], (int) $task['id'], 200);
         }
         if ($task['status'] === 'COMPLETED') { db()->rollBack(); json_error('Production task is already completed', 422); }
-        $weightOf10 = $task['weight_of_10_grams'] === null ? null : (float) $task['weight_of_10_grams'];
-        if ($weightOf10 === null) {
-            if (!production_valid_quantity($submittedWeight) || (float) production_normalize_digits($submittedWeight) * 1000 > 99999999999) {
-                db()->rollBack(); json_error('A valid 10-piece weight in kilograms is required before logging production', 422);
-            }
-            $weightOf10 = (float) production_normalize_digits($submittedWeight) * 1000;
-        }
-        $totalWeight = production_log_weight_grams($quantity, $weightOf10);
-        if ($totalWeight <= 0 || $totalWeight > 99999999999.999) { db()->rollBack(); json_error('Production weight is out of range', 422); }
+        $weightOf10 = (float) ($task['weight_of_10_grams'] ?? 0);
+        if ($weightOf10 <= 0) { db()->rollBack(); json_error('Record the 10-piece weight before logging production', 422); }
+        $quantity = production_pieces_from_weight($weightKg, $weightOf10);
+        if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $totalWeight = $weightKg * 1000;
         $total = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId');
         $total->execute([':taskId' => $task['id']]);
         if ((float) $total->fetchColumn() + $quantity > (float) $task['required_quantity'] + 0.00001) { db()->rollBack(); json_error('Produced quantity exceeds the task quantity', 422); }
@@ -305,8 +319,8 @@ function production_task_log_create($params, $body, $user)
         $id = (int) db()->lastInsertId();
         $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId'); $sum->execute([':taskId' => $task['id']]); $newTotal = (float) $sum->fetchColumn();
         $status = $newTotal + 0.00001 >= (float) $task['required_quantity'] ? 'COMPLETED' : 'IN_PROGRESS';
-        $update = db()->prepare('UPDATE production_tasks SET status = :status, weight_of_10_grams = :weightOf10, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
-        $update->execute([':status' => $status, ':weightOf10' => $weightOf10, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
+        $update = db()->prepare('UPDATE production_tasks SET status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
+        $update->execute([':status' => $status, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
         db()->commit();
     } catch (PDOException $e) {
         if (db()->inTransaction()) db()->rollBack();
