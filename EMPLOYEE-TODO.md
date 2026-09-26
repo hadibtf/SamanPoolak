@@ -170,17 +170,22 @@ underlying product, order, task, quantity, status, dimensions, and timestamp.
 
 ## TODO 5 — Build Management Statistics for Individual and All Employees
 
-- [ ] Add an admin-only `Statistics` bottom-navigation tab; retain the current navigation for non-admin users and ensure route protection is server-side as well as UI-side.
-- [ ] Reuse the same year/month selection mechanism as employee statistics.
-- [ ] Add an individual employee statistics mode.
-- [ ] Allow management to select an employee and see their daily production chart.
-- [ ] Allow management to click a day and inspect that employee's underlying production logs.
-- [ ] Add an `All Employees` statistics mode.
-- [ ] Calculate total factory production per day from all employee production logs.
-- [ ] Show total production per employee for the selected month.
-- [ ] Provide a readable employee comparison view without overcrowding the chart.
-- [ ] Reuse shared chart/month-selector/drill-down components where practical, while management API responses remain admin-only.
-- [ ] Ensure both desktop and mobile layouts remain usable.
+- [x] Add an admin-only `Statistics` bottom-navigation tab; retain the current navigation for non-admin users and ensure route protection is server-side as well as UI-side.
+- [x] Reuse the same year/month selection mechanism as employee statistics.
+- [x] Add an individual employee statistics mode.
+- [x] Allow management to select an employee and see their daily production chart.
+- [x] Allow management to click a day and inspect that employee's underlying production logs.
+- [x] Add an `All Employees` statistics mode.
+- [x] Calculate total factory production per day from all employee production logs.
+- [x] Show total production per employee for the selected month.
+- [x] Provide a readable employee comparison view without overcrowding the chart.
+- [x] Reuse shared chart/month-selector/drill-down components where practical, while management API responses remain admin-only.
+- [ ] Verify both desktop and mobile layouts in the live management app.
+
+Implementation is deployed. PHP syntax and both production builds pass; the
+live manager statistics endpoints reject employee tokens with HTTP 403.
+An admin session and visual desktop/mobile check are still needed before this
+TODO's acceptance criteria can be marked complete.
 
 ### Acceptance Criteria
 

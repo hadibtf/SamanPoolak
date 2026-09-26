@@ -1,0 +1,19 @@
+.management-statistics { max-width: 900px; }
+.management-statistics .statistics-mode { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; max-width: 380px; padding: 4px; margin-bottom: 14px; border-radius: 13px; background: rgba(118,118,128,.13); }
+.management-statistics .statistics-mode button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #505866; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.management-statistics .statistics-mode button.active { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
+.management-statistics .statistics-controls:has(.statistics-employee-select) { grid-template-columns: 1.5fr 1fr 1fr auto; }
+.management-statistics .statistics-comparison { margin-top: 16px; padding: 20px; }
+.management-statistics .statistics-employee-row { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(100px, 2fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 13px; }
+.management-statistics .statistics-employee-row:last-child { border-bottom: 0; }
+.management-statistics .statistics-employee-row > span { color: #32383f; font-weight: 600; }
+.management-statistics .statistics-employee-row > strong { color: #007aff; white-space: nowrap; }
+.management-statistics .statistics-employee-meter { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
+.management-statistics .statistics-employee-meter span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#67b7ff,#007aff); }
+.management-statistics .statistics-no-production { padding: 22px 0 6px; color: #777f8b; text-align: center; }
+@media(max-width:700px){.management-statistics .statistics-controls:has(.statistics-employee-select){grid-template-columns:1fr 1fr}.management-statistics .statistics-employee-select{grid-column:1/-1}.management-statistics .statistics-employee-row{grid-template-columns:1fr auto}.management-statistics .statistics-employee-meter{grid-column:1/-1;grid-row:2}}
+[data-theme="dark"] .management-statistics .statistics-mode { background: rgba(255,255,255,.08); }
+[data-theme="dark"] .management-statistics .statistics-mode button { color: #bfc3ce; }
+[data-theme="dark"] .management-statistics .statistics-mode button.active { background: rgba(255,255,255,.15); color: #79b8ff; }
+[data-theme="dark"] .management-statistics .statistics-employee-row > span { color: #e5e5ea; }
+[data-theme="dark"] .management-statistics .statistics-employee-meter { background: rgba(255,255,255,.12); }

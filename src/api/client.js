@@ -151,6 +151,9 @@ export const productionApi = {
   logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
   employeeMonthStatistics: (year, month) => api.get(`/production/statistics/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`),
   employeeDayStatistics: (date) => api.get(`/production/statistics/day?date=${encodeURIComponent(date)}`),
+  managementStatisticsEmployees: () => api.get('/production/statistics/management/employees'),
+  managementMonthStatistics: (year, month, employeeUserId) => api.get(`/production/statistics/management/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
+  managementDayStatistics: (date, employeeUserId) => api.get(`/production/statistics/management/day?date=${encodeURIComponent(date)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
   itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),
 };
 

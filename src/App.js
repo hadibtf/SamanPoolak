@@ -10,12 +10,14 @@ import OrderView from './pages/OrderView';
 import Inquiries from './pages/Inquiries';
 import IssueNotes from './pages/IssueNotes';
 import SettingsInfo from './pages/SettingsInfo';
+import ManagementStatistics from './pages/ManagementStatistics';
 import Login from './pages/Login';
 import { useAuth } from './auth/AuthContext';
 import { useSyncEngine } from './hooks/useSyncEngine';
 
 // The authenticated app shell. useSyncEngine runs only while logged in.
 function AppShell() {
+  const { user } = useAuth();
   useSyncEngine();
 
   return (
@@ -37,6 +39,7 @@ function AppShell() {
           <Route path="/inquiries" element={<Navigate to="/orders/inquiries" replace />} />
           <Route path="/job-applications" element={<Navigate to="/payroll" replace />} />
           <Route path="/settings" element={<SettingsInfo />} />
+          {user.role === 'admin' && <Route path="/statistics" element={<ManagementStatistics />} />}
           <Route path="*" element={<Navigate to="/payroll" replace />} />
         </Routes>
       </main>

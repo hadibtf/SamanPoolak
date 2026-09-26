@@ -297,6 +297,126 @@ function production_employee_day_statistics($params, $body, $user)
     ]);
 }
 
+function production_management_statistics_employee_filter()
+{
+    $raw = $_GET['employeeUserId'] ?? '';
+    if ($raw === '') return null;
+    if (!ctype_digit((string) $raw) || (int) $raw <= 0) json_error('Invalid employee', 422);
+    $id = (int) $raw;
+    $stmt = db()->prepare("SELECT id FROM users WHERE id = :id AND role = 'employee' LIMIT 1");
+    $stmt->execute([':id' => $id]);
+    if (!$stmt->fetch()) json_error('Employee not found', 404);
+    return $id;
+}
+
+function production_management_statistics_employees($params, $body, $user)
+{
+    require_admin($user);
+    // Include disabled accounts so historical production remains inspectable.
+    $stmt = db()->query("SELECT u.id, u.username, u.disabled,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name
+        FROM users u LEFT JOIN employee_accounts ea ON ea.user_id = u.id
+        LEFT JOIN people p ON p.id = ea.person_id
+        WHERE u.role = 'employee' ORDER BY employee_name, u.id");
+    $employees = array_map(fn ($row) => [
+        'userId' => (int) $row['id'], 'name' => $row['employee_name'],
+        'disabled' => (bool) $row['disabled'],
+    ], $stmt->fetchAll());
+    json_response(['employees' => $employees]);
+}
+
+function production_management_month_statistics($params, $body, $user)
+{
+    require_admin($user);
+    [$year, $month, $prefix] = production_statistics_month_params();
+    $employeeId = production_management_statistics_employee_filter();
+    $filter = $employeeId === null ? '' : ' AND l.employee_user_id = :employee';
+    $bind = [':startDate' => $prefix . '01', ':endDate' => $prefix . '31'];
+    if ($employeeId !== null) $bind[':employee'] = $employeeId;
+
+    $dailyStmt = db()->prepare('SELECT l.production_date, SUM(l.quantity) AS total_quantity
+        FROM production_logs l WHERE l.production_date >= :startDate AND l.production_date <= :endDate' . $filter . '
+        GROUP BY l.production_date ORDER BY l.production_date ASC');
+    $dailyStmt->execute($bind);
+    $daily = array_map(fn ($row) => [
+        'date' => $row['production_date'], 'quantity' => (float) $row['total_quantity'],
+    ], $dailyStmt->fetchAll());
+
+    $employeeUserFilter = $employeeId === null ? '' : ' AND u.id = :employee';
+    $employeeStmt = db()->prepare("SELECT u.id AS employee_user_id,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
+        COALESCE(SUM(l.quantity), 0) AS total_quantity
+        FROM users u
+        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
+        LEFT JOIN people p ON p.id = ea.person_id
+        LEFT JOIN production_logs l ON l.employee_user_id = u.id
+            AND l.production_date >= :startDate AND l.production_date <= :endDate
+        WHERE u.role = 'employee'" . $employeeUserFilter . "
+        GROUP BY u.id, p.first_name, p.last_name, u.display_name, u.username
+        ORDER BY total_quantity DESC, employee_name ASC");
+    $employeeStmt->execute($bind);
+    $byEmployee = array_map(fn ($row) => [
+        'employeeUserId' => (int) $row['employee_user_id'],
+        'employeeName' => $row['employee_name'],
+        'quantity' => (float) $row['total_quantity'],
+    ], $employeeStmt->fetchAll());
+
+    json_response([
+        'year' => $year, 'month' => $month, 'employeeUserId' => $employeeId,
+        'total' => array_sum(array_column($daily, 'quantity')),
+        'daily' => $daily, 'byEmployee' => $byEmployee,
+    ]);
+}
+
+function production_management_day_statistics($params, $body, $user)
+{
+    require_admin($user);
+    $date = production_normalize_digits($_GET['date'] ?? '');
+    if (!production_valid_date($date) || (int) substr($date, 0, 4) < 1405 || (int) substr($date, 0, 4) > 1499) {
+        json_error('Invalid production statistics date', 422);
+    }
+    $employeeId = production_management_statistics_employee_filter();
+    $filter = $employeeId === null ? '' : ' AND l.employee_user_id = :employee';
+    $bind = [':productionDate' => $date];
+    if ($employeeId !== null) $bind[':employee'] = $employeeId;
+    $stmt = db()->prepare("SELECT l.*, t.required_quantity, t.status AS task_status, o.order_number, o.items,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name
+        FROM production_logs l JOIN production_tasks t ON t.id = l.task_id
+        JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
+        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
+        LEFT JOIN people p ON p.id = ea.person_id
+        WHERE l.production_date = :productionDate" . $filter . "
+        ORDER BY l.created_at ASC, l.id ASC");
+    $stmt->execute($bind);
+    $records = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $item = null;
+        foreach (($row['items'] ? json_decode($row['items'], true) : []) as $candidate) {
+            if (($candidate['uid'] ?? '') === $row['order_item_uid']) { $item = $candidate; break; }
+        }
+        $records[] = [
+            'id' => (int) $row['id'], 'taskId' => (int) $row['task_id'],
+            'employeeUserId' => (int) $row['employee_user_id'],
+            'employeeName' => $row['employee_name'],
+            'orderNumber' => $row['order_number'],
+            'productName' => $item['productName'] ?? '—',
+            'quantity' => (float) $row['quantity'],
+            'productionDate' => $row['production_date'],
+            'createdAt' => to_iso($row['created_at']),
+            'taskRequiredQuantity' => (float) $row['required_quantity'],
+            'taskStatus' => $row['task_status'],
+            'material' => $item['material'] ?? '',
+            'thickness' => $item['thickness'] ?? null,
+            'diameter' => $item['diameter'] ?? null,
+        ];
+    }
+    json_response([
+        'date' => $date, 'employeeUserId' => $employeeId,
+        'total' => array_sum(array_column($records, 'quantity')),
+        'records' => $records,
+    ]);
+}
+
 function production_item_summary($params, $body, $user)
 {
     require_management($user); $orderId = (int) $params['orderId']; $uid = (string) $params['itemUid'];
