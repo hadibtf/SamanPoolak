@@ -95,7 +95,7 @@ are not available to employees. Employee credentials are managed through People.
 ### Production
 
 Implemented in `routes/production.php`; relationships and units are documented
-in [the production domain](../EMPLOYEE-PRODUCTION-DOMAIN.md).
+in [employee production](../MASTERCONTEXT.md#employee-production).
 
 - `GET /production/employees` *(admin)* lists eligible employees.
 - `GET /production/tasks` returns admin tasks or the employee's own safe task projection.
@@ -226,4 +226,4 @@ createdBy, createdByName, createdAt, updatedAt, deletedAt`.
 Production statistics are aggregated on the server from active production logs.
 An offline write queue remains future work; current production writes require
 a connection. Release acceptance and remaining test coverage are recorded in
-[../EMPLOYEE-TODO.md](../EMPLOYEE-TODO.md).
+[the verification record](../MASTERCONTEXT.md#verification).

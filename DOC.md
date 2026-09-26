@@ -4,7 +4,7 @@ How the **front-end** is built and why, for a developer new to React/web but
 comfortable with **Android (Kotlin, Compose, Room)**. "🤖 Android analogy"
 callouts map web ideas to things you know. For the API see
 [server/DOC.md](server/DOC.md); for hosting see [DEPLOY.md](DEPLOY.md);
-for the quick operational map see [AGENTS.md](AGENTS.md).
+for the AI agent operational map see [MASTERCONTEXT.md](MASTERCONTEXT.md).
 
 ---
 
@@ -40,7 +40,7 @@ mirror so the UI updates instantly.
 
 Production screens are an exception: `productionApi` calls the server directly
 and stores responses in local React state. Employee logs are not mirrored through
-the management sync engine. See [the production domain](EMPLOYEE-PRODUCTION-DOMAIN.md)
+the management sync engine. See [employee production](MASTERCONTEXT.md#employee-production)
 for units, ownership, edits/deletes, dates, and aggregation rules.
 
 🤖 **Analogy:** like a Room cache fed by a Retrofit-backed repository with a
@@ -210,7 +210,7 @@ paint `option { background-color; color }` explicitly (don't rely on
 - **Images compressed** before upload (`utils/image.js`).
 - **PWA caching** — hard-refresh after deploy.
 - **Deploy is local** (`npm run deploy:web|api`); **adding a table needs a
-  phpMyAdmin step**. See [CLAUDE.md](CLAUDE.md) / [DEPLOY.md](DEPLOY.md).
+  phpMyAdmin step**. See [MASTERCONTEXT.md](MASTERCONTEXT.md) / [DEPLOY.md](DEPLOY.md).
 
 ---
 
@@ -223,8 +223,8 @@ Add a "delivery note" entity:
    `db.version`); add `notes` to `RESOURCES` in `useSyncEngine.js`.
 4. **UI**: a page reading `useLiveQuery(db.notes…)` and writing via `notesApi`
    then `db.notes.put`.
-5. **Verify**: `CI=true npm run build`, `npm run deploy:all`, import the table,
-   test cross-device.
+5. **Verify**: CI-mode build, deploy the relevant surfaces after the database
+   step, then test cross-device.
 
 🤖 **Analogy:** add a Room entity (+migration), a Retrofit endpoint, a sync step,
 and a screen — same shape, fewer layers.

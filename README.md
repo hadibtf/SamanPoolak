@@ -6,7 +6,7 @@ iOS-style "liquid glass" UI (light + dark themes). A React front-end talks to a
 small **PHP + MySQL** backend that is the single shared source of truth, so a
 team of users on different devices all see the same live data.
 
-> **New here?** Read **[CLAUDE.md](CLAUDE.md)** for the operational map (how to
+> **New here?** Read **[MASTERCONTEXT.md](MASTERCONTEXT.md)** for the operational map (how to
 > build/deploy and the traps), **[DOC.md](DOC.md)** for a frontend deep-dive
 > (with Android/Compose analogies), **[server/DOC.md](server/DOC.md)** for the
 > API reference, and **[DEPLOY.md](DEPLOY.md)** for hosting.
@@ -135,7 +135,7 @@ todo/                         # open feature plans (DECIDED/OPEN markers)
 
 ## Conventions & gotchas
 
-See **[CLAUDE.md](CLAUDE.md)** — money stored in Rial, Jalali `YYYYMMDD` dates,
+See **[MASTERCONTEXT.md](MASTERCONTEXT.md)** — money stored in Rial, Jalali `YYYYMMDD` dates,
 server-assigned IDs/order-numbers, PWA caching after deploy, the build's
 zero-warning rule, and the PDF/RTL specifics.
 

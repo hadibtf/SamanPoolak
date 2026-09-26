@@ -1,5 +1,7 @@
 # Hosting & deployment
 
+AI agent entry point: [MASTERCONTEXT.md](MASTERCONTEXT.md#deployment).
+
 How the app is hosted and how to ship changes. Production runs on a cPanel
 shared host that serves several domains on one account: the
 **platform.samanpoolak.ir** subdomain (management front-end),
