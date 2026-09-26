@@ -141,6 +141,16 @@ function production_tasks_create($params, $body, $user)
     $stmt->execute([':id' => $id]); json_response(['productionTask' => production_task_to_wire($stmt->fetch())], 201);
 }
 
+function production_normalize_digits($value)
+{
+    return strtr((string) $value, [
+        '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+        '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+        '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+        '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+    ]);
+}
+
 function production_valid_date($value)
 {
     if (!preg_match('/^(\d{4})(\d{2})(\d{2})$/', (string) $value, $m)) return false;
@@ -173,7 +183,11 @@ function production_task_logs_list($params, $body, $user)
 function production_task_log_create($params, $body, $user)
 {
     require_employee($user); require_fields($body, ['quantity', 'productionDate', 'submissionKey']);
-    $quantity = (float) $body['quantity']; $date = (string) $body['productionDate']; $key = trim((string) $body['submissionKey']);
+    $quantity = (float) $body['quantity'];
+    // react-multi-date-picker can format a Jalali date with Persian digits.
+    // Persist dates in the server's canonical ASCII YYYYMMDD format.
+    $date = production_normalize_digits($body['productionDate']);
+    $key = trim((string) $body['submissionKey']);
     if (!is_finite($quantity) || $quantity <= 0 || !production_valid_date($date) || !preg_match('/^[a-f0-9-]{16,36}$/i', $key)) json_error('Invalid production log', 422);
     db()->beginTransaction();
     try {
@@ -185,12 +199,14 @@ function production_task_log_create($params, $body, $user)
         $now = now_utc();
         $insert = db()->prepare('INSERT INTO production_logs (task_id, employee_user_id, order_id, order_item_uid, quantity, production_date, submission_key, created_at) VALUES (:taskId,:employeeId,:orderId,:itemUid,:quantity,:date,:key,:createdAt)');
         $insert->execute([':taskId' => $task['id'], ':employeeId' => $user['id'], ':orderId' => $task['order_id'], ':itemUid' => $task['order_item_uid'], ':quantity' => $quantity, ':date' => $date, ':key' => $key, ':createdAt' => $now]);
-        $newTotal = (float) $total->fetchColumn(); // retained only for clarity; query again below
+        // Capture the generated ID before later UPDATE statements, which do
+        // not have an insert ID on MySQL.
+        $id = (int) db()->lastInsertId();
         $sum = db()->prepare('SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE task_id = :taskId'); $sum->execute([':taskId' => $task['id']]); $newTotal = (float) $sum->fetchColumn();
         $status = $newTotal + 0.00001 >= (float) $task['required_quantity'] ? 'COMPLETED' : 'IN_PROGRESS';
         $update = db()->prepare('UPDATE production_tasks SET status = :status, completed_at = :completedAt, updated_at = :updatedAt WHERE id = :id');
         $update->execute([':status' => $status, ':completedAt' => $status === 'COMPLETED' ? $now : null, ':updatedAt' => $now, ':id' => $task['id']]);
-        $id = (int) db()->lastInsertId(); db()->commit();
+        db()->commit();
     } catch (PDOException $e) {
         if (db()->inTransaction()) db()->rollBack();
         if ((string) $e->getCode() === '23000') json_error('This production submission was already recorded', 409);

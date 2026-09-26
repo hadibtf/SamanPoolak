@@ -11,6 +11,7 @@ const today = () => new DateObject({ calendar: persian, locale: persian_fa }).fo
 const fa = (value) => Number(value || 0).toLocaleString('fa-IR');
 const stamp = (value) => value ? new Date(value).toLocaleString('fa-IR') : '';
 const key = () => window.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+const taskStatus = (status) => ({ ASSIGNED: 'تخصیص داده شده', IN_PROGRESS: 'در حال تولید', COMPLETED: 'تکمیل شده' }[status] || status);
 export default function EmployeeTasks() {
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
@@ -68,9 +69,9 @@ export default function EmployeeTasks() {
   if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>وظیفه تولید فعالی ندارید.</p></div>;
   return <div className="employee-tasks">
     <header><h1>وظایف تولید</h1><span>{fa(tasks.length)} وظیفه</span></header>
-    <div className="task-list">{tasks.map((task) => <button type="button" key={task.id} onClick={() => setSelectedId(task.id)} className={task.id === selected?.id ? 'active' : ''}><strong>{task.productName}</strong><span>سفارش {task.orderNumber}</span><em>{task.status}</em></button>)}</div>
+    <div className="task-list">{tasks.map((task) => <button type="button" key={task.id} onClick={() => setSelectedId(task.id)} className={task.id === selected?.id ? 'active' : ''}><strong>{task.productName}</strong><span>سفارش {task.orderNumber}</span><em>{taskStatus(task.status)}</em></button>)}</div>
     {selected && <section className="task-detail glass-card">
-      <div className="task-title"><div><h2>{selected.productName}</h2><span>سفارش {selected.orderNumber}</span></div><b>{selected.status}</b></div>
+      <div className="task-title"><div><h2>{selected.productName}</h2><span>سفارش {selected.orderNumber}</span></div><b>{taskStatus(selected.status)}</b></div>
       {selected.markingSrc && <img className="task-marking" src={selected.markingSrc} alt={selected.markingName || 'مارک'} />}
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
       <div className="task-specs"><span>تعداد وظیفه: <b>{fa(selected.requiredQuantity)}</b></span><span>باقی‌مانده: <b>{fa(remaining)}</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
