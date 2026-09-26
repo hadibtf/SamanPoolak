@@ -6,7 +6,17 @@
 function handle_cors()
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = config('cors_allowed_origins', []);
+    // Keep the configured allowlist, while always allowing the two fixed
+    // first-party application origins. Existing deployments can have an older
+    // config.php which predates the employee app; without these defaults the
+    // browser blocks its login request before it reaches the auth route.
+    $allowed = array_unique(array_filter(array_merge(
+        config('cors_allowed_origins', []),
+        [
+            config('management_app_origin', 'https://platform.samanpoolak.ir'),
+            config('employee_app_origin', 'https://employee.samanpoolak.ir'),
+        ]
+    )));
     if ($origin && in_array($origin, $allowed, true)) {
         header('Access-Control-Allow-Origin: ' . $origin);
         header('Vary: Origin');
