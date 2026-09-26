@@ -219,11 +219,12 @@ single-open accordion instead of separate selection cards and detail panel.
 
 Log corrections: employees can edit or soft-delete their own individual logs,
 or clear all their own logs for the selected production item. Changes recompute
-task status, remaining quantity, and all log-derived statistics. The API and
-employee UI are implemented locally but **must not be deployed** until
-`server/migrations/2026-09-26-production-log-edit-delete.sql` is applied to the
-live DB and the new flow is verified. Weight placeholders contain units only,
-without «مثلاً».
+task status, remaining quantity, and all log-derived statistics. The user
+confirmed applying `server/migrations/2026-09-26-production-log-edit-delete.sql`;
+the API and both app builds are deployed. Live read-only checks confirmed the
+current bundles and HTTP 401 on unauthenticated mutation routes. Authenticated
+edit/delete/clear and recalculated statistics still need a real-account test.
+Weight placeholders contain units only, without «مثلاً».
 
 
 - [ ] Test the full workflow: `Existing Order Item -> Assign Employee -> Employee Produces -> Production Log -> Statistics`.
