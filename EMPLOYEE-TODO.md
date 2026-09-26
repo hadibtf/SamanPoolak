@@ -205,6 +205,7 @@ TODO's acceptance criteria can be marked complete.
 - [x] Add manager editing of an assignment's quantity, rejecting any reduction below already logged production or increase beyond order capacity.
 - [x] When a new assignment exceeds free capacity, offer a confirmation to transfer the deficit from a selected earlier employee's unproduced quantity; never rewrite historical logs.
 - [x] Require the employee's measured 10-piece weight in kilograms before the first production log for a task; store grams on the task and a calculated weight snapshot on each log.
+- [x] Fix the employee task date picker so an earlier Jalali day can be selected and sent unchanged for delayed production logging.
 - [ ] Apply `server/migrations/2026-09-26-production-weight.sql` to the live database, then deploy API, platform, and employee builds and verify both flows live. These changes are intentionally not deployed before the migration.
 
 

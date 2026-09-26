@@ -8,6 +8,12 @@ export const productionFa = (value) => Number(value || 0).toLocaleString('fa-IR'
 export const productionFaYear = (value) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
 export const productionStatusLabel = (status) => ({ ASSIGNED: 'تخصیص داده شده', IN_PROGRESS: 'در حال تولید', COMPLETED: 'تکمیل شده' }[status] || status);
 
+// Use numeric DateObject fields rather than locale-dependent format() output.
+export function productionDateKey(date) {
+  if (!date?.isValid) return '';
+  return `${date.year}${String(date.month.number).padStart(2, '0')}${String(date.day).padStart(2, '0')}`;
+}
+
 export function currentProductionMonth() {
   const date = new DateObject({ calendar: persian, locale: persian_fa });
   return { year: Math.min(1499, Math.max(1405, date.year)), month: date.month.number };

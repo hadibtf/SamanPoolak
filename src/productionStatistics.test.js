@@ -1,4 +1,7 @@
-import { productionMonthDays, productionFaYear } from './productionStatistics';
+import DateObject from 'react-date-object';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
+import { productionMonthDays, productionFaYear, productionDateKey } from './productionStatistics';
 
 test('every supported Jalali month has all valid dates and zero-filled days', () => {
   for (let year = 1405; year <= 1499; year++) {
@@ -28,4 +31,10 @@ test('Esfand leap years match the server date validator throughout 1405–1499',
   const actual = Array.from({ length: 95 }, (_, index) => index + 1405)
     .filter((year) => productionMonthDays(year, 12).length === 30);
   expect(actual).toEqual(leapYears);
+});
+
+test('a past day selected in the Jalali picker keeps its exact API date', () => {
+  const selected = new DateObject({ calendar: persian, locale: persian_fa, year: 1405, month: 7, day: 3 });
+  expect(productionDateKey(selected)).toBe('14050703');
+  expect(productionDateKey(null)).toBe('');
 });

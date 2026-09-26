@@ -5,9 +5,10 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import { computeWeights } from '../db';
 import { productionApi, ApiError } from '../api/client';
+import { productionDateKey } from '../productionStatistics';
 import './EmployeeTasks.css';
 
-const today = () => new DateObject({ calendar: persian, locale: persian_fa }).format('YYYYMMDD');
+const today = () => productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
 const fa = (value) => Number(value || 0).toLocaleString('fa-IR');
 const stamp = (value) => value ? new Date(value).toLocaleString('fa-IR') : '';
 const key = () => window.crypto?.randomUUID?.() || `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
@@ -26,6 +27,10 @@ export default function EmployeeTasks() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const selected = useMemo(() => tasks.find((task) => task.id === selectedId) || tasks[0] || null, [tasks, selectedId]);
+  const pickerDate = useMemo(() => /^\d{8}$/.test(productionDate) ? new DateObject({
+    calendar: persian, locale: persian_fa,
+    year: Number(productionDate.slice(0, 4)), month: Number(productionDate.slice(4, 6)), day: Number(productionDate.slice(6, 8)),
+  }) : '', [productionDate]);
 
   const loadTasks = useCallback(async () => {
     setTasksLoading(true);
@@ -80,7 +85,7 @@ export default function EmployeeTasks() {
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
       <div className="task-specs"><span>تعداد وظیفه: <b>{fa(selected.requiredQuantity)}</b></span><span>باقی‌مانده: <b>{fa(remaining)}</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
       {(selected.thickness || selected.diameter || selected.hardeningIntensity || selected.description) && <p className="task-description">ابعاد: {selected.thickness || '—'} × {selected.diameter || '—'} میلی‌متر {selected.isHardened ? `• سخت‌کاری ${selected.hardeningIntensity || ''}` : ''}<br />{selected.description}</p>}
-      {remaining > 0 && <form onSubmit={submit} className="production-form"><h3>ثبت تولید</h3>{!selected.weightOf10 && <div className="weight-first"><label htmlFor="weight-of-10">ابتدا ۱۰ عدد را وزن کنید و وزن آن‌ها را به کیلوگرم وارد کنید</label><input id="weight-of-10" value={weightOf10Kg} onChange={(e) => setWeightOf10Kg(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="مثلاً ۰٫۳ یا ۱٫۵ کیلوگرم" /><small>این اندازه‌گیری برای محاسبه وزن تمام ثبت‌های همین وظیفه استفاده می‌شود.</small></div>}<input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="تعداد تولیدشده" /><JalaliDatePicker value={productionDate} onChange={(date) => setProductionDate(date?.format?.('YYYYMMDD') || today())} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" /><button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>{error && <p className="task-error">{error}</p>}</form>}
+      {remaining > 0 && <form onSubmit={submit} className="production-form"><h3>ثبت تولید</h3>{!selected.weightOf10 && <div className="weight-first"><label htmlFor="weight-of-10">ابتدا ۱۰ عدد را وزن کنید و وزن آن‌ها را به کیلوگرم وارد کنید</label><input id="weight-of-10" value={weightOf10Kg} onChange={(e) => setWeightOf10Kg(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="مثلاً ۰٫۳ یا ۱٫۵ کیلوگرم" /><small>این اندازه‌گیری برای محاسبه وزن تمام ثبت‌های همین وظیفه استفاده می‌شود.</small></div>}<input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="تعداد تولیدشده" /><JalaliDatePicker value={pickerDate} onChange={(date) => setProductionDate(productionDateKey(date))} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" /><button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>{error && <p className="task-error">{error}</p>}</form>}
       <div className="task-logs"><h3>سوابق ثبت تولید</h3>{logs.length ? logs.map((log) => <div key={log.id}><b>{fa(log.quantity)} عدد</b><span>{fa(Number(log.totalWeightGrams || 0) / 1000)} کیلوگرم</span><span>{log.productionDate.slice(0,4)}/{log.productionDate.slice(4,6)}/{log.productionDate.slice(6,8)}</span><small>{stamp(log.createdAt)}</small></div>) : <p>هنوز تولیدی ثبت نشده است.</p>}</div>
     </section>}
   </div>;
