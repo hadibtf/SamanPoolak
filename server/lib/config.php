@@ -5,7 +5,8 @@ function config($key = null, $default = null)
 {
     static $cfg = null;
     if ($cfg === null) {
-        $file = dirname(__DIR__) . '/config.php';
+        $configFile = getenv('SAMAN_LOCAL_DEV') === '1' ? 'config.local.php' : 'config.php';
+        $file = dirname(__DIR__) . '/' . $configFile;
         if (!file_exists($file)) {
             http_response_code(500);
             header('Content-Type: application/json; charset=utf-8');

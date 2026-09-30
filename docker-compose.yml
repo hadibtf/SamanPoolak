@@ -1,0 +1,34 @@
+services:
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: samanpoolak_dev
+      MYSQL_USER: samanpoolak_local
+      MYSQL_PASSWORD: local-dev-only
+      MYSQL_ROOT_PASSWORD: local-root-only
+    volumes:
+      - samanpoolak-local-db:/var/lib/mysql
+      - ./server/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-plocal-root-only"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.local
+    environment:
+      SAMAN_LOCAL_DEV: "1"
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./server:/var/www/html
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "/var/www/html", "/var/www/html/router.local.php"]
+
+volumes:
+  samanpoolak-local-db:

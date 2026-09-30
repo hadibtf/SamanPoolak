@@ -51,7 +51,7 @@ team of users on different devices all see the same live data.
 | Auth | Per-user bcrypt + server-side bearer tokens |
 | Jalali dates | `react-multi-date-picker` + `react-date-object` |
 | PDF | `jspdf` + `html2canvas` (DOM screenshot → PDF) |
-| Styling | Plain CSS (global + per-page), CSS variables, glassmorphism, dark theme |
+| Styling | CSS Modules + deliberate global CSS, CSS variables, dark theme |
 | Font / icons | Vazirmatn (bundled) / Font Awesome |
 
 No TypeScript, no Redux/Zustand, no CSS framework. Cross-component data flows
@@ -59,7 +59,14 @@ through the Dexie mirror via live queries.
 
 ---
 
-## Getting started (frontend)
+## Local development
+
+For a fresh computer, follow the complete [local development guide](docs/LOCAL-DEVELOPMENT.md).
+It covers prerequisites, Docker setup, local admin creation, daily commands,
+database persistence and reset, and troubleshooting. The local API and database
+are isolated from production.
+
+## Getting started (frontend only)
 
 ```bash
 npm install
@@ -111,7 +118,7 @@ src/
 ├── utils/image.js            # client-side image compression → Base64
 ├── components/               # BottomNav, MarkingsManager
 └── pages/                    # HumanResources (+ payroll tabs), Management (+ orders/inquiries),
-                              #   SettingsInfo (+ People), Expenses, Login (+ matching .css)
+                              #   SettingsInfo (+ People), Expenses, Login (+ CSS Modules)
 server/                       # PHP API (see server/DOC.md, server/DEPLOY.md)
 landing/                      # standalone static marketing site (samanpoolak.ir) — see landing/README.md
 jobs/                         # standalone careers site (jobs.samanpoolak.ir)

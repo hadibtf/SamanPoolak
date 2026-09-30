@@ -25,6 +25,7 @@ PROMPT.md
 
 # backend secrets (never commit real credentials)
 /server/config.php
+/server/config.local.php
 
 # one-off deploy artifact
 /server-deploy.zip

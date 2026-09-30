@@ -22,6 +22,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "dev:platform": "node scripts/dev.mjs platform",
+    "dev:employee": "node scripts/dev.mjs employee",
+    "local:up": "node scripts/local-compose.mjs up",
+    "local:down": "node scripts/local-compose.mjs down",
+    "local:status": "node scripts/local-compose.mjs status",
+    "local:reset": "node scripts/local-compose.mjs reset",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
