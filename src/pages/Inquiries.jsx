@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { inquiriesApi, ApiError } from '../api/client';
-import './Inquiries.css';
+import styles from './Inquiries.module.css';
 
 const sourceLabel = {
   direct: 'ثبت مستقیم',
@@ -76,7 +76,7 @@ const Inquiries = () => {
   };
 
   return (
-    <div className="inquiries-page">
+    <div className={styles.root}>
       <div className="inquiries-header">
         <div>
           <h1>درخواست‌ها</h1>

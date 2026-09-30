@@ -6,7 +6,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
 import { ordersApi, ApiError } from '../api/client';
-import './Management.css';
+import styles from './Management.module.css';
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ const OrderList = () => {
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
   return (
-    <div className="order-list">
+    <div className={`${styles.root} order-list`}>
       <div className="glass-card filter-card">
         <div className="filter-grid">
           <div className="form-group">

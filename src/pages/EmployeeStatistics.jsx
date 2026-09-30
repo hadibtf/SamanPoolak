@@ -4,7 +4,7 @@ import ProductionMonthControls from '../components/ProductionMonthControls';
 import ProductionDayDetails from '../components/ProductionDayDetails';
 import { PRODUCTION_MONTHS, currentProductionMonth, productionFa as fa, productionFaYear as faYear, productionMonthDays } from '../productionStatistics';
 import { productionApi, ApiError } from '../api/client';
-import './EmployeeStatistics.css';
+import styles from './EmployeeStatistics.module.css';
 
 export default function EmployeeStatistics() {
   const [{ year: initialYear, month: initialMonth }] = useState(currentProductionMonth);
@@ -34,7 +34,7 @@ export default function EmployeeStatistics() {
     finally { setDetailsLoading(false); }
   };
 
-  return <div className="employee-statistics">
+  return <div className={styles.root}>
     <header><div><span>گزارش عملکرد</span><h1>آمار تولید ماهانه</h1></div>{stats && <strong>{fa(stats.total)} <small>عدد</small></strong>}</header>
     <ProductionMonthControls year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} onView={loadMonth} loading={loading} />
     {error && <div className="statistics-message error">{error}</div>}

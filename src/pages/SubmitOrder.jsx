@@ -9,7 +9,10 @@ import { db, jalaliDateKey, yymmPrefix, getCustomerMarkings, newUid } from '../d
 import { ordersApi, ApiError } from '../api/client';
 import { useSettings } from '../context/SettingsContext';
 import { MATERIAL_OPTIONS, PLATING_OPTIONS, ORDER_STATES } from '../constants';
-import './Management.css';
+import styles from './Management.module.css';
+
+const managementRootClass = styles.root;
+void styles;
 
 const blankItem = () => ({
   uid: newUid(),
@@ -407,7 +410,7 @@ const SubmitOrder = () => {
     : dateKey ? `${yymmPrefix(dateKey)}…` : 'پس از انتخاب تاریخ';
 
   return (
-    <div className="submit-order">
+    <div className={`${managementRootClass} submit-order`}>
       {isEdit && (
         <div className="page-back">
           <button type="button" className="back-btn" onClick={() => navigate(-1)}>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ApiError, jobApplicationsApi } from '../api/client';
-import './JobApplications.css';
+import styles from './JobApplications.module.css';
 
 const STATUSES = {
   new: 'بررسی نشده',
@@ -196,7 +196,7 @@ const JobApplications = () => {
   };
 
   return (
-    <div className="jobs-admin-page">
+    <div className={styles.root}>
       <div className="jobs-admin-header">
         <div>
           <h1>درخواست‌های استخدام</h1>

@@ -11,7 +11,7 @@ import PayrollAttendance from './PayrollAttendance';
 import PayrollSettings from './PayrollSettings';
 import JobApplications from './JobApplications';
 import { usePayrollSettings } from '../payrollSettings';
-import "./HumanResources.css";
+import styles from './HumanResources.module.css';
 
 const formatNum = (num) => {
   return Math.round(num).toLocaleString('fa-IR');
@@ -290,7 +290,7 @@ const HumanResources = () => {
   };
 
   return (
-    <div className={`payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''}`}>
+    <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''}`}>
       <div className="payroll-tabs">
         <div className="segmented-control">
           <button
@@ -346,7 +346,9 @@ const HumanResources = () => {
                   value={searchFullName}
                   onChange={(e) => { setSearchFullName(e.target.value); setShowDropdown(true); }}
                   placeholder="نام یا نام خانوادگی را وارد کنید..."
-                  style={{ width: '100%' }}
+                  className={styles.searchInput}
+                  type="search"
+                  dir="rtl"
                 />
               </div>
 

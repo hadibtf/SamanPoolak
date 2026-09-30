@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import './FloatingNav.css';
+import styles from './FloatingNav.module.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const BottomNav = () => {
@@ -15,12 +15,12 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="floating-nav" style={{ '--nav-count': navItems.length, '--nav-max-width': '760px' }}>
+    <nav className={styles['floating-nav']} style={{ '--nav-count': navItems.length, '--nav-max-width': '760px' }}>
       {navItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
-          className={({ isActive }) => `floating-nav-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) => `${styles['floating-nav-item']} ${isActive ? styles.active : ''}`}
           title={item.label}
         >
           <i className={`fa-solid ${item.icon}`}></i>

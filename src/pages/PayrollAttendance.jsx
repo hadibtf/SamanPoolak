@@ -11,7 +11,7 @@ import {
 import { useHolidays } from '../holidays';
 import { usePayrollSettings, hourlyAdjustRate } from '../payrollSettings';
 import { useSettings } from '../context/SettingsContext';
-import './PayrollAttendance.css';
+import styles from './PayrollAttendance.module.css';
 
 const DOUBLE_SCAN_MIN = 10;
 
@@ -213,7 +213,7 @@ const PayrollAttendance = () => {
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
   return (
-    <div className="attendance-tab">
+    <div className={styles.root}>
       <div className="card att-import-card">
         <div className="att-import-row">
           <div>

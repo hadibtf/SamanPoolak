@@ -8,7 +8,7 @@ import { db, jalaliDateKey } from '../db';
 import { expensesApi, ApiError } from '../api/client';
 import { useSettings } from '../context/SettingsContext';
 import { EXPENSE_CATEGORIES } from '../constants';
-import './Expenses.css';
+import styles from './Expenses.module.css';
 
 const CUSTOM = '__custom__';
 
@@ -159,39 +159,39 @@ const Expenses = () => {
   const hasFilters = fText || fCategory !== 'ALL' || fFrom || fTo;
 
   return (
-    <div className="expenses-page">
-      <div className="expenses-header">
+    <div className={styles['expenses-page']}>
+      <div className={styles['expenses-header']}>
         <h1>هزینه‌ها</h1>
         <button className="add-btn" onClick={() => openModal()}>
           <i className="fa-solid fa-plus"></i> افزودن هزینه
         </button>
       </div>
 
-      <div className="glass-card filter-card">
-        <div className="exp-filter-grid">
-          <div className="form-group">
+      <div className={`glass-card ${styles.filterCard}`}>
+        <div className={styles['exp-filter-grid']}>
+          <div className={styles.filterGroup}>
             <label>جستجو</label>
             <input value={fText} onChange={(e) => setFText(e.target.value)} placeholder="عنوان، طرف حساب..." />
           </div>
-          <div className="form-group">
+          <div className={styles.filterGroup}>
             <label>دسته</label>
             <select value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
               <option value="ALL">همه</option>
               {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <div className="form-group">
+          <div className={styles.filterGroup}>
             <label>از تاریخ</label>
             <JalaliDatePicker value={fFrom} onChange={setFFrom} calendar={persian} locale={persian_fa}
               weekDays={weekDays} placeholder="از تاریخ" calendarPosition="bottom-right" inputClass="rmdp-input" />
           </div>
-          <div className="form-group">
+          <div className={styles.filterGroup}>
             <label>تا تاریخ</label>
             <JalaliDatePicker value={fTo} onChange={setFTo} calendar={persian} locale={persian_fa}
               weekDays={weekDays} placeholder="تا تاریخ" calendarPosition="bottom-right" inputClass="rmdp-input" />
           </div>
         </div>
-        <div className="filter-footer">
+        <div className={styles.filterFooter}>
           <span className="result-count">{filtered.length.toLocaleString('fa-IR')} هزینه · جمع: {formatMoney(total)}</span>
           {hasFilters && (
             <button className="clear-btn" onClick={() => { setFText(''); setFCategory('ALL'); setFFrom(null); setFTo(null); }}>
@@ -201,7 +201,7 @@ const Expenses = () => {
         </div>
       </div>
 
-      <div className="expenses-list">
+      <div className={styles['expenses-list']}>
         {filtered.length === 0 ? (
           <div className="empty-state">
             <i className="fa-solid fa-wallet"></i>
@@ -209,21 +209,21 @@ const Expenses = () => {
           </div>
         ) : (
           filtered.map((e) => (
-            <div key={e.id} className="expense-card">
-              <div className="expense-main">
-                <div className="expense-top">
+            <div key={e.id} className={styles['expense-card']}>
+              <div className={styles['expense-main']}>
+                <div className={styles['expense-top']}>
                   <h3>{e.title}</h3>
-                  <span className="expense-amount">{formatMoney(e.amount)}</span>
+                  <span className={styles['expense-amount']}>{formatMoney(e.amount)}</span>
                 </div>
-                <div className="expense-meta">
+                <div className={styles['expense-meta']}>
                   {e.category && <span className="chip">{e.category}</span>}
                   <span><i className="fa-solid fa-calendar"></i> {formatDate(e.date)}</span>
                   {e.paidTo && <span><i className="fa-solid fa-user"></i> {e.paidTo}</span>}
                   {e.createdByName && <span><i className="fa-solid fa-user-pen"></i> {e.createdByName}</span>}
                 </div>
-                {e.description && <p className="expense-desc">{e.description}</p>}
+                {e.description && <p className={styles['expense-desc']}>{e.description}</p>}
               </div>
-              <div className="expense-actions">
+              <div className={styles['expense-actions']}>
                 <button className="icon-btn" title="ویرایش" onClick={() => openModal(e)}>
                   <i className="fa-solid fa-pen-to-square"></i>
                 </button>
@@ -237,11 +237,11 @@ const Expenses = () => {
       </div>
 
       {isOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(ev) => ev.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={closeModal}>
+          <div className={styles.modalContent} onClick={(ev) => ev.stopPropagation()}>
             <h2 style={{ marginBottom: '18px' }}>{editing ? 'ویرایش هزینه' : 'افزودن هزینه'}</h2>
             <form onSubmit={handleSubmit}>
-              <div className="form-grid">
+              <div className={styles.expenseFormGrid}>
                 <div className="form-group full-width">
                   <label>عنوان</label>
                   <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: خرید مواد اولیه" required />

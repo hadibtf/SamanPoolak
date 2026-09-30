@@ -17,7 +17,10 @@ import {
   PLATING_LABELS,
   INVOICE_PLATING_LABELS,
 } from '../constants';
-import './Management.css';
+import styles from './Management.module.css';
+
+const managementRootClass = styles.root;
+void styles;
 
 const fa = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('fa-IR'));
 // Raw Rial formatting — the invoice is always in Rial, never converted.
@@ -361,11 +364,11 @@ const OrderView = () => {
   };
 
   if (order === undefined) {
-    return <div className="order-view"><p className="hint-text">در حال بارگذاری...</p></div>;
+    return <div className={`${managementRootClass} order-view`}><p className="hint-text">در حال بارگذاری...</p></div>;
   }
   if (order === null) {
     return (
-      <div className="order-view">
+      <div className={`${managementRootClass} order-view`}>
         <div className="page-back">
           <button className="back-btn" onClick={() => navigate('/orders/list')}>
             <i className="fa-solid fa-chevron-right"></i> بازگشت
@@ -447,7 +450,7 @@ const OrderView = () => {
   };
 
   return (
-    <div className="order-view">
+    <div className={`${managementRootClass} order-view`}>
       <div className="page-back">
         <button className="back-btn" onClick={() => navigate('/orders/list')}>
           <i className="fa-solid fa-chevron-right"></i> بازگشت

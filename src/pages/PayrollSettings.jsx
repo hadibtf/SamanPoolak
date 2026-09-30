@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from '../payrollSettings';
-import './PayrollSettings.css';
+import styles from './PayrollSettings.module.css';
 
 // All amounts are Rial (canonical). Breaks/shift in minutes / HH:MM.
 const PayrollSettings = () => {
@@ -39,7 +39,7 @@ const PayrollSettings = () => {
   );
 
   return (
-    <form className="card payroll-settings" onSubmit={handleSave}>
+    <form className={`${styles.root} card`} onSubmit={handleSave}>
       <h2 className="ps-title">شیفت و تنفس</h2>
       <p className="ps-hint">
         شیفت کاری شامل ساعت شروع و پایان و زمان تنفس‌هاست. هر تنفسی که مقدارش

@@ -1,0 +1,46 @@
+.root {
+  padding: 16px;
+  padding-bottom: 100px;
+}
+
+.root :global(.header-section) { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.root :global(.header-section h1) { font-size: 24px; font-weight: 700; margin: 0; color: #1c1c1e; }
+.root :global(.people-list) { display: flex; flex-direction: column; gap: 12px; }
+.root :global(.person-card) { background: var(--glass-surface, rgba(255,255,255,.72)); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border, rgba(255,255,255,.6)); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 28px -10px rgba(0,0,0,.14); }
+.root :global(.person-info h3) { margin: 0 0 4px; font-size: 16px; color: #1c1c1e; }
+.root :global(.person-info p) { margin: 0; font-size: 13px; color: #8e8e93; }
+.root :global(.person-actions) { display: flex; gap: 12px; }
+.root :global(.modal-overlay) { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; justify-content: center; align-items: flex-end; z-index: 2000; }
+.root :global(.modal-content) { background: rgba(248,248,250,.92); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border-top: 1px solid rgba(255,255,255,.6); width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; padding: 24px; overflow-y: auto; animation: slideUp .3s ease-out; }
+.root :global(.form-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .root :global(.form-grid) { grid-template-columns: 1fr; } }
+.root :global(.form-group) { display: flex; flex-direction: column; gap: 6px; }
+.root :global(.form-group label) { font-size: 13px; font-weight: 600; color: #3a3a3c; }
+.root :global(.form-group input), .root :global(.form-group select), .root :global(.form-group textarea) { padding: 12px; border: 1px solid #e5e5ea; border-radius: 10px; font-size: 15px; background: #f2f2f7; outline: none; }
+.root :global(.form-group input:focus) { border-color: var(--active-color); }
+.root :global(.full-width) { grid-column: 1 / -1; }
+.root :global(.form-actions) { margin-top: 24px; display: flex; gap: 12px; }
+.root :global(.submit-btn) { flex: 2; background: var(--active-color); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; }
+.root :global(.cancel-btn) { flex: 1; background: #e5e5ea; color: #3a3a3c; border: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; }
+.root :global(.sync-badge) { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
+.root :global(.sync-badge.synced) { background: #34c759; color: white; }
+.root :global(.sync-badge.pending) { background: #ff9500; color: white; }
+.root :global(.category-tag) { font-size: 11px; background: #e5e5ea; padding: 2px 8px; border-radius: 10px; color: #3a3a3c; }
+.root :global(.muted) { color: #8e8e93; }
+.root :global(.hint-text) { font-size: 13px; color: #8e8e93; margin: 8px 0; }
+.root :global(.inline-error) { color: #ff3b30; font-size: 13px; margin: 10px 0; }
+.root :global(.marking-form) { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; }
+.root :global(.marking-form-fields) { flex: 1 1 220px; display: flex; flex-direction: column; gap: 12px; }
+.root :global(.marking-form .submit-btn) { flex-basis: 100%; }
+.root :global(.photo-upload) { position: relative; width: 80px; height: 80px; border-radius: 16px; border: 1px dashed rgba(0,0,0,.2); background: rgba(118,118,128,.08); display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+.root :global(.photo-upload > i) { font-size: 26px; color: #8e8e93; }
+.root :global(.photo-thumb) { width: 100%; height: 100%; object-fit: cover; }
+.root :global(.markings-grid) { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 12px; margin: 20px 0; }
+.root :global(.marking-tile) { position: relative; background: #f2f2f7; border-radius: 14px; overflow: hidden; border: 1px solid #e5e5ea; }
+.root :global(.marking-tile img), .root :global(.marking-tile-noimg) { width: 100%; height: 100px; object-fit: cover; display: block; }
+.root :global(.marking-tile-noimg) { display: flex; align-items: center; justify-content: center; font-size: 32px; color: #c7c7cc; background: #e5e5ea; }
+.root :global(.marking-tile-info) { padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.root :global(.marking-tile-info strong) { font-size: 12px; color: #1c1c1e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.root :global(.marking-tile-info span) { font-size: 11px; }
+.root :global(.marking-tile-del) { position: absolute; top: 6px; left: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; font-size: 12px; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

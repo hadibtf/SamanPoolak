@@ -7,7 +7,7 @@ import JalaliDatePicker from "../components/JalaliDatePicker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import MarkingsManager from '../components/MarkingsManager';
-import './People.css';
+import styles from './People.module.css';
 
 const People = () => {
   const { user } = useAuth();
@@ -156,7 +156,7 @@ const People = () => {
   };
 
   return (
-    <div className="people-container">
+    <div className={`${styles.root} people-container`}>
       <div className="header-section">
         <h1>لیست افراد</h1>
         <button className="add-btn" onClick={() => handleOpenModal()}>

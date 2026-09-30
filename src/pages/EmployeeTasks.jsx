@@ -6,7 +6,7 @@ import JalaliDatePicker from '../components/JalaliDatePicker';
 import { computeWeights } from '../db';
 import { productionApi, ApiError } from '../api/client';
 import { productionDateKey, productionPiecesFromWeight } from '../productionStatistics';
-import './EmployeeTasks.css';
+import styles from './EmployeeTasks.module.css';
 
 const today = () => productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
 const fa = (value) => Number(value || 0).toLocaleString('fa-IR');
@@ -141,10 +141,10 @@ export default function EmployeeTasks() {
     finally { setMutatingLog(false); }
   };
 
-  if (tasksLoading) return <div className="employee-tasks empty-state"><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
-  if (tasksError) return <div className="employee-tasks empty-state"><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
-  if (!tasks.length) return <div className="employee-tasks empty-state"><i className="fa-solid fa-list-check" /><p>موردی در لیست تولید شما نیست.</p></div>;
-  return <div className="employee-tasks">
+  if (tasksLoading) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
+  if (tasksError) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
+  if (!tasks.length) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-list-check" /><p>موردی در لیست تولید شما نیست.</p></div>;
+  return <div className={styles.root}>
     <header><h1>لیست تولید</h1><span>{fa(tasks.length)} مورد</span></header>
     <div className="task-list">{tasks.map((task) => <section className={`production-item glass-card ${task.id === selectedId ? 'open' : ''}`} key={task.id}>
       <button type="button" className="production-item-trigger" aria-expanded={task.id === selectedId} disabled={busy || savingWeight || mutatingLog} onClick={() => { setSelectedId((current) => current === task.id ? null : task.id); setLogs([]); setWeightKg(''); setEditingLogId(null); setError(''); }}>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import './Management.css';
+import styles from './Management.module.css';
 
 const Management = () => {
   return (
-    <div className="orders-container">
+    <div className={`${styles.root} orders-container`}>
       <div className="orders-header">
         <h1>مدیریت</h1>
         <div className="segmented-control">

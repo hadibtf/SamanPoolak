@@ -5,7 +5,7 @@ import { usersApi, adminApi, holidaysApi, ApiError } from '../api/client';
 import { loadedHolidayYears, holidayStatus } from '../holidays';
 import { requestSync } from '../syncBus';
 import People from './People';
-import './SettingsInfo.css';
+import styles from './SettingsInfo.module.css';
 
 const toFaDigits = (val) => String(val ?? '').replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
 
@@ -181,7 +181,7 @@ const SettingsInfo = () => {
   };
 
   return (
-    <div className={`settings-page ${activeTab === 'people' ? 'settings-page-wide' : ''}`}>
+    <div className={`${styles.root} settings-page ${activeTab === 'people' ? 'settings-page-wide' : ''}`}>
       <h1>تنظیمات و اطلاعات</h1>
 
       <div className="settings-tabs" role="tablist" aria-label="بخش‌های تنظیمات">

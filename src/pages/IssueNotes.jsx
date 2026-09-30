@@ -8,7 +8,7 @@ import { jsPDF } from 'jspdf';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import { db, jalaliDateKey } from '../db';
 import { issueNotesApi } from '../api/client';
-import './IssueNotes.css';
+import styles from './IssueNotes.module.css';
 
 const itemBlank = () => ({ productName: '', quantity: '', weight: '', quantityUnit: 'عدد', packaging: '', description: '' });
 const currentDate = () => new DateObject({ calendar: persian, locale: persian_fa });
@@ -79,7 +79,7 @@ export default function IssueNotes() {
     return () => { window.removeEventListener('resize', fitSlip); window.removeEventListener('orientationchange', fitSlip); document.removeEventListener('gesturestart', stopGesture); document.removeEventListener('gesturechange', stopGesture); };
   }, [open]);
 
-  return <div className="issue-notes">
+  return <div className={styles.root}>
     <div className="glass-card"><h2>{editing ? 'ویرایش برگه خروج' : 'ثبت برگه خروج'}</h2><form onSubmit={save}>
       <div className="issue-grid issue-header-grid"><label>تاریخ<JalaliDatePicker value={date} onChange={setDate} calendar={persian} locale={persian_fa} inputClass="rmdp-input" /></label><label>ساعت<input className="issue-time-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label><label>نام کامل تحویل‌گیرنده<input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="نام و نام خانوادگی" /></label><label>مشتری / شرکت مقصد<input required value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="نام شخص یا شرکت" /></label></div>
       <h3 className="items-heading">اقلام خروجی</h3>{items.map((item, index) => <section className="item-row" key={index}><div className="item-editor-head"><span className="item-badge">کالا {(index + 1).toLocaleString('fa-IR')}</span>{items.length > 1 && <button type="button" className="link-btn danger" onClick={() => setItems(items.filter((_, i) => i !== index))}><i className="fa-solid fa-trash" /> حذف</button>}</div><div className="issue-grid"><label>شرح کالا<input required value={item.productName} onChange={(e) => updateItem(index, 'productName', e.target.value)} /></label><label>تعداد<input type="number" min="0" step="any" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', e.target.value)} /></label><label>وزن کیلوگرم<input type="number" min="0" step="any" value={item.weight} onChange={(e) => updateItem(index, 'weight', e.target.value)} /></label><label>واحد<input value={item.quantityUnit} onChange={(e) => updateItem(index, 'quantityUnit', e.target.value)} /></label><label>بسته‌بندی<input value={item.packaging} onChange={(e) => updateItem(index, 'packaging', e.target.value)} /></label><label>توضیحات<input value={item.description} onChange={(e) => updateItem(index, 'description', e.target.value)} /></label></div></section>)}

@@ -4,8 +4,8 @@ import ProductionMonthControls from '../components/ProductionMonthControls';
 import ProductionDayDetails from '../components/ProductionDayDetails';
 import { productionApi, ApiError } from '../api/client';
 import { PRODUCTION_MONTHS, currentProductionMonth, productionFa as fa, productionFaYear as faYear, productionMonthDays } from '../productionStatistics';
-import './EmployeeStatistics.css';
-import './ManagementStatistics.css';
+import employeeStatisticsStyles from './EmployeeStatistics.module.css';
+import styles from './ManagementStatistics.module.css';
 
 export default function ManagementStatistics() {
   const [{ year: initialYear, month: initialMonth }] = useState(currentProductionMonth);
@@ -56,7 +56,7 @@ export default function ManagementStatistics() {
     finally { setDetailsLoading(false); }
   };
 
-  return <div className="employee-statistics management-statistics">
+  return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
     <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <strong>{fa(stats.total)} <small>عدد</small></strong>}</header>
     <div className="statistics-mode" role="group" aria-label="نمایش آمار">
       <button type="button" className={mode === 'all' ? 'active' : ''} onClick={() => changeMode('all')}>همه کارکنان</button>

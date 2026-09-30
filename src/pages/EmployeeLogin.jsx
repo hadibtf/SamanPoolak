@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
-import './Login.css';
+import styles from './Login.module.css';
 
 const EmployeeLogin = () => {
   const { login } = useAuth();
@@ -32,7 +32,7 @@ const EmployeeLogin = () => {
   };
 
   return (
-    <div className="login-screen">
+    <div className={styles.root}>
       <form className="login-card glass-card" onSubmit={handleSubmit}>
         <div className="login-brand">
           <img className="login-logo-img" src={`${process.env.PUBLIC_URL}/logo192.png`} alt="سامان پولک" />

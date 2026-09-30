@@ -1,0 +1,80 @@
+/* ===== Attendance / payroll settings tab ===== */
+:local(.root) :global(.ps-title) {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1c1c1e;
+  margin: 22px 0 6px;
+  text-align: right;
+}
+:local(.root) :global(.ps-title):first-child { margin-top: 0; }
+
+:local(.root) :global(.ps-hint) {
+  font-size: 12.5px;
+  color: #8e8e93;
+  margin: 0 0 14px;
+  line-height: 1.9;
+}
+
+:local(.root) :global(.grid-form) { margin-bottom: 6px; }
+
+:local(.root) :global(.form-group) {
+  min-width: 0;
+}
+
+:local(.root) :global(.form-group) > input[type="time"],
+:local(.root) :global(.form-group) > input[type="number"] {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d7dfe9;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  color: #1c1c1e;
+  font: inherit;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+:local(.root) :global(.form-group) > input[type="time"] {
+  direction: ltr;
+  text-align: left;
+}
+
+:local(.root) :global(.form-group) > input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="dark"] :local(.root) :global(.form-group) > input[type="time"],
+[data-theme="dark"] :local(.root) :global(.form-group) > input[type="number"] {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f5f7;
+  color-scheme: dark;
+}
+
+:local(.root) :global(.ps-actions) {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+:local(.root) :global(.btn-calc) { flex: 1; }
+
+:local(.root) :global(.ps-reset) {
+  border: none;
+  background: rgba(118, 118, 128, 0.14);
+  color: #3a3a3c;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}

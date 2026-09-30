@@ -1,4 +1,4 @@
-.payroll-container {
+:local(.root) {
     width: 100%;
     max-width: 750px;
     margin: 40px auto;
@@ -7,15 +7,15 @@
 }
 
 /* ===== Tabs (محاسبه حقوق / حضور و غیاب) — iOS segmented control ===== */
-.payroll-container-wide {
+:local(.root):global(.payroll-container-wide) {
     max-width: 1160px;
 }
 
-.payroll-tabs {
+:local(.root) :global(.payroll-tabs) {
     margin-bottom: 22px;
 }
 
-.payroll-tabs .segmented-control {
+:local(.root) :global(.payroll-tabs) :global(.segmented-control) {
     display: flex;
     gap: 4px;
     padding: 4px;
@@ -27,7 +27,7 @@
     margin: 0 auto;
 }
 
-.payroll-tabs .segment {
+:local(.root) :global(.payroll-tabs) :global(.segment) {
     flex: 1;
     text-align: center;
     padding: 9px 12px;
@@ -42,13 +42,13 @@
     transition: all 0.25s ease;
 }
 
-.payroll-tabs .segment.active {
+:local(.root) :global(.payroll-tabs) :global(.segment):global(.active) {
     background: rgba(255, 255, 255, 0.95);
     color: var(--active-color);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-.card {
+:local(.root) :global(.card) {
     background: var(--glass-surface, rgba(255, 255, 255, 0.72));
     backdrop-filter: blur(30px) saturate(180%);
     -webkit-backdrop-filter: blur(30px) saturate(180%);
@@ -58,14 +58,14 @@
     box-shadow: 0 12px 40px -12px rgba(0,0,0,0.18);
 }
 
-h1 {
+:local(.root) h1 {
     font-size: 22px;
     color: #1e293b;
     margin-bottom: 25px;
     text-align: center;
 }
 
-.grid-form {
+:local(.root) :global(.grid-form) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
@@ -73,30 +73,58 @@ h1 {
 }
 
 @media(max-width: 600px) {
-    .grid-form { grid-template-columns: 1fr; }
+    :local(.root) :global(.grid-form) { grid-template-columns: 1fr; }
 }
 
-.form-group {
+:local(.root) :global(.form-group) {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.span-2 {
+:local(.root) :global(.span-2) {
     grid-column: span 2;
 }
 
 @media(max-width: 600px) {
-    .span-2 { grid-column: span 1; }
+    :local(.root) :global(.span-2) { grid-column: span 1; }
 }
 
-label {
+:local(.root) label {
     font-size: 14px;
     font-weight: 600;
     color: #64748b;
 }
 
-input[type="number"], .rmdp-input {
+:local(.root) .searchInput {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    outline: none;
+    background: #fcfcfc;
+    color: #1e293b;
+    font: inherit;
+    font-size: 15px;
+    text-align: right;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+:local(.root) .searchInput:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+:local(.root) .searchInput::placeholder {
+    color: #8e8e93;
+    opacity: 1;
+}
+
+:local(.root) input[type="number"],:local(.root) :global(.rmdp-input) {
     width: 100% !important;
     padding: 12px 15px !important;
     border-radius: 12px !important;
@@ -108,12 +136,12 @@ input[type="number"], .rmdp-input {
     height: auto !important;
 }
 
-input:focus, .rmdp-input:focus {
+:local(.root) input:focus,:local(.root) :global(.rmdp-input):focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
 }
 
-.checkbox-group {
+:local(.root) :global(.checkbox-group) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -127,24 +155,24 @@ input:focus, .rmdp-input:focus {
     height: 100%;
 }
 
-.checkbox-group:hover {
+:local(.root) :global(.checkbox-group):hover {
     background: #f1f5f9;
 }
 
-.checkbox-group.no-ins {
+:local(.root) :global(.checkbox-group):global(.no-ins) {
     background: #fef2f2;
     border-color: #fca5a5;
     color: #b91c1c;
     font-weight: bold;
 }
 
-.checkbox-group input {
+:local(.root) :global(.checkbox-group) input {
     width: 18px;
     height: 18px;
     cursor: pointer;
 }
 
-.days-msg {
+:local(.root) :global(.days-msg) {
     font-size: 14px;
     color: #10b981;
     margin-top: 5px;
@@ -155,7 +183,7 @@ input:focus, .rmdp-input:focus {
     border: 1px solid #a7f3d0;
 }
 
-.btn-calc {
+:local(.root) :global(.btn-calc) {
     width: 100%;
     padding: 14px;
     border: none;
@@ -169,12 +197,12 @@ input:focus, .rmdp-input:focus {
     margin-bottom: 20px;
 }
 
-.btn-calc:hover {
+:local(.root) :global(.btn-calc):hover {
     background: #2563eb;
     transform: translateY(-1px);
 }
 
-.btn-currency {
+:local(.root) :global(.btn-currency) {
     width: 100%;
     padding: 14px;
     border: 2px solid #3b82f6;
@@ -188,11 +216,11 @@ input:focus, .rmdp-input:focus {
     margin-top: 15px;
 }
 
-.btn-currency:hover {
+:local(.root) :global(.btn-currency):hover {
     background: #eff6ff;
 }
 
-.btn-export {
+:local(.root) :global(.btn-export) {
     width: 100%;
     padding: 14px;
     border: none;
@@ -206,30 +234,30 @@ input:focus, .rmdp-input:focus {
     margin-top: 12px;
 }
 
-.btn-export:hover {
+:local(.root) :global(.btn-export):hover {
     background: #059669;
     transform: translateY(-1px);
 }
 
 /* Base wage box */
-.box-wage { background: #eef2ff; border-color: #c7d2fe; }
-.box-wage h3 { color: #4338ca; }
+:local(.root) :global(.box-wage) { background: #eef2ff; border-color: #c7d2fe; }
+:local(.root) :global(.box-wage) h3 { color: #4338ca; }
 
 /* Non-insured benefits box */
-.box-extra { background: #fffbeb; border-color: #fde68a; }
-.box-extra h3 { color: #b45309; }
+:local(.root) :global(.box-extra) { background: #fffbeb; border-color: #fde68a; }
+:local(.root) :global(.box-extra) h3 { color: #b45309; }
 
 /* ===================== A5 landscape salary slip ===================== */
 
 /* Keep the slip rendered but out of view; html2canvas captures it. */
-.slip-offscreen {
+:local(.root) :global(.slip-offscreen) {
     position: fixed;
     top: 0;
     left: -10000px;
     pointer-events: none;
 }
 
-.salary-slip {
+:local(.root) :global(.salary-slip) {
     width: 1000px;
     /* Auto height (with an A5-ratio floor) so footer + signatures are never
        clipped; the export contain-fits the capture into the A5 page. */
@@ -245,7 +273,7 @@ input:focus, .rmdp-input:focus {
     flex-direction: column;
 }
 
-.slip-header {
+:local(.root) :global(.slip-header) {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -254,41 +282,41 @@ input:focus, .rmdp-input:focus {
     margin-bottom: 20px;
 }
 
-.slip-title h2 {
+:local(.root) :global(.slip-title) h2 {
     font-size: 30px;
     margin: 0 0 4px;
     color: #1e40af;
 }
 
-.slip-title span {
+:local(.root) :global(.slip-title) span {
     font-size: 16px;
     color: #64748b;
 }
 
-.slip-emp {
+:local(.root) :global(.slip-emp) {
     text-align: left;
     font-size: 16px;
     line-height: 1.9;
 }
 
-.slip-emp span { color: #64748b; }
-.slip-emp strong { color: #0f172a; }
+:local(.root) :global(.slip-emp) span { color: #64748b; }
+:local(.root) :global(.slip-emp) strong { color: #0f172a; }
 
-.slip-grid {
+:local(.root) :global(.slip-grid) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     flex: 1;
 }
 
-.slip-col {
+:local(.root) :global(.slip-col) {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     padding: 14px 16px;
 }
 
-.slip-col-title {
+:local(.root) :global(.slip-col-title) {
     font-size: 16px;
     font-weight: 700;
     color: #1e40af;
@@ -297,9 +325,9 @@ input:focus, .rmdp-input:focus {
     border-bottom: 1px solid #e2e8f0;
 }
 
-.slip-col-title.mt { margin-top: 16px; }
+:local(.root) :global(.slip-col-title):global(.mt) { margin-top: 16px; }
 
-.slip-row {
+:local(.root) :global(.slip-row) {
     display: flex;
     justify-content: space-between;
     font-size: 15px;
@@ -307,16 +335,16 @@ input:focus, .rmdp-input:focus {
     border-bottom: 1px dashed #e8eef5;
 }
 
-.slip-row:last-child { border-bottom: none; }
+:local(.root) :global(.slip-row):last-child { border-bottom: none; }
 
 /* Keep parenthesised percentages (e.g. (۲۰٪)) correctly oriented in the
    rasterised slip, where html2canvas would otherwise mirror the brackets. */
-.slip-row span[dir="ltr"] {
+:local(.root) :global(.slip-row) span[dir="ltr"] {
     unicode-bidi: isolate;
     direction: ltr;
 }
 
-.slip-row.sub {
+:local(.root) :global(.slip-row):global(.sub) {
     margin-top: 6px;
     font-weight: 700;
     color: #1e40af;
@@ -325,7 +353,7 @@ input:focus, .rmdp-input:focus {
     padding-top: 8px;
 }
 
-.slip-net {
+:local(.root) :global(.slip-net) {
     margin-top: 18px;
     background: #3b82f6;
     color: #fff;
@@ -336,7 +364,7 @@ input:focus, .rmdp-input:focus {
     border-radius: 12px;
 }
 
-.slip-footer-text {
+:local(.root) :global(.slip-footer-text) {
     margin-top: 18px;
     font-size: 15px;
     line-height: 2;
@@ -344,7 +372,7 @@ input:focus, .rmdp-input:focus {
     color: #334155;
 }
 
-.slip-signatures {
+:local(.root) :global(.slip-signatures) {
     display: flex;
     justify-content: space-between;
     gap: 24px;
@@ -352,7 +380,7 @@ input:focus, .rmdp-input:focus {
     padding-bottom: 6px;
 }
 
-.sign-box {
+:local(.root) :global(.sign-box) {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -360,19 +388,19 @@ input:focus, .rmdp-input:focus {
     gap: 8px;
 }
 
-.sign-line {
+:local(.root) :global(.sign-line) {
     width: 100%;
     border-bottom: 1px dotted #94a3b8;
     height: 34px;
 }
 
-.sign-box span:last-child {
+:local(.root) :global(.sign-box) span:last-child {
     font-size: 15px;
     font-weight: 600;
     color: #475569;
 }
 
-.result-container {
+:local(.root) :global(.result-container) {
     animation: fadeIn 0.5s ease;
 }
 
@@ -381,14 +409,14 @@ input:focus, .rmdp-input:focus {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.res-box {
+:local(.root) :global(.res-box) {
     border-radius: 12px;
     padding: 15px 20px;
     margin-bottom: 15px;
     border: 1px solid #e2e8f0;
 }
 
-.res-box h3 {
+:local(.root) :global(.res-box) h3 {
     font-size: 15px;
     margin-bottom: 15px;
     display: flex;
@@ -396,7 +424,7 @@ input:focus, .rmdp-input:focus {
     gap: 8px;
 }
 
-.row {
+:local(.root) :global(.row) {
     display: flex;
     justify-content: space-between;
     font-size: 14px;
@@ -405,29 +433,29 @@ input:focus, .rmdp-input:focus {
     border-bottom: 1px dashed #e2e8f0;
 }
 
-.row:last-child {
+:local(.root) :global(.row):last-child {
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
 }
 
-.row span:last-child {
+:local(.root) :global(.row) span:last-child {
     font-weight: bold;
 }
 
-.box-income { background: #ecfdf5; border-color: #a7f3d0; }
-.box-income h3 { color: #047857; }
-.ins-bonus { color: #047857; }
-.total-gross { margin-top: 10px; font-size: 16px; color: #047857; }
+:local(.root) :global(.box-income) { background: #ecfdf5; border-color: #a7f3d0; }
+:local(.root) :global(.box-income) h3 { color: #047857; }
+:local(.root) :global(.ins-bonus) { color: #047857; }
+:local(.root) :global(.total-gross) { margin-top: 10px; font-size: 16px; color: #047857; }
 
-.box-ins { background: #eff6ff; border-color: #bfdbfe; }
-.box-ins h3 { color: #1e40af; }
+:local(.root) :global(.box-ins) { background: #eff6ff; border-color: #bfdbfe; }
+:local(.root) :global(.box-ins) h3 { color: #1e40af; }
 
-.box-deduct { background: #fef2f2; border-color: #fca5a5; }
-.box-deduct h3 { color: #b91c1c; }
-.total-deduct { margin-top: 10px; font-size: 16px; border-top: 1px dashed #fca5a5; padding-top: 8px; }
+:local(.root) :global(.box-deduct) { background: #fef2f2; border-color: #fca5a5; }
+:local(.root) :global(.box-deduct) h3 { color: #b91c1c; }
+:local(.root) :global(.total-deduct) { margin-top: 10px; font-size: 16px; border-top: 1px dashed #fca5a5; padding-top: 8px; }
 
-.box-total {
+:local(.root) :global(.box-total) {
     background: #3b82f6;
     color: white;
     font-size: 18px;
@@ -442,14 +470,14 @@ input:focus, .rmdp-input:focus {
     gap: 12px;
 }
 
-.negative-val {
+:local(.root) :global(.negative-val) {
     direction: ltr;
     display: inline-block;
     color: #ef4444;
 }
 
 /* Search Section */
-.search-section {
+:local(.root) :global(.search-section) {
     position: relative;
     margin-bottom: 30px;
     background: #f8fafc;
@@ -458,7 +486,7 @@ input:focus, .rmdp-input:focus {
     border: 1px solid #e2e8f0;
 }
 
-.search-dropdown {
+:local(.root) :global(.search-dropdown) {
     position: absolute;
     top: 100%;
     left: 0;
@@ -472,7 +500,7 @@ input:focus, .rmdp-input:focus {
     overflow-y: auto;
 }
 
-.dropdown-item {
+:local(.root) :global(.dropdown-item) {
     padding: 12px 20px;
     border-bottom: 1px solid #f1f5f9;
     cursor: pointer;
@@ -480,15 +508,15 @@ input:focus, .rmdp-input:focus {
     transition: background 0.2s;
 }
 
-.dropdown-item:hover {
+:local(.root) :global(.dropdown-item):hover {
     background: #f8fafc;
 }
 
-.dropdown-item:last-child {
+:local(.root) :global(.dropdown-item):last-child {
     border-bottom: none;
 }
 
-.selected-badge {
+:local(.root) :global(.selected-badge) {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -500,7 +528,7 @@ input:focus, .rmdp-input:focus {
     font-size: 15px;
 }
 
-.clear-btn {
+:local(.root) :global(.clear-btn) {
     background: #3b82f6;
     color: white;
     border: none;
@@ -511,14 +539,14 @@ input:focus, .rmdp-input:focus {
     cursor: pointer;
 }
 
-.date-picker-wrapper {
+:local(.root) :global(.date-picker-wrapper) {
   display: flex;
   gap: 10px;
   width: 100%;
 }
 
 
-.full-width-date-picker .rmdp-input {
+:local(.root) :global(.full-width-date-picker) :global(.rmdp-input) {
   width: 100% !important;
   box-sizing: border-box !important;
 }
@@ -526,20 +554,20 @@ input:focus, .rmdp-input:focus {
 
 
 /* Force the container to take all available flex space */
-.full-width-date-picker {
+:local(.root) :global(.full-width-date-picker) {
     display: flex !important;
     flex: 1 1 0% !important; /* Forces equal sizing */
     width: 100% !important;
 }
 
 /* Overwrite the library's inline-block behavior on the container */
-.rmdp-container {
+:local(.root) :global(.rmdp-container) {
     display: flex !important;
     width: 100% !important;
 }
 
 /* Copy-net button (always copies the Rial amount) */
-.copy-net-btn {
+:local(.root) :global(.copy-net-btn) {
     flex-shrink: 0;
     padding: 8px 18px;
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -553,66 +581,66 @@ input:focus, .rmdp-input:focus {
     transition: background 0.2s ease;
 }
 
-.copy-net-btn:hover { background: rgba(255, 255, 255, 0.3); }
+:local(.root) :global(.copy-net-btn):hover { background: rgba(255, 255, 255, 0.3); }
 
 /* ===================== Payroll — dark theme ===================== */
-[data-theme="dark"] .search-section {
+[data-theme="dark"] :local(.root) :global(.search-section) {
     background: rgba(255, 255, 255, 0.04);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
-[data-theme="dark"] .checkbox-group {
+[data-theme="dark"] :local(.root) :global(.checkbox-group) {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.12);
     color: #ececf1;
 }
 
-[data-theme="dark"] .checkbox-group.no-ins {
+[data-theme="dark"] :local(.root) :global(.checkbox-group):global(.no-ins) {
     background: rgba(255, 59, 48, 0.14);
     border-color: rgba(255, 59, 48, 0.4);
     color: #ff8a80;
 }
 
-[data-theme="dark"] .search-dropdown { background: #1d1d24; border-color: rgba(255, 255, 255, 0.1); }
-[data-theme="dark"] .dropdown-item { border-bottom-color: rgba(255, 255, 255, 0.06); }
-[data-theme="dark"] .dropdown-item:hover { background: rgba(10, 132, 255, 0.18); }
-[data-theme="dark"] .selected-badge {
+[data-theme="dark"] :local(.root) :global(.search-dropdown) { background: #1d1d24; border-color: rgba(255, 255, 255, 0.1); }
+[data-theme="dark"] :local(.root) :global(.dropdown-item) { border-bottom-color: rgba(255, 255, 255, 0.06); }
+[data-theme="dark"] :local(.root) :global(.dropdown-item):hover { background: rgba(10, 132, 255, 0.18); }
+[data-theme="dark"] :local(.root) :global(.selected-badge) {
     background: rgba(10, 132, 255, 0.16);
     border-color: rgba(10, 132, 255, 0.4);
     color: #cfe0ff;
 }
 
 /* Result boxes: dark tinted surfaces keep the color-coding readable */
-[data-theme="dark"] .res-box {
+[data-theme="dark"] :local(.root) :global(.res-box) {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
     color: #ececf1;
 }
 
-[data-theme="dark"] .res-box .row { border-bottom-color: rgba(255, 255, 255, 0.1); }
+[data-theme="dark"] :local(.root) :global(.res-box) :global(.row) { border-bottom-color: rgba(255, 255, 255, 0.1); }
 
-[data-theme="dark"] .box-wage { background: rgba(99, 102, 241, 0.14); border-color: rgba(99, 102, 241, 0.3); }
-[data-theme="dark"] .box-wage h3 { color: #a5b4fc; }
-[data-theme="dark"] .box-income { background: rgba(52, 199, 89, 0.12); border-color: rgba(52, 199, 89, 0.3); }
-[data-theme="dark"] .box-income h3,
-[data-theme="dark"] .ins-bonus,
-[data-theme="dark"] .total-gross { color: #6ee7b7; }
-[data-theme="dark"] .box-ins { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3); }
-[data-theme="dark"] .box-ins h3 { color: #93c5fd; }
-[data-theme="dark"] .box-extra { background: rgba(255, 149, 0, 0.12); border-color: rgba(255, 149, 0, 0.3); }
-[data-theme="dark"] .box-extra h3 { color: #fcd34d; }
-[data-theme="dark"] .box-deduct { background: rgba(255, 59, 48, 0.12); border-color: rgba(255, 59, 48, 0.3); }
-[data-theme="dark"] .box-deduct h3 { color: #fca5a5; }
-[data-theme="dark"] .total-deduct { border-top-color: rgba(255, 255, 255, 0.18); }
+[data-theme="dark"] :local(.root) :global(.box-wage) { background: rgba(99, 102, 241, 0.14); border-color: rgba(99, 102, 241, 0.3); }
+[data-theme="dark"] :local(.root) :global(.box-wage) h3 { color: #a5b4fc; }
+[data-theme="dark"] :local(.root) :global(.box-income) { background: rgba(52, 199, 89, 0.12); border-color: rgba(52, 199, 89, 0.3); }
+[data-theme="dark"] :local(.root) :global(.box-income) h3,
+[data-theme="dark"] :local(.root) :global(.ins-bonus),
+[data-theme="dark"] :local(.root) :global(.total-gross) { color: #6ee7b7; }
+[data-theme="dark"] :local(.root) :global(.box-ins) { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3); }
+[data-theme="dark"] :local(.root) :global(.box-ins) h3 { color: #93c5fd; }
+[data-theme="dark"] :local(.root) :global(.box-extra) { background: rgba(255, 149, 0, 0.12); border-color: rgba(255, 149, 0, 0.3); }
+[data-theme="dark"] :local(.root) :global(.box-extra) h3 { color: #fcd34d; }
+[data-theme="dark"] :local(.root) :global(.box-deduct) { background: rgba(255, 59, 48, 0.12); border-color: rgba(255, 59, 48, 0.3); }
+[data-theme="dark"] :local(.root) :global(.box-deduct) h3 { color: #fca5a5; }
+[data-theme="dark"] :local(.root) :global(.total-deduct) { border-top-color: rgba(255, 255, 255, 0.18); }
 
-[data-theme="dark"] .days-msg {
+[data-theme="dark"] :local(.root) :global(.days-msg) {
     background: rgba(16, 185, 129, 0.14);
     border-color: rgba(16, 185, 129, 0.35);
     color: #6ee7b7;
 }
 
 /* Force the input to ignore the library's character-based width calculation */
-.full-width-date-picker input.rmdp-input {
+:local(.root) :global(.full-width-date-picker) input:global(.rmdp-input) {
     width: 100% !important;
     min-width: 0 !important;
     box-sizing: border-box !important;

@@ -1,0 +1,488 @@
+:local(.root) {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 16px 110px;
+  direction: rtl;
+}
+
+:local(.root) :global(.jobs-admin-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+:local(.root) :global(.jobs-admin-header) > div {
+  min-width: 0;
+}
+
+:local(.root) :global(.jobs-admin-header) h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #1c1c1e;
+}
+
+:local(.root) :global(.jobs-admin-header) p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+:local(.root) :global(.jobs-refresh) {
+  border: none;
+  border-radius: 12px;
+  background: #007aff;
+  color: white;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+:local(.root) :global(.jobs-refresh):disabled { opacity: 0.7; cursor: wait; }
+
+:local(.root) :global(.jobs-filters) {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+:local(.root) :global(.jobs-filter-primary),:local(.root) :global(.jobs-filter-controls) {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+:local(.root) :global(.jobs-filter-primary) > input {
+  flex: 1 1 300px;
+}
+
+:local(.root) :global(.jobs-filter-primary) > select,:local(.root) :global(.jobs-filter-controls) > select {
+  flex: 0 1 210px;
+}
+
+:local(.root) :global(.jobs-filter-controls) {
+  flex-wrap: wrap;
+}
+
+:local(.root) :global(.hiring-control) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+:local(.root) :global(.hiring-control) strong,:local(.root) :global(.hiring-control) span {
+  display: block;
+}
+
+:local(.root) :global(.hiring-control) strong {
+  color: #1c1c1e;
+}
+
+:local(.root) :global(.hiring-control) span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+:local(.root) :global(.hiring-control) button,:local(.root) :global(.job-delete-btn) {
+  border: none;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+:local(.root) :global(.hiring-control) button:global(.success) {
+  color: #fff;
+  background: #30a46c;
+}
+
+:local(.root) :global(.hiring-control) button:global(.danger),:local(.root) :global(.job-delete-btn) {
+  color: #fff;
+  background: #d92d20;
+}
+
+:local(.root) :global(.hiring-control) button:global(.subtle) {
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
+}
+
+:local(.root) :global(.hiring-control) button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+:local(.root) :global(.jobs-filters) input,:local(.root) :global(.jobs-filters) select,:local(.root) :global(.job-card) select,:local(.root) :global(.job-status-edit) input,:local(.root) :global(.job-status-edit) select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid rgba(118, 118, 128, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: inherit;
+  color: #1c1c1e;
+}
+
+:local(.root) :global(.job-filter-menu) {
+  position: relative;
+  flex: 0 1 180px;
+  min-width: 150px;
+}
+
+:local(.root) :global(.job-filter-menu) summary {
+  height: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(118, 118, 128, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 10px 12px;
+  color: #1c1c1e;
+  font-size: 14px;
+}
+
+:local(.root) :global(.job-filter-menu) summary::-webkit-details-marker { display: none; }
+:local(.root) :global(.job-filter-menu) summary i { font-size: 11px; transition: transform 160ms ease; }
+:local(.root) :global(.job-filter-menu)[open] summary i { transform: rotate(180deg); }
+:local(.root) :global(.job-filter-menu) summary:global(.is-active) { border-color: #007aff; color: #0063cc; background: rgba(0, 122, 255, 0.07); }
+
+:local(.root) :global(.job-filter-menu-content) {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 7px);
+  right: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: 280px;
+  padding: 6px;
+  border: 1px solid rgba(118, 118, 128, 0.18);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+}
+
+:local(.root) :global(.job-check-item) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 4px 7px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #1c1c1e;
+}
+:local(.root) :global(.job-check-item):hover { background: rgba(0, 122, 255, 0.07); }
+:local(.root) :global(.job-check-item) input { accent-color: #007aff; width: 16px; height: 16px; padding: 0; }
+:local(.root) :global(.job-filter-empty) { margin: 5px; font-size: 12px; color: #6b7280; }
+
+:local(.root) :global(.job-age-range) {
+  flex: 1 1 240px;
+  min-width: 220px;
+  padding: 7px 12px 10px;
+  border: 1px solid rgba(118, 118, 128, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+:local(.root) :global(.job-age-label) { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #6b7280; }
+:local(.root) :global(.job-age-label) b { color: #1c1c1e; font-size: 12px; }
+:local(.root) :global(.job-range-track) { position: relative; height: 20px; margin-top: 3px; }
+:local(.root) :global(.job-range-track)::before { content: ''; position: absolute; top: 8px; right: 0; left: 0; height: 4px; border-radius: 999px; background: #d7dce3; }
+:local(.root) :global(.job-range-track) input { position: absolute; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; appearance: none; pointer-events: none; }
+:local(.root) :global(.job-range-track) input::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: transparent; }
+:local(.root) :global(.job-range-track) input::-moz-range-track { height: 4px; border-radius: 999px; background: transparent; }
+:local(.root) :global(.job-range-track) input::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; margin-top: -6px; border: 2px solid #fff; border-radius: 50%; background: #007aff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); pointer-events: auto; cursor: grab; }
+:local(.root) :global(.job-range-track) input::-moz-range-thumb { width: 13px; height: 13px; border: 2px solid #fff; border-radius: 50%; background: #007aff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); pointer-events: auto; cursor: grab; }
+
+:local(.root) :global(.jobs-list) {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+:local(.root) :global(.job-card) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px 92px;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+}
+
+:local(.root) :global(.job-card) > select,:local(.root) :global(.job-card) > :global(.job-delete-btn) {
+  min-width: 0;
+}
+
+:local(.root) :global(.job-delete-btn) {
+  align-self: start;
+  min-height: 42px;
+}
+
+:local(.root) :global(.modal-delete) {
+  width: 100%;
+  margin-top: 16px;
+}
+
+:local(.root) :global(.job-card-main) { min-width: 0; }
+:local(.root) :global(.job-card-top) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+:local(.root) :global(.job-card) h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #1c1c1e;
+}
+
+:local(.root) :global(.job-status) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+:local(.root) :global(.job-status):global(.new) { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+:local(.root) :global(.job-status):global(.interview) { color: #2563eb; background: rgba(37, 99, 235, 0.12); }
+:local(.root) :global(.job-status):global(.accepted) { color: #14804a; background: rgba(20, 128, 74, 0.13); }
+:local(.root) :global(.job-status):global(.rejected) { color: #b42318; background: rgba(180, 35, 24, 0.12); }
+
+:local(.root) :global(.job-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 12px;
+  align-items: center;
+  color: #6b7280;
+  font-size: 12.5px;
+}
+
+:local(.root) :global(.job-meta) a {
+  color: #007aff;
+  text-decoration: none;
+}
+
+:local(.root) :global(.job-meta) i { margin-left: 5px; }
+
+:local(.root) :global(.jobs-empty) {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 220px;
+  color: #7c8798;
+}
+
+:local(.root) :global(.jobs-empty) i { font-size: 40px; opacity: 0.5; }
+
+:local(.root) :global(.job-modal-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: end center;
+  background: rgba(0, 0, 0, 0.42);
+  padding: 20px;
+}
+
+:local(.root) :global(.job-modal) {
+  width: min(900px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  position: relative;
+  background: #fff;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+:local(.root) :global(.job-modal-close) {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(118, 118, 128, 0.14);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+:local(.root) :global(.job-modal-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-left: 42px;
+  margin-bottom: 14px;
+}
+
+:local(.root) :global(.job-modal-head) h2 {
+  margin: 0 0 8px;
+  color: #1c1c1e;
+}
+
+:local(.root) :global(.job-call) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #fff;
+  background: #30a46c;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+:local(.root) :global(.job-detail-section) {
+  border-top: 1px solid rgba(118, 118, 128, 0.16);
+  padding-top: 14px;
+  margin-top: 14px;
+}
+
+:local(.root) :global(.job-detail-section) h3 {
+  margin: 0 0 10px;
+  color: #1c1c1e;
+  font-size: 16px;
+}
+
+:local(.root) :global(.job-detail-row) {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+}
+
+:local(.root) :global(.job-detail-row) span {
+  color: #6b7280;
+}
+
+:local(.root) :global(.job-detail-row) b {
+  color: #1f2937;
+  font-weight: 700;
+  white-space: pre-wrap;
+}
+
+:local(.root) :global(.job-status-edit) {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 10px;
+}
+
+:local(.root) :global(.job-record) {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(118, 118, 128, 0.08);
+  margin-bottom: 8px;
+}
+
+:local(.root) :global(.job-empty-line) {
+  margin: 0;
+  color: #7c8798;
+}
+
+[data-theme="dark"] :local(.root) :global(.jobs-admin-header) h1,
+[data-theme="dark"] :local(.root) :global(.hiring-control) strong,
+[data-theme="dark"] :local(.root) :global(.job-card) h3,
+[data-theme="dark"] :local(.root) :global(.job-modal-head) h2,
+[data-theme="dark"] :local(.root) :global(.job-detail-section) h3,
+[data-theme="dark"] :local(.root) :global(.job-detail-row) b {
+  color: #f5f5f7;
+}
+
+[data-theme="dark"] :local(.root) :global(.jobs-admin-header) p,
+[data-theme="dark"] :local(.root) :global(.hiring-control) span,
+[data-theme="dark"] :local(.root) :global(.job-meta),
+[data-theme="dark"] :local(.root) :global(.job-detail-row) span,
+[data-theme="dark"] :local(.root) :global(.job-empty-line) {
+  color: #9a9aa2;
+}
+
+[data-theme="dark"] :local(.root) :global(.job-card),
+[data-theme="dark"] :local(.root) :global(.jobs-filters) input,
+[data-theme="dark"] :local(.root) :global(.jobs-filters) select,
+[data-theme="dark"] :local(.root) :global(.job-filter-menu) summary,
+[data-theme="dark"] :local(.root) :global(.job-age-range),
+[data-theme="dark"] :local(.root) :global(.job-card) select,
+[data-theme="dark"] :local(.root) :global(.job-modal),
+[data-theme="dark"] :local(.root) :global(.job-status-edit) input,
+[data-theme="dark"] :local(.root) :global(.job-status-edit) select {
+  background: var(--glass-surface);
+  border-color: var(--glass-border);
+  color: #f5f5f7;
+}
+
+[data-theme="dark"] :local(.root) :global(.job-filter-menu-content) {
+  background: #25252a;
+  border-color: var(--glass-border);
+}
+
+[data-theme="dark"] :local(.root) :global(.job-check-item),
+[data-theme="dark"] :local(.root) :global(.job-age-label) b {
+  color: #f5f5f7;
+}
+
+[data-theme="dark"] :local(.root) :global(.job-range-track)::before { background: #56565f; }
+
+[data-theme="dark"] :local(.root) :global(.job-record),
+[data-theme="dark"] :local(.root) :global(.job-modal-close) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #f5f5f7;
+}
+
+@media (max-width: 900px) {
+  :local(.root) :global(.jobs-filter-primary) > input { flex-basis: 220px; }
+}
+
+@media (max-width: 640px) {
+  :local(.root) :global(.jobs-admin-header),:local(.root) :global(.hiring-control),:local(.root) :global(.job-card),:local(.root) :global(.job-modal-head),:local(.root) :global(.job-status-edit),:local(.root) :global(.job-detail-row) {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  :local(.root) :global(.jobs-filters) {
+    gap: 10px;
+  }
+  :local(.root) :global(.jobs-filter-primary) { flex-direction: column; }
+  :local(.root) :global(.jobs-filter-primary) > select,:local(.root) :global(.jobs-filter-controls) > select,:local(.root) :global(.job-filter-menu),:local(.root) :global(.job-age-range) { flex-basis: 100%; width: 100%; }
+  :local(.root) :global(.jobs-refresh),:local(.root) :global(.job-call) {
+    width: 100%;
+  }
+  :local(.root) :global(.job-modal-overlay) {
+    padding: 8px;
+  }
+  :local(.root) :global(.job-modal) {
+    max-height: 94vh;
+    border-radius: 18px;
+  }
+}

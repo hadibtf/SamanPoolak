@@ -1,0 +1,127 @@
+:local(.root){max-width:720px;margin:auto;padding:24px 16px 40px}:local(.root) header,:local(.root) :global(.task-title){display:flex;justify-content:space-between;align-items:center;gap:12px}:local(.root) h1,:local(.root) h2{margin:0}:local(.root) :global(.task-list){display:grid;gap:12px;margin:16px 0}:local(.root) :global(.task-list)>:global(.production-item)>:global(.production-item-trigger){width:100%;text-align:right;border:0;padding:15px 18px;background:transparent;font:inherit;cursor:pointer}:local(.root) :global(.task-logs) small{display:block;color:#6b7280;font-size:12px;font-style:normal}:local(.root) :global(.task-detail){padding:18px}:local(.root) :global(.task-title) b{background:#e8f2ff;color:#007aff;border-radius:16px;padding:6px 10px;font-size:12px}:local(.root) :global(.task-marking){width:76px;height:76px;object-fit:cover;border-radius:12px;margin-top:14px}:local(.root) :global(.task-specs){display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}:local(.root) :global(.task-specs) span,:local(.root) :global(.task-description){background:#f5f5f7;border-radius:10px;padding:10px;font-size:13px}:local(.root) :global(.production-form){display:grid;gap:10px;border-top:1px dashed #ccc;padding-top:16px}:local(.root) :global(.production-form) h3,:local(.root) :global(.task-logs) h3{margin:0}:local(.root) :global(.production-form)>input,:local(.root) :global(.production-form)>:global(.production-submit),:local(.root) :global(.production-form) :global(.rmdp-input){box-sizing:border-box;width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font:inherit}:local(.root) :global(.production-form)>:global(.production-submit){background:#007aff;color:#fff;border:0;font-weight:700}:local(.root) :global(.task-error){color:#c1121f;margin:0}:local(.root) :global(.task-logs){margin-top:20px}:local(.root) :global(.task-logs)>div{display:grid;grid-template-columns:1fr auto;gap:4px;padding:10px 0;border-bottom:1px solid #eee}:local(.root) :global(.task-logs) small{grid-column:1/-1}:local(.root) :global(.retry-tasks){margin-top:12px;padding:10px 16px;border:0;border-radius:10px;background:#007aff;color:#fff;font:inherit;font-weight:700}@media(max-width:480px){:local(.root) :global(.task-specs){grid-template-columns:1fr}}
+
+/* Employee production workspace: deliberately compact, task-first, and
+   consistent with the platform's translucent surfaces. */
+:local(.root) {
+  max-width: 680px;
+  padding: 32px 20px 56px;
+}
+
+:local(.root) > header {
+  margin-bottom: 18px;
+  padding: 0 4px;
+}
+
+:local(.root) > header h1 {
+  color: #1c1c1e;
+  font-size: 27px;
+  letter-spacing: -0.5px;
+}
+
+:local(.root) > header > span {
+  color: #6b7280;
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.75);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-weight: 600;
+}
+
+:local(.root) :global(.task-list) { grid-template-columns: 1fr; gap: 12px; margin: 0 0 18px; }
+:local(.root) :global(.production-item) {
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 19px;
+  background: rgba(255,255,255,.68);
+  box-shadow: 0 7px 24px rgba(31,38,55,.08);
+  backdrop-filter: blur(24px) saturate(155%);
+  -webkit-backdrop-filter: blur(24px) saturate(155%);
+  overflow: visible;
+}
+:local(.root) :global(.production-item):global(.open) { border-color: rgba(10,132,255,.45); }
+:local(.root) :global(.production-item-trigger) { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #1c1c1e; }
+:local(.root) :global(.production-item-trigger):focus-visible { outline: 2px solid #0a84ff; outline-offset: -3px; border-radius: 18px; }
+:local(.root) :global(.production-item-name) { display: grid; gap: 4px; }
+:local(.root) :global(.production-item-name) strong { font-size: 17px; }
+:local(.root) :global(.production-item-name) small { color: #667085; font-size: 13px; }
+:local(.root) :global(.production-item-meta) { display: flex; align-items: center; gap: 12px; color: #0875df; white-space: nowrap; }
+:local(.root) :global(.production-item-meta) em { font-size: 12px; font-style: normal; font-weight: 700; }
+:local(.root) :global(.production-item-meta) i { font-size: 12px; }
+:local(.root) :global(.task-detail) { padding: 2px 18px 20px; border-top: 1px solid rgba(120,120,128,.15); }
+
+:local(.root) :global(.task-title) { align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid rgba(120,120,128,.16); }
+:local(.root) :global(.task-title) h2 { color: #1c1c1e; font-size: 23px; line-height: 1.45; }
+:local(.root) :global(.task-title) b { white-space: nowrap; background: #e8f3ff; color: #007aff; border-radius: 999px; padding: 7px 11px; font-size: 12px; }
+
+:local(.root) :global(.task-specs) { gap: 9px; margin: 18px 0; }
+:local(.root) :global(.task-specs) span,:local(.root) :global(.task-description) {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 10px 13px;
+  border: 1px solid rgba(120,120,128,.1);
+  border-radius: 12px;
+  background: rgba(255,255,255,.64);
+  color: #3a3a3c;
+}
+
+:local(.root) :global(.production-form) {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(120,120,128,.18);
+}
+:local(.root) :global(.production-form) h3,:local(.root) :global(.task-logs) h3 { color: #1c1c1e; font-size: 19px; }
+:local(.root) :global(.production-form) input,:local(.root) :global(.production-form) :global(.full-width-date-picker) :global(.rmdp-input) {
+  height: 52px;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 12px 15px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+  background: #fcfcfc !important;
+  color: #1c1c1e;
+  text-align: right;
+}
+:local(.root) :global(.production-form) :global(.full-width-date-picker) {
+  display: flex !important;
+  flex: 1 1 0% !important;
+  width: 100% !important;
+}
+:local(.root) :global(.production-form) :global(.full-width-date-picker) :global(.rmdp-container) { display: flex !important; width: 100% !important; }
+:local(.root) :global(.production-form) > :global(.production-submit) {
+  min-height: 52px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #0a84ff, #0073e6);
+  box-shadow: 0 10px 22px rgba(10,132,255,.23);
+}
+:local(.root) :global(.task-error) { padding: 10px 12px; border-radius: 10px; background: #fff0f0; color: #c81e1e; font-weight: 600; }
+:local(.root) :global(.weight-first) { display: grid; gap: 8px; border: 1px solid #afd2f7; border-radius: 13px; padding: 14px; background: #eff7ff; }
+:local(.root) :global(.weight-first) label { font-weight: 700; color: #1a4571; }
+:local(.root) :global(.weight-first) small { color: #52677d; }
+:local(.root) :global(.weight-preview) { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 12px 14px; border-radius: 11px; background: #e8f4ed; color: #20583a; }
+:local(.root) :global(.weight-preview) strong { font-size: 18px; }
+:local(.root) :global(.weight-preview) small { color: #4a7058; }
+:local(.root) :global(.task-logs) { margin-top: 28px; }
+:local(.root) :global(.task-logs-heading) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 12px; border-bottom: 1px solid rgba(120,120,128,.15); }
+:local(.root) :global(.task-logs) :global(.log-clear) { border: 0; background: transparent; color: #ba3030; font: inherit; font-size: 12px; cursor: pointer; }
+:local(.root) :global(.task-log-row) { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; border-bottom: 1px solid rgba(120,120,128,.14); }
+:local(.root) :global(.log-summary) { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+:local(.root) :global(.log-summary) small { width: 100%; }
+:local(.root) :global(.log-actions) { display: flex; gap: 6px; }
+:local(.root) :global(.log-actions) button { border: 1px solid #cbd8e7; border-radius: 8px; background: #f3f8ff; color: #1765ae; padding: 7px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+:local(.root) :global(.log-actions) button:global(.danger) { background: #fff4f4; border-color: #f1c9c9; color: #b72c2c; }
+:local(.root) :global(.log-actions) button:disabled,:local(.root) :global(.log-clear):disabled { opacity: .5; cursor: default; }
+:local(.root) :global(.log-edit-form) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; width: 100%; }
+:local(.root) :global(.log-edit-form) label { display: grid; gap: 5px; font-size: 12px; color: #526071; }
+:local(.root) :global(.log-edit-form) input,:local(.root) :global(.log-edit-form) :global(.rmdp-input) { width: 100%; min-height: 40px; box-sizing: border-box; border: 1px solid #d7dfe9; border-radius: 8px; padding: 7px 10px; background: #fff; color: #1c1c1e; font: inherit; }
+:local(.root) :global(.log-edit-form) :global(.full-width-date-picker),:local(.root) :global(.log-edit-form) :global(.rmdp-container) { width: 100%; }
+:local(.root) :global(.log-edit-form) :global(.log-actions) { grid-column: 1 / -1; }
+
+@media (max-width: 480px) {
+  :local(.root) { padding: 22px 14px 42px; }
+  :local(.root) > header h1 { font-size: 24px; }
+  :local(.root) :global(.task-detail) { padding: 2px 14px 17px; }
+  :local(.root) :global(.task-title) h2 { font-size: 20px; }
+  :local(.root) :global(.production-item-trigger) { flex-wrap: wrap; }
+  :local(.root) :global(.task-log-row) { align-items: flex-start; flex-direction: column; }
+  :local(.root) :global(.log-edit-form) { grid-template-columns: 1fr; }
+}
