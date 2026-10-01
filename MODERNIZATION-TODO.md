@@ -232,35 +232,43 @@ Backend deployment does not modify the live schema automatically. Existing datab
 
 ## Tasks
 
-1. [ ] Audit `server/schema.sql` and `server/migrations/`.
-2. [ ] Inventory all existing migrations and determine which ones are already confirmed applied in production from `MASTERCONTEXT.md`.
-3. [ ] Design a `schema_migrations` table with at least:
+1. [x] Audit `server/schema.sql` and `server/migrations/`.
+2. [x] Inventory all existing migrations and determine which ones are already confirmed applied in production from `MASTERCONTEXT.md`.
+   - The two 2026-09-26 production migrations are confirmed applied; their IDs remain unchanged.
+3. [x] Design a `schema_migrations` table with at least:
    - migration ID/name
    - applied timestamp
-4. [ ] Define a consistent migration naming convention, for example:
-   - `001_initial.sql`
-   - `002_employee_accounts.sql`
-   - `003_production_weights.sql`
-5. [ ] Do not rewrite historical production schema blindly.
-6. [ ] Create a migration runner appropriate for the existing PHP/cPanel environment.
-7. [ ] The runner must:
+4. [x] Define a consistent migration naming convention, for example:
+   - `YYYY-MM-DD-short-description.php`, ordered lexically.
+   - Existing stable IDs: `2026-09-26-production-weight` and `2026-09-26-production-log-edit-delete`.
+5. [x] Do not rewrite historical production schema blindly.
+   - Historical migrations check each resulting column and only add missing columns before recording the stable ID.
+6. [x] Create a migration runner appropriate for the existing PHP/cPanel environment.
+   - `server/migrate.php` is CLI-only and uses the existing PHP/PDO configuration.
+7. [x] The runner must:
    - determine which migrations are already applied
    - apply only missing migrations
    - execute in deterministic order
    - stop on failure
    - record successful application
    - provide useful error output
-8. [ ] Prefer transactions where MySQL allows them safely.
-9. [ ] Keep destructive migrations explicit and never auto-run them casually.
-10. [ ] Add a dry-run/status capability if practical.
-11. [ ] Add documentation showing:
+   - `status` and read-only `dry-run`; explicit `apply` stops on failure and records only success.
+8. [x] Prefer transactions where MySQL allows them safely.
+   - Current migrations use DDL, which implicitly commits on supported MySQL/MariaDB versions; each operation is retry-safe instead of pretending to be transactional.
+9. [x] Keep destructive migrations explicit and never auto-run them casually.
+   - Destructive migrations require `apply --allow-destructive`; none are currently pending.
+10. [x] Add a dry-run/status capability if practical.
+11. [x] Add documentation showing:
    - how to inspect migration status
    - how to apply pending migrations
    - how deployment ordering works
-12. [ ] Keep `server/schema.sql` valid for fresh installs.
-13. [ ] Ensure fresh-install schema and migration history do not drift.
-14. [ ] Add tests for the migration runner where practical.
-15. [ ] Do not execute anything against the live database unless explicitly asked.
+12. [x] Keep `server/schema.sql` valid for fresh installs.
+13. [x] Ensure fresh-install schema and migration history do not drift.
+   - Fresh schema includes the tracking table and current columns without seeding historical migration rows; the runner verifies schema before recording those IDs.
+14. [x] Add tests for the migration runner where practical.
+   - Offline fake-database tests cover adoption, ordering, repeated apply, partial DDL failure/retry, and destructive-operation blocking.
+15. [x] Do not execute anything against the live database unless explicitly asked.
+   - The implementation did not access the live DB. The owner later verified the four historical columns and bootstrapped both confirmed migration IDs through phpMyAdmin on 2026-10-01.
 
 ---
 

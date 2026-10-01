@@ -1,8 +1,14 @@
--- Signit API schema (people pilot)
--- Import into your cPanel MySQL database via phpMyAdmin.
+-- Signit API schema for fresh installations.
+-- Existing databases must be changed through the tracked migration runner.
 -- Compatible with MySQL 5.7+ / MariaDB 10.2+.
 
 SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    migration_id VARCHAR(191) NOT NULL,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (migration_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS users (
     id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -290,70 +296,6 @@ CREATE TABLE IF NOT EXISTS production_logs (
     INDEX idx_production_logs_order_item (order_id, order_item_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ===========================================================================
--- MIGRATION for an EXISTING live DB (the people table already exists, so the
--- card_no column above is NOT added by CREATE TABLE IF NOT EXISTS). Run this
--- ONCE in phpMyAdmin after deploying. The two new tables above are created by
--- their CREATE statements; only this ALTER is needed. (MySQL 8 has no
--- ADD COLUMN IF NOT EXISTS — run once; re-running errors harmlessly if present.)
---   ALTER TABLE people ADD COLUMN card_no VARCHAR(64) NOT NULL DEFAULT '' AFTER bank_account_number;
---
--- New landing inquiries table:
---   CREATE TABLE IF NOT EXISTS inquiries (
---       id INT AUTO_INCREMENT PRIMARY KEY,
---       name VARCHAR(255) NOT NULL DEFAULT '',
---       phone VARCHAR(64) NOT NULL DEFAULT '',
---       product VARCHAR(255) NOT NULL DEFAULT '',
---       quantity VARCHAR(128) NOT NULL DEFAULT '',
---       note TEXT NULL,
---       source VARCHAR(32) NOT NULL DEFAULT 'direct',
---       ip VARCHAR(64) NOT NULL DEFAULT '',
---       user_agent VARCHAR(255) NOT NULL DEFAULT '',
---       created_at DATETIME NOT NULL,
---       handled_at DATETIME NULL,
---       INDEX idx_inquiries_created (created_at),
---       INDEX idx_inquiries_handled (handled_at)
---   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
---
--- New careers applications table:
---   CREATE TABLE IF NOT EXISTS job_applications (
---       id INT AUTO_INCREMENT PRIMARY KEY,
---       first_name VARCHAR(255) NOT NULL DEFAULT '',
---       last_name VARCHAR(255) NOT NULL DEFAULT '',
---       birth_date VARCHAR(32) NOT NULL DEFAULT '',
---       city VARCHAR(128) NOT NULL DEFAULT '',
---       sahand_phase VARCHAR(32) NOT NULL DEFAULT '',
---       has_car VARCHAR(16) NOT NULL DEFAULT '',
---       marital_status VARCHAR(32) NOT NULL DEFAULT '',
---       children_count INT NOT NULL DEFAULT 0,
---       military_status VARCHAR(64) NOT NULL DEFAULT '',
---       military_exemption_reason VARCHAR(64) NOT NULL DEFAULT '',
---       military_medical_detail TEXT NULL,
---       military_explanation TEXT NULL,
---       military_temp_expiry VARCHAR(64) NOT NULL DEFAULT '',
---       education VARCHAR(64) NOT NULL DEFAULT '',
---       education_other VARCHAR(255) NOT NULL DEFAULT '',
---       education_field VARCHAR(255) NOT NULL DEFAULT '',
---       mobile VARCHAR(32) NOT NULL DEFAULT '',
---       has_work_experience TINYINT(1) NOT NULL DEFAULT 0,
---       has_insurance TINYINT(1) NOT NULL DEFAULT 0,
---       experience_notes TEXT NULL,
---       status VARCHAR(32) NOT NULL DEFAULT 'new',
---       interview_at VARCHAR(64) NOT NULL DEFAULT '',
---       ip VARCHAR(64) NOT NULL DEFAULT '',
---       user_agent VARCHAR(255) NOT NULL DEFAULT '',
---       created_at DATETIME NOT NULL,
---       updated_at DATETIME NOT NULL,
---       INDEX idx_job_applications_status (status),
---       INDEX idx_job_applications_created (created_at),
---       INDEX idx_job_applications_city (city),
---       INDEX idx_job_applications_mobile (mobile)
---   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
---
--- Employee login mapping and production tables are created by the CREATE
--- statements above.
--- On the live database, after deploying the API routes that use them, run the
--- three CREATE TABLE statements for employee_accounts, production_tasks, and
--- production_logs above
--- in phpMyAdmin. They are idempotent because they use IF NOT EXISTS.
--- ===========================================================================
+-- This complete schema includes the results of the historical production
+-- migrations. The migration runner verifies existing columns before recording
+-- those stable migration IDs, so importing this file does not seed false history.

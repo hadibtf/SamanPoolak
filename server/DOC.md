@@ -25,11 +25,14 @@ server/
   index.php          Front controller: requires, CORS, route table, auth gate, errors
   .htaccess          HTTPS redirect, front-controller rewrite, Authorization passthrough
   config.sample.php  Template for config.php (created on the server; never committed)
-  schema.sql         All tables (CREATE TABLE IF NOT EXISTS)
+  schema.sql         Complete fresh-install schema (CREATE TABLE IF NOT EXISTS)
+  migrate.php        CLI-only tracked migration runner (status / dry-run / apply)
+  migrations/        Ordered, retry-safe PHP migration definitions
   uploads/           Marking/product images saved as files (served statically)
   lib/
     config.php       config() loader (reads config.php)
     db.php           db() PDO singleton, now_utc(), next_counter()
+    migrations.php   Migration tracking, locking, and PDO database adapter
     http.php         CORS, JSON in/out, json_error, require_fields, ISO timestamp helpers
     auth.php         token gen, bearer parsing, current_user(), require_auth(), require_admin()
   routes/
@@ -45,9 +48,11 @@ server/
     admin.php        backup / restore (admin-only)
 ```
 
-Add a resource: create `routes/<name>.php` (copy `expenses.php` — the simplest
-full example), register its routes in `index.php`, add the table to
-`schema.sql`, and **run the CREATE on the live DB** (phpMyAdmin).
+Add a resource: create `routes/<name>.php` (copy `expenses.php` as a complete
+example), register its routes in `index.php`, add the table to `schema.sql`, and
+add a tracked migration for existing installations. Apply it with the CLI-only
+[`migrate.php`](migrate.php) before activating API code that depends on the
+schema; see the root [database migration procedure](../DEPLOY.md#database-migrations).
 
 ---
 

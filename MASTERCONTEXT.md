@@ -250,12 +250,22 @@ see `deploy.env.sample`. Optional `WINSCP_PATH` locates WinSCP.com. Host is
 `hadibtf.ir`, FTPS port 21, main account `hadibt`; subaccounts are jailed away from
 the doc roots. Directory names are short names, not full domain names.
 
-Select `hadibt_business_platform` in phpMyAdmin before running migrations.
-`CREATE TABLE IF NOT EXISTS` neither alters existing tables nor runs on deploy.
-Apply additive migrations before dependent API code. The owner confirmed both
-2026-09-26 production weight and log edit/delete migrations applied live. Do not
-rerun ADD COLUMN blindly. Fresh installs use current `server/schema.sql`.
-Legacy log weight zero represents unknown measured weight, not a fabricated estimate.
+The complete fresh-install schema is `server/schema.sql`; importing it does not
+alter existing tables and API deployment never applies migrations. Use the
+CLI-only `server/migrate.php` from cPanel Terminal (`php migrate.php status`,
+`dry-run`, `apply`) after confirming `config.php` points at the intended DB.
+`status`/`dry-run` are read-only; `apply` takes an advisory lock, applies pending
+migrations in filename order, records only successes, and stops on failure.
+DDL migrations must be retry-safe because MySQL/MariaDB implicitly commits
+`ALTER TABLE`. Apply migrations before activating dependent API code. The owner
+confirmed both 2026-09-26 production weight and log edit/delete migrations
+applied live; their IDs are preserved and their column effects are checked
+before an untracked migration is recorded. On 2026-10-01, the owner verified
+those four columns in `hadibt_business_platform` and bootstrapped
+`schema_migrations` through phpMyAdmin. Both IDs now have tracking records
+(2026-10-01 09:21:21 UTC). Legacy log weight zero remains unknown measured
+weight, not a fabricated estimate. Full operating steps are in
+[DEPLOY.md](DEPLOY.md#database-migrations).
 
 Fresh host sequence: create DB/user and privileges; configure domains and PHP;
 upload API; create private config with DB credentials, allowed origins and a

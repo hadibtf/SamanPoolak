@@ -95,16 +95,89 @@ recipe.hadibtf.ir → /home/hadibt/recipe
 teleclip.hadibtf.ir → /home/hadibt/teleclip
 ```
 
-### Adding a DB table or column
-`server/schema.sql` uses `CREATE TABLE IF NOT EXISTS`, so deploying backend code
-does **not** change the live schema. Before deploying dependent API code, run the new
-`CREATE`/`ALTER` once in **cPanel → phpMyAdmin → (select `hadibt_business_platform`)
-→ SQL**. Selecting the database first avoids MySQL error `#1046 No database selected`.
-`CREATE TABLE IF NOT EXISTS` does not add columns to existing tables.
+### Database migrations
 
-The production-weight and log edit/delete migrations under `server/migrations/`
-dated `2026-09-26` were confirmed applied by the owner. Fresh installs use the
-current schema; do not rerun `ADD COLUMN` migrations blindly on an existing DB.
+`server/schema.sql` is the complete schema for fresh installations. It does not
+update existing tables, and deploying backend files never runs migrations.
+Migrations are ordered by their `YYYY-MM-DD-name.php` filenames and tracked in
+`schema_migrations`. The runner is CLI-only and is not an HTTP endpoint.
+
+On the cPanel host, use Terminal from the API document root. Confirm that
+`config.php` points to the intended database (`hadibt_business_platform` in
+production) before using `apply`:
+
+```bash
+cd /home/hadibt/api
+php migrate.php status
+php migrate.php dry-run
+php migrate.php apply
+php migrate.php status
+```
+
+`status` and `dry-run` do not modify the database. `apply` creates the tracking
+table when needed, takes a database advisory lock, applies only unrecorded
+migrations in filename order, and records each migration only after it succeeds.
+It stops on an error. MySQL/MariaDB implicitly commits `ALTER TABLE`, so DDL
+migrations are not wrapped in transactions; each must check for existing schema
+before changing it so a partial failure can be retried safely. A destructive
+migration is blocked unless explicitly run as `php migrate.php apply --allow-destructive`.
+
+If cPanel Terminal is unavailable, phpMyAdmin can bootstrap tracking for the
+two historical production migrations **only after their columns have been
+verified**. Select `hadibt_business_platform` and run the read-only query below;
+it must return all four columns with their expected definitions. Then run the
+tracking-table and insert statements, followed by the confirmation query. The
+insert records already-existing schema and does not run `ALTER TABLE`. Do not
+use this bootstrap to mark a migration whose schema changes have not been
+applied. Future PHP migrations require CLI access or a separately prepared,
+reviewed phpMyAdmin SQL procedure.
+
+```sql
+SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = 'hadibt_business_platform'
+  AND (
+    (TABLE_NAME = 'production_tasks' AND COLUMN_NAME = 'weight_of_10_grams')
+    OR
+    (TABLE_NAME = 'production_logs' AND COLUMN_NAME IN (
+      'total_weight_grams', 'updated_at', 'deleted_at'
+    ))
+  )
+ORDER BY TABLE_NAME, COLUMN_NAME;
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+    migration_id VARCHAR(191) NOT NULL,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (migration_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO schema_migrations (migration_id, applied_at)
+VALUES
+    ('2026-09-26-production-weight', UTC_TIMESTAMP()),
+    ('2026-09-26-production-log-edit-delete', UTC_TIMESTAMP());
+
+SELECT migration_id, applied_at
+FROM schema_migrations
+WHERE migration_id IN (
+    '2026-09-26-production-weight',
+    '2026-09-26-production-log-edit-delete'
+)
+ORDER BY migration_id;
+```
+
+The two `2026-09-26` production migrations were confirmed applied by the owner.
+Their IDs are preserved. When the tracker is first introduced to an existing
+database, `apply` checks the target columns and records those migrations without
+repeating existing `ALTER`s; it adds a column only if the check shows it is
+missing. Do not delete migration files or reuse their IDs. Legacy production
+log weights of zero remain unknown measured weights; the migration does not
+estimate or rewrite stored values.
+
+For a fresh host, import `server/schema.sql`, then run `php migrate.php status`,
+`dry-run`, and `apply` before enabling dependent API behavior. For future API
+changes, install the runner and migration files, inspect the target with
+`status`/`dry-run`, apply migrations, and only then activate API code that needs
+the new schema. The normal API deployment command does not run `apply`.
 
 ---
 
@@ -150,10 +223,13 @@ Recorded here for rebuilding on a fresh host:
    `http://localhost:3000`), and a
    one-time `setup_key`. It stays only on the server (git-ignored, never
    overwritten by deploys).
-7. **Schema** — phpMyAdmin → Import `server/schema.sql` (creates all tables).
-8. **SSL** — run AutoSSL for both subdomains; verify `https://api.samanpoolak.ir/`
+7. **Schema** — phpMyAdmin → Import `server/schema.sql` (creates all fresh-install tables and migration tracking).
+8. **Migrations** — from cPanel Terminal in `/home/hadibt/api`, run
+   `php migrate.php status`, `php migrate.php dry-run`, then
+   `php migrate.php apply` after confirming `config.php` targets the intended DB.
+9. **SSL** — run AutoSSL for both subdomains; verify `https://api.samanpoolak.ir/`
    returns `{"ok":true,…}`.
-9. **First admin** — one-time:
+10. **First admin** — one-time:
    ```bash
    curl -X POST https://api.samanpoolak.ir/setup/seed-admin \
      -H "Content-Type: application/json" \
@@ -161,7 +237,7 @@ Recorded here for rebuilding on a fresh host:
    ```
    Then blank `setup_key` in `config.php` to disable the route. (Further users
    are added in-app: **Settings → user management**, admin only.)
-10. **Front-ends** — `npm run deploy:web` uploads the manager build to `platform/`
+11. **Front-ends** — `npm run deploy:web` uploads the manager build to `platform/`
    and preserves its server-owned `.htaccess`. Seed that doc root once with the
    SPA rewrite from [`public/.htaccess`](public/.htaccess). `npm run
    deploy:employee` uploads that rewrite with the employee build, so refreshing
