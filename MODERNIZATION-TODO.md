@@ -63,8 +63,9 @@ The application has grown page-by-page, so common controls can develop inconsist
 
 ## Tasks
 
-1. [ ] Audit repeated UI patterns across management and employee screens.
-2. [ ] Identify the minimum useful shared primitive set. Start with:
+1. [x] Audit repeated UI patterns across management and employee screens.
+   - Management and employee surfaces repeat action buttons, icon actions, labeled controls, status treatments, page/section headings, toolbars, and empty/loading/error states. Existing `index.css` also exposes several legacy global UI classes with inconsistent sizing and glass-heavy styling.
+2. [x] Identify the minimum useful shared primitive set. Start with:
    - Button
    - IconButton
    - Input
@@ -79,8 +80,9 @@ The application has grown page-by-page, so common controls can develop inconsist
    - EmptyState
    - LoadingState
    - ErrorState
-3. [ ] Do not create generic abstractions for components that currently appear only once.
-4. [ ] Create or consolidate global design tokens for:
+   - Implemented the repeated foundations in `src/components/ui/Ui.jsx`; a dialog shell is deferred to Problem 3's accessible-primitives evaluation rather than creating behavior without focus management.
+3. [x] Do not create generic abstractions for components that currently appear only once.
+4. [x] Create or consolidate global design tokens for:
    - spacing
    - typography
    - control heights
@@ -92,9 +94,9 @@ The application has grown page-by-page, so common controls can develop inconsist
    - focus ring
    - primary/action colors
    - danger/warning/success semantics
-5. [ ] Make all shared primitives support light and dark modes.
-6. [ ] Make all shared primitives support Persian RTL layouts.
-7. [ ] Ensure controls provide appropriate states:
+5. [x] Make all shared primitives support light and dark modes.
+6. [x] Make all shared primitives support Persian RTL layouts.
+7. [x] Ensure controls provide appropriate states:
    - default
    - hover
    - focus-visible
@@ -102,10 +104,12 @@ The application has grown page-by-page, so common controls can develop inconsist
    - disabled
    - loading where relevant
    - validation/error where relevant
-8. [ ] Keep visual styling restrained and suitable for dense business software.
-9. [ ] Avoid turning every section into a card.
-10. [ ] Migrate existing pages to shared primitives gradually when they are already being worked on.
-11. [ ] Run `npm run build` after each meaningful migration.
+8. [x] Keep visual styling restrained and suitable for dense business software.
+9. [x] Avoid turning every section into a card.
+10. [x] Migrate existing pages to shared primitives gradually when they are already being worked on.
+   - Migrated the employee task screen's loading, error, empty, retry, and submit controls as a proof point; data behavior and workflow are unchanged.
+11. [x] Run `npm run build` after each meaningful migration.
+   - `npm test -- --watchAll=false --runInBand` and `npm run build` pass for this foundation and migration.
 
 ---
 

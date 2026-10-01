@@ -3,6 +3,7 @@ import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
+import { Button, EmptyState, ErrorState, LoadingState } from '../components/ui/Ui';
 import { computeWeights } from '../db';
 import { productionApi, ApiError } from '../api/client';
 import { productionDateKey, productionPiecesFromWeight } from '../productionStatistics';
@@ -141,9 +142,9 @@ export default function EmployeeTasks() {
     finally { setMutatingLog(false); }
   };
 
-  if (tasksLoading) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-spinner fa-spin" /><p>در حال دریافت وظایف تولید...</p></div>;
-  if (tasksError) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-triangle-exclamation" /><p>{tasksError}</p><button type="button" className="retry-tasks" onClick={loadTasks}>تلاش دوباره</button></div>;
-  if (!tasks.length) return <div className={`${styles.root} empty-state`}><i className="fa-solid fa-list-check" /><p>موردی در لیست تولید شما نیست.</p></div>;
+  if (tasksLoading) return <LoadingState className={styles.root} label="در حال دریافت وظایف تولید..." />;
+  if (tasksError) return <ErrorState className={styles.root} message={tasksError} action={<Button onClick={loadTasks}>تلاش دوباره</Button>} />;
+  if (!tasks.length) return <EmptyState className={styles.root} title="موردی در لیست تولید شما نیست." />;
   return <div className={styles.root}>
     <header><h1>لیست تولید</h1><span>{fa(tasks.length)} مورد</span></header>
     <div className="task-list">{tasks.map((task) => <section className={`production-item glass-card ${task.id === selectedId ? 'open' : ''}`} key={task.id}>
@@ -160,7 +161,7 @@ export default function EmployeeTasks() {
         <h3>مرحله ۱ · وزن‌کشی نمونه</h3>
         <label htmlFor="weight-of-10">وزن ۱۰ عدد (گرم)</label>
         <input id="weight-of-10" value={weightOf10Grams} onChange={(event) => setWeightOf10Grams(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="۰.۰ گرم" required />
-        <button className="production-submit" disabled={savingWeight}>{savingWeight ? 'در حال ثبت...' : 'ثبت وزن ۱۰ عدد'}</button>
+        <Button type="submit" disabled={savingWeight} loading={savingWeight} className={`${styles.submitButton} production-submit`}>{savingWeight ? 'در حال ثبت...' : 'ثبت وزن ۱۰ عدد'}</Button>
         <small>پس از ثبت، وزن هر عدد و وزن کل مورد انتظار محاسبه می‌شود.</small>
         {error && <p className="task-error">{error}</p>}
       </form>}
@@ -170,7 +171,7 @@ export default function EmployeeTasks() {
         <input id="production-weight" value={weightKg} onChange={(event) => setWeightKg(event.target.value)} type="number" min="0.001" step="0.001" inputMode="decimal" placeholder="۰.۰ کیلوگرم" required />
         {estimatedPieces > 0 && <div className="weight-preview"><span>تعداد برآوردی این ثبت</span><strong>{fa(estimatedPieces)} عدد</strong><small>از {fa(remaining)} عدد باقی‌مانده</small></div>}
         <JalaliDatePicker value={pickerDate} onChange={(date) => setProductionDate(productionDateKey(date))} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تاریخ تولید" calendarPosition="bottom-right" containerClassName="full-width-date-picker" />
-        <button className="production-submit" disabled={busy}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</button>
+        <Button type="submit" disabled={busy} loading={busy} className={`${styles.submitButton} production-submit`}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</Button>
         {error && <p className="task-error">{error}</p>}
       </form>}
       <div className="task-logs">
