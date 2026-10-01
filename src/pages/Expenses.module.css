@@ -104,7 +104,7 @@
 
 :local(.expenses-page) .filterFooter :global(.result-count) { font-variant-numeric: tabular-nums; }
 
-:local(.expenses-page) .modalOverlay {
+:local(.modalOverlay) {
   position: fixed;
   z-index: 1000;
   inset: 0;
@@ -116,15 +116,25 @@
   background: rgba(15, 23, 42, 0.48);
 }
 
-:local(.expenses-page) .modalContent {
+:local(.modalContent) {
   width: min(100%, 620px);
   max-height: min(90vh, 820px);
+  max-height: min(90dvh, 820px);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 24px;
   border: 1px solid rgba(255,255,255,.55);
   border-radius: 18px;
   background: var(--glass-surface, #fff);
   box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+
+:local(.modalContent) :global(input:focus-visible),
+:local(.modalContent) :global(select:focus-visible),
+:local(.modalContent) :global(textarea:focus-visible),
+:local(.modalContent) :global(button:focus-visible) {
+  outline: 2px solid var(--sp-focus);
+  outline-offset: 2px;
 }
 
 :local(.expenses-page) .expenseFormGrid {
@@ -144,16 +154,16 @@
 
 :local(.expenses-page) .expenseFormGrid textarea { min-height: 84px; resize: vertical; }
 
-:local(.expenses-page) .modalContent :global(.form-actions) {
+:local(.modalContent) :global(.form-actions) {
   display: flex;
   justify-content: flex-start;
   gap: 10px;
   margin-top: 18px;
 }
 
-:local(.expenses-page) .modalContent :global(.submit-btn),
-:local(.expenses-page) .modalContent :global(.cancel-btn) {
-  min-height: 42px;
+:local(.modalContent) :global(.submit-btn),
+:local(.modalContent) :global(.cancel-btn) {
+  min-height: 44px;
   padding: 9px 16px;
   border: 0;
   border-radius: 9px;
@@ -162,9 +172,9 @@
   cursor: pointer;
 }
 
-:local(.expenses-page) .modalContent :global(.submit-btn) { background: #007aff; color: #fff; }
-:local(.expenses-page) .modalContent :global(.cancel-btn) { background: rgba(118,118,128,.14); color: #3a3a3c; }
-:local(.expenses-page) .modalContent :global(.submit-btn):disabled { opacity: .6; cursor: wait; }
+:local(.modalContent) :global(.submit-btn) { background: #007aff; color: #fff; }
+:local(.modalContent) :global(.cancel-btn) { background: rgba(118,118,128,.14); color: #3a3a3c; }
+:local(.modalContent) :global(.submit-btn):disabled { opacity: .6; cursor: wait; }
 
 :local(.expenses-page) .expenses-list {
   display: flex;
@@ -252,7 +262,7 @@
   :local(.expenses-page) .exp-filter-grid,
   :local(.expenses-page) .expenseFormGrid { grid-template-columns: minmax(0, 1fr); }
   :local(.expenses-page) .expenseFormGrid > :global(.full-width) { grid-column: auto; }
-  :local(.expenses-page) .modalOverlay { padding: 10px; align-items: flex-start; }
-  :local(.expenses-page) .modalContent { max-height: calc(100vh - 20px); padding: 18px; }
+  :local(.modalOverlay) { padding: 10px; align-items: flex-start; }
+  :local(.modalContent) { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 18px; }
   :local(.expenses-page) .filterFooter { align-items: flex-start; flex-direction: column; }
 }

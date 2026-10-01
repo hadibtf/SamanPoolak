@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import DateObject from 'react-date-object';
@@ -159,12 +160,15 @@ const Expenses = () => {
   const hasFilters = fText || fCategory !== 'ALL' || fFrom || fTo;
 
   return (
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
     <div className={styles['expenses-page']}>
       <div className={styles['expenses-header']}>
         <h1>هزینه‌ها</h1>
+        <Dialog.Trigger asChild>
         <button className="add-btn" onClick={() => openModal()}>
           <i className="fa-solid fa-plus"></i> افزودن هزینه
         </button>
+        </Dialog.Trigger>
       </div>
 
       <div className={`glass-card ${styles.filterCard}`}>
@@ -237,11 +241,17 @@ const Expenses = () => {
       </div>
 
       {isOpen && (
-        <div className={styles.modalOverlay} onClick={closeModal}>
-          <div className={styles.modalContent} onClick={(ev) => ev.stopPropagation()}>
-            <h2 style={{ marginBottom: '18px' }}>{editing ? 'ویرایش هزینه' : 'افزودن هزینه'}</h2>
-            <form onSubmit={handleSubmit}>
-              <div className={styles.expenseFormGrid}>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              className={styles.modalOverlay}
+              onClick={(event) => { if (event.target === event.currentTarget) closeModal(); }}
+            >
+              <Dialog.Content className={styles.modalContent} dir="rtl" aria-describedby={undefined}>
+                <Dialog.Title asChild>
+                  <h2 style={{ marginBottom: '18px' }}>{editing ? 'ویرایش هزینه' : 'افزودن هزینه'}</h2>
+                </Dialog.Title>
+                <form onSubmit={handleSubmit}>
+                  <div className={styles.expenseFormGrid}>
                 <div className="form-group full-width">
                   <label>عنوان</label>
                   <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثال: خرید مواد اولیه" required />
@@ -277,20 +287,24 @@ const Expenses = () => {
                   <label>توضیحات</label>
                   <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="2" />
                 </div>
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="submit-btn" disabled={saving}>
-                  {saving ? 'در حال ذخیره...' : 'ذخیره'}
-                </button>
-                <button type="button" className="cancel-btn" onClick={closeModal}>انصراف</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  </div>
+                  <div className="form-actions">
+                    <button type="submit" className="submit-btn" disabled={saving}>
+                      {saving ? 'در حال ذخیره...' : 'ذخیره'}
+                    </button>
+                    <Dialog.Close asChild>
+                      <button type="button" className="cancel-btn">انصراف</button>
+                    </Dialog.Close>
+                  </div>
+                </form>
+              </Dialog.Content>
+            </Dialog.Overlay>
+          </Dialog.Portal>
+        )}
 
       {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
     </div>
+    </Dialog.Root>
   );
 };
 

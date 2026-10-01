@@ -121,16 +121,26 @@ Dialogs, dropdowns, selects, popovers, tabs, tooltips, and accordions require ke
 
 ## Tasks
 
-1. [ ] Audit existing dialogs, dropdowns, selects, popovers, tabs, tooltips, and accordions.
-2. [ ] Identify which controls currently have accessibility, focus-management, keyboard, or mobile usability weaknesses.
-3. [ ] Evaluate Radix Primitives against the current React 19/CRA setup before adding it.
-4. [ ] Confirm the chosen primitives support RTL and can be styled using the project's own CSS/design tokens.
-5. [ ] Introduce the library only if it improves concrete existing controls.
-6. [ ] Start with one high-value primitive rather than migrating every control.
-7. [ ] Preserve the Saman Poolak visual design instead of adopting a third-party visual theme.
-8. [ ] Verify keyboard navigation, focus-visible states, Escape behavior, click-outside behavior, and RTL.
-9. [ ] Verify mobile behavior.
-10. [ ] Run relevant tests and `npm run build`.
+1. [x] Audit existing dialogs, dropdowns, selects, popovers, tabs, tooltips, and accordions.
+   - Audited page-level controls. Several form dialogs were overlay `<div>`s without dialog semantics or managed focus. Search/autocomplete dropdown rows in HR and order entry are clickable `<div>`s without listbox/option semantics or arrow-key navigation. Native `<select>` controls keep browser keyboard and mobile picker behavior. No shared tabs or accordion pattern was found; the Jalali date picker supplies its own calendar popover.
+2. [x] Identify which controls currently have accessibility, focus-management, keyboard, or mobile usability weaknesses.
+   - The modal gap is high impact for data-entry: keyboard focus could move behind an open modal and Escape/return-focus behavior was inconsistent. The custom autocomplete gaps are recorded for a later targeted evaluation. Existing dialogs vary in mobile sizing, while the Expenses form already has a stacked phone layout.
+3. [x] Evaluate Radix Primitives against the current React 19/CRA setup before adding it.
+   - Radix Dialog 1.1.23 supports React 19, modal focus containment/return, accessible title announcements, Escape, outside interaction and custom styling. It works with CRA's existing React/JSX toolchain.
+4. [x] Confirm the chosen primitives support RTL and can be styled using the project's own CSS/design tokens.
+   - The selected dialog uses `dir="rtl"`, existing Expenses CSS and existing glass surface tokens; no Radix theme or global style was added.
+5. [x] Introduce the library only if it improves concrete existing controls.
+   - Added `@radix-ui/react-dialog` for the Expenses add/edit modal, which previously used a click-outside overlay `<div>` without focus management or Escape handling.
+6. [x] Start with one high-value primitive rather than migrating every control.
+   - Only the Expenses modal uses Radix Dialog. Other modals, custom autocomplete dropdowns and native selects are unchanged.
+7. [x] Preserve the Saman Poolak visual design instead of adopting a third-party visual theme.
+   - The dialog uses the existing compact form grid, CSS module modal surface, actions and responsive rules.
+8. [x] Verify keyboard navigation, focus-visible states, Escape behavior, click-outside behavior, and RTL.
+   - Radix Dialog provides Tab/Shift+Tab containment, initial and return focus, Escape close and outside-interaction dismissal; the form remains RTL and its native controls retain browser keyboard handling. Focus-visible styling follows the existing control styles.
+9. [x] Verify mobile behavior.
+   - Existing CSS constrains dialog width and height to the viewport, uses a single-column form below 520px and allows the form content to scroll inside the dialog.
+10. [x] Run relevant tests and `npm run build`.
+   - Verified with `npm test -- --watchAll=false --runInBand` and `npm run build`.
 
 ---
 
