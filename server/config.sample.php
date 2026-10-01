@@ -22,6 +22,7 @@ return [
         'https://samanpoolak.ir',
         'https://jobs.samanpoolak.ir',
         'http://localhost:3000',
+        'http://127.0.0.1:3000',
     ],
 
     // Login surfaces are role-separated. These exact origins are checked when

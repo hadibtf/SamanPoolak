@@ -53,6 +53,8 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
    name, user, or password here, make the same change to the `database`
    service environment in `docker-compose.yml`. Keep the database host set to
    `database`, which is the Compose service name visible from the API container.
+   The local CORS allowlist supports both `localhost` and `127.0.0.1` for the
+   management and employee frontends.
    Change `setup_key` to a private local value before creating an admin account.
 
 5. Start the local API and database from the repository root:
@@ -66,7 +68,7 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
    responds:
 
    ```sh
-   curl http://localhost:8000/
+   curl http://localhost:18000/
    ```
 
    The response should be JSON containing `"ok": true`.
@@ -81,15 +83,15 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
      password = 'choose-a-local-password'
      displayName = 'Local Admin'
    } | ConvertTo-Json
-   Invoke-RestMethod -Method Post -Uri http://localhost:8000/setup/seed-admin `
+   Invoke-RestMethod -Method Post -Uri http://localhost:18000/setup/seed-admin `
      -ContentType 'application/json' -Body $body
    ```
 
    For macOS/Linux, send the same JSON to `POST
-   http://localhost:8000/setup/seed-admin` with `curl`:
+   http://localhost:18000/setup/seed-admin` with `curl`:
 
    ```sh
-   curl -X POST http://localhost:8000/setup/seed-admin \
+   curl -X POST http://localhost:18000/setup/seed-admin \
      -H 'Content-Type: application/json' \
      -d '{"setupKey":"your-local-setup-key","username":"admin","password":"choose-a-local-password","displayName":"Local Admin"}'
    ```
@@ -121,7 +123,7 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
 | --- | --- | --- |
 | Management React app | `http://localhost:3000` | Admin and management interface |
 | Employee React app | `http://localhost:3001` | Employee interface |
-| PHP API | `http://localhost:8000` | Local API used by both apps |
+| PHP API | `http://localhost:18000` | Local API used by both apps |
 | MySQL | Docker network only | Local application database |
 | Database volume | `samanpoolak-local-db` | Persists local records between runs |
 | PHP config | `server/config.local.php` | Local DB credentials, origins, setup key |

@@ -24,7 +24,7 @@ const child = spawn(command, args, {
     HOST: process.env.HOST || '127.0.0.1',
     PORT: process.env.PORT || settings.port,
     REACT_APP_APP_SURFACE: settings.appSurface,
-    REACT_APP_API_URL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+    REACT_APP_API_URL: process.env.REACT_APP_API_URL || 'http://localhost:18000',
   },
 });
 

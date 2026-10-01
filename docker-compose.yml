@@ -25,7 +25,7 @@ services:
       database:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:18000:8000"
     volumes:
       - ./server:/var/www/html
     command: ["php", "-S", "0.0.0.0:8000", "-t", "/var/www/html", "/var/www/html/router.local.php"]
