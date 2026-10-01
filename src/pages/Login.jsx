@@ -37,7 +37,7 @@ const Login = () => {
     <div className={styles.root}>
       <form className="login-card glass-card" onSubmit={handleSubmit}>
         <div className="login-brand">
-          <img className="login-logo-img" src={`${process.env.PUBLIC_URL}/logo192.png`} alt="سامان پولک" />
+          <img className="login-logo-img" src={`${import.meta.env.BASE_URL}logo192.png`} alt="سامان پولک" />
           <h1>ورود به سامانه</h1>
           <p>برای ادامه وارد حساب کاربری خود شوید</p>
         </div>

@@ -21,7 +21,7 @@ for the AI agent operational map see [MASTERCONTEXT.md](MASTERCONTEXT.md).
 | Dexie.js | Room | ORM over a local DB (IndexedDB here). |
 | `useLiveQuery` | Room `Flow` + `collectAsState` | Re-renders when the queried table changes. |
 | `fetch` wrapper (`api/client.js`) | Retrofit + an `AuthInterceptor` | HTTP with the bearer token attached. |
-| CRA (`react-scripts`) | Gradle + AGP | `npm start` ≈ run; `npm run build` ≈ release. |
+| Vite | Gradle + AGP | `npm start` ≈ run; `npm run build` ≈ release. |
 
 ### The big shift from MVVM
 There is **no ViewModel/Repository layer and no Redux**. The architecture is:
@@ -51,15 +51,15 @@ API client and read Room (`useLiveQuery`) directly.
 
 ## 2. Boot & auth gate
 
-`src/index.js` selects the employee app at build time when
-`REACT_APP_APP_SURFACE=employee`; otherwise it loads the management app shown
+`src/index.jsx` selects the employee app at build time when
+`VITE_APP_SURFACE=employee`; otherwise it loads the management app shown
 below. Employee routes are `/tasks` (single-open production-list accordion) and
 `/statistics`. Its login reuses the platform presentation with title
 «سامانه آمار تولید کارکنان», without management links or routes. Employee login
 credentials are maintained through the management People add/edit screen.
 
 ```
-src/index.js
+src/index.jsx
   └ <SettingsProvider>            theme + currency (also themes the login screen)
       └ <BrowserRouter>
           └ <AuthProvider>        validates a stored token, exposes user/login/logout
@@ -69,7 +69,7 @@ src/index.js
 - [`src/auth/AuthContext.jsx`](src/auth/AuthContext.jsx): on mount, validates the
   saved token via `GET /auth/me`; exposes `{ user, loading, login, logout }`. A
   global 401 (from the API client) forces logout.
-- [`src/App.js`](src/App.js): shows a splash while validating, the **Login**
+- [`src/App.jsx`](src/App.jsx): shows a splash while validating, the **Login**
   screen when unauthenticated, otherwise the routed app. `useSyncEngine()` runs
   only inside the authenticated shell.
 
@@ -81,7 +81,7 @@ src/index.js
 ## 3. The data layer
 
 ### 3.1 API client — [`src/api/client.js`](src/api/client.js)
-A `fetch` wrapper that prefixes `REACT_APP_API_URL`, attaches
+A `fetch` wrapper that prefixes `VITE_API_URL`, attaches
 `Authorization: Bearer <token>`, parses JSON, throws a typed `ApiError`
 (`status: 0` means network/offline), and on `401` clears the token and notifies
 listeners. It exports per-entity helpers: `authApi`, `usersApi`, `peopleApi`,
@@ -193,7 +193,7 @@ parentheses around Persian inside PDF nodes (html2canvas mirrors them wrong).
 ---
 
 ## 8. Styling & dark mode
-Plain CSS files imported per component (bundled globally by CRA). Tokens in
+Plain CSS files imported per component (bundled globally by Vite). Tokens in
 `:root`; dark overrides under `[data-theme="dark"]` (class-scoped — never bare
 element selectors that would hit the PDF nodes). Native `<select>` dark mode:
 paint `option { background-color; color }` explicitly (don't rely on
@@ -203,7 +203,7 @@ paint `option { background-color; color }` explicitly (don't rely on
 ---
 
 ## 9. Conventions & gotchas
-- **Build fails on lint warnings** (`CI=true`). No unused imports/vars.
+- **Build:** Vite production output is written to `build/`; run `npm test` for Vitest checks.
 - **Money in Rial**, **dates Jalali `YYYYMMDD`**, **server-assigned IDs/numbers**.
 - **Immutable updates** — rebuild arrays/objects; editing an order rebuilds
   `items[]` but preserves each item's `state/stateHistory/weight`.
@@ -234,8 +234,8 @@ and a screen — same shape, fewer layers.
 ## 11. File reference
 | File | Responsibility |
 | --- | --- |
-| `src/index.js` | Mount + providers |
-| `src/App.js` | Routes, login gate, sync bootstrap |
+| `src/index.jsx` | Mount + providers |
+| `src/App.jsx` | Routes, login gate, sync bootstrap |
 | `src/db.js` | Dexie schema/migrations + helpers |
 | `src/constants.js` | Enums + Persian labels |
 | `src/api/client.js` | HTTP + per-entity API objects + token |

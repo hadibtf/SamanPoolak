@@ -1,13 +1,15 @@
 import React from 'react';
-import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Expenses from './Expenses';
 
-jest.mock('dexie-react-hooks', () => ({ useLiveQuery: () => [] }));
-jest.mock('../db', () => ({ db: {}, jalaliDateKey: jest.fn() }));
-jest.mock('../components/JalaliDatePicker', () => () => <input aria-label="تاریخ" />);
-jest.mock('../context/SettingsContext', () => ({
+vi.mock('dexie-react-hooks', () => ({ useLiveQuery: () => [] }));
+vi.mock('../db', () => ({ db: {}, jalaliDateKey: vi.fn() }));
+vi.mock('../components/JalaliDatePicker', () => ({
+  default: () => <input aria-label="تاریخ" />,
+}));
+vi.mock('../context/SettingsContext', () => ({
   useSettings: () => ({
     formatMoney: (value) => String(value),
     currencyLabel: 'ریال',
@@ -15,7 +17,7 @@ jest.mock('../context/SettingsContext', () => ({
     fromRial: Number,
   }),
 }));
-jest.mock('../api/client', () => ({
+vi.mock('../api/client', () => ({
   expensesApi: {},
   ApiError: class ApiError extends Error {},
 }));

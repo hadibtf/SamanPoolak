@@ -7,7 +7,7 @@ does not import production data.
 ## Requirements
 
 - Git
-- Node.js 20 or newer with npm
+- Node.js 20.19+ or 22.12+ with npm (required by Vite 8)
 - Docker Desktop with Docker Compose v2, running Linux containers
 - Windows, macOS, or Linux
 
@@ -116,6 +116,14 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
    ```
 
    Open <http://localhost:3001>.
+
+Vite binds to all interfaces during local development and prints both the
+`localhost` URL and a `Network` URL discovered from the machine's LAN address.
+During development, API requests go through Vite's same-origin `/__api` proxy
+to `127.0.0.1:18000`. This lets another device use the LAN URL without exposing
+the API port or configuring browser CORS. The proxy sends the local app origin
+expected by the API's login surface check. Set `VITE_API_URL` explicitly only
+when you want the browser to call a different API directly.
 
 ## Services and local files
 

@@ -1,9 +1,10 @@
 // Thin fetch wrapper around the Signit API.
-// Base URL comes from REACT_APP_API_URL (see .env.sample).
+// Base URL comes from VITE_API_URL (see .env.sample).
 // Attaches the bearer token, parses JSON, and throws typed errors.
 // On 401 it clears the token and notifies listeners so the app can show login.
 
-const BASE_URL = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+const BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const USE_DEV_API_PROXY = import.meta.env.DEV && !BASE_URL;
 const TOKEN_KEY = 'signit_token';
 
 let authToken = localStorage.getItem(TOKEN_KEY) || null;
@@ -38,8 +39,8 @@ export class ApiError extends Error {
 }
 
 async function request(method, path, body) {
-  if (!BASE_URL) {
-    throw new ApiError('REACT_APP_API_URL is not set', 0);
+  if (!BASE_URL && !USE_DEV_API_PROXY) {
+    throw new ApiError('VITE_API_URL is not set', 0);
   }
   const headers = { Accept: 'application/json' };
   if (body !== undefined) {
@@ -51,7 +52,8 @@ async function request(method, path, body) {
 
   let res;
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
+    const requestUrl = USE_DEV_API_PROXY ? `/__api${path}` : `${BASE_URL}${path}`;
+    res = await fetch(requestUrl, {
       method,
       // Be explicit for the separate employee origin and never reuse a stale
       // cross-origin response after an API/CORS deployment.

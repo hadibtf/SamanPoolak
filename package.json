@@ -17,21 +17,18 @@
     "react-dom": "^19.2.7",
     "react-element-popper": "^2.1.7",
     "react-multi-date-picker": "^4.5.2",
-    "react-router-dom": "^7.18.0",
-    "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "react-router-dom": "^7.18.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "vite",
     "dev:platform": "node scripts/dev.mjs platform",
     "dev:employee": "node scripts/dev.mjs employee",
     "local:up": "node scripts/local-compose.mjs up",
     "local:down": "node scripts/local-compose.mjs down",
     "local:status": "node scripts/local-compose.mjs status",
     "local:reset": "node scripts/local-compose.mjs reset",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "build": "vite build",
+    "test": "vitest run",
     "deploy:web": "node scripts/deploy.mjs web --mode=automatic",
     "deploy:platform": "node scripts/deploy.mjs platform --mode=automatic",
     "deploy:api": "node scripts/deploy.mjs api --mode=automatic",
@@ -48,17 +45,6 @@
     "deploy:all:manual": "node scripts/deploy.mjs all --mode=manual",
     "export:attendance": "node scripts/export-attendance.mjs"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "jest": {
-    "moduleNameMapper": {
-      "^@radix-ui/primitive/is-development$": "<rootDir>/node_modules/@radix-ui/primitive/dist/internal/is-development.false.js"
-    }
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -70,5 +56,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "jsdom": "^30.1.1",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.3"
   }
 }

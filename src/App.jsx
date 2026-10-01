@@ -54,7 +54,7 @@ function App() {
   if (loading) {
     return (
       <div className="app-splash">
-        <img src={`${process.env.PUBLIC_URL}/logo192.png`} alt="سامان پولک" className="splash-logo" />
+        <img src={`${import.meta.env.BASE_URL}logo192.png`} alt="سامان پولک" className="splash-logo" />
       </div>
     );
   }

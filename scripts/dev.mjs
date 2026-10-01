@@ -21,10 +21,13 @@ const child = spawn(command, args, {
   stdio: 'inherit',
   env: {
     ...process.env,
-    HOST: process.env.HOST || '127.0.0.1',
+    HOST: process.env.HOST || '0.0.0.0',
     PORT: process.env.PORT || settings.port,
-    REACT_APP_APP_SURFACE: settings.appSurface,
-    REACT_APP_API_URL: process.env.REACT_APP_API_URL || 'http://localhost:18000',
+    VITE_APP_SURFACE: settings.appSurface,
+    VITE_DEV_APP_ORIGIN: process.env.VITE_DEV_APP_ORIGIN || `http://localhost:${settings.port}`,
+    // Empty by default: the browser calls Vite's same-origin /__api proxy,
+    // which reaches the API through the development machine's loopback.
+    VITE_API_URL: process.env.VITE_API_URL || '',
   },
 });
 

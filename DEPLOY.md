@@ -38,7 +38,7 @@ owner's personal use — not this app). Each domain has its own doc root in
 From the project root on a machine that can reach the host:
 
 ```bash
-npm run deploy:web      # build (CI=true) + upload build/ → platform/ (platform.samanpoolak.ir)
+npm run deploy:web      # build + upload build/ → platform/ (platform.samanpoolak.ir)
 npm run deploy:platform # same as deploy:web, clearer name
 npm run deploy:api      # upload server/ → api/ (api.samanpoolak.ir)
 npm run deploy:landing  # upload landing/ → samanpoolak.ir/ (static marketing site)
@@ -62,8 +62,8 @@ npm run deploy:all      # api + platform + landing + jobs + employee
 - Employee deploy explicitly uploads the SPA `.htaccess` through curl after
   WinSCP synchronization; its manual ZIP includes that file too. Verify refreshes
   on `/tasks` and `/statistics`, since a root-page check does not catch missing rewrites.
-- `deploy:web` builds first; the build runs with `CI=true`, so **any lint
-  warning fails it**. Fix warnings before deploying.
+- `deploy:web` builds first with Vite. The build output remains `build/` to keep
+  deployment paths stable during the tooling migration.
 - Platform and landing deploys **do not upload** `.htaccess` because the server's
   copy has cPanel/PWA routing rules. API deploys include the API router
   `.htaccess`. Deploys never upload `server/config.php` (live DB creds).
@@ -117,7 +117,7 @@ FTP_API_DIR=api                    # API doc root (api.samanpoolak.ir)
 FTP_LANDING_DIR=samanpoolak.ir     # landing-site doc root (samanpoolak.ir)
 FTP_JOBS_DIR=jobs                  # careers-site doc root (jobs.samanpoolak.ir)
 FTP_EMPLOYEE_DIR=employee          # employee app doc root (employee.samanpoolak.ir)
-API_URL=https://api.samanpoolak.ir # baked into the web build (REACT_APP_API_URL)
+API_URL=https://api.samanpoolak.ir # baked into the web build (VITE_API_URL)
 ```
 
 `FTP_SERVER` stays the account's FTP host (`hadibtf.ir`) — all domains live on

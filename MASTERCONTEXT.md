@@ -38,8 +38,8 @@ imply exhaustive test coverage.
 - Deploy commands default to automatic upload; `:manual` produces ZIP packages.
 - Apply required live database changes before dependent API deployment.
   Uploading schema files does not migrate an existing database.
-- Run production builds with `CI=true`; lint warnings, including unused imports,
-  fail those builds. Platform and employee builds share `build/`; run sequentially.
+- Run production builds with `npm run build`; platform and employee builds
+  share `build/`, so run them sequentially with the appropriate Vite surface.
 - Keep passwords/tokens out of docs and commits. `deploy.env` and server
   `config.php` hold private configuration and must remain gitignored.
 
@@ -65,8 +65,8 @@ same hosting account are outside this app's deployment targets.
 
 | Source | Responsibility |
 | --- | --- |
-| `src/index.js` | Build-time surface selection and mounting |
-| `src/App.js` | Management routes, login gate, sync bootstrap |
+| `src/index.jsx` | Build-time surface selection and mounting |
+| `src/App.jsx` | Management routes, login gate, sync bootstrap |
 | `src/auth/AuthContext.jsx` | User/session, login/logout, token validation |
 | `src/api/client.js` | Fetch wrapper, bearer token, per-resource API helpers |
 | `src/db.js` | Dexie v10 schema/migrations and domain helpers |
@@ -87,7 +87,7 @@ same hosting account are outside this app's deployment targets.
 <a id="architecture"></a>
 ## Architecture and data flow
 
-React 19 / Create React App clients call a vanilla PHP 8 + PDO + MySQL/MariaDB
+React 19 / Vite clients call a vanilla PHP 8 + PDO + MySQL/MariaDB
 API. Production PHP is 8.1+. The server is the single source of truth.
 
 Management resources generally use a Dexie IndexedDB read mirror and
@@ -106,13 +106,14 @@ outbox or Redux data store. Production screens and statistics instead call
 `productionApi` directly and keep local React state. Do not introduce unrestricted
 employee log mirroring.
 
-`REACT_APP_APP_SURFACE=employee` selects the separate employee app at build time.
+`VITE_APP_SURFACE=employee` selects the separate employee app at build time;
+otherwise the management app is selected.
 Management and employee surfaces have separate routes and role restrictions.
 AuthContext validates saved tokens through `/auth/me`; global API 401 responses
 clear the session. Login sends `username`, `password`, and `surface`.
 
 API requests use bearer tokens, not cookies, across origins. The fetch wrapper
-prefixes `REACT_APP_API_URL`, parses JSON, and throws `ApiError`; status `0`
+prefixes `VITE_API_URL`, parses JSON, and throws `ApiError`; status `0`
 means a network failure. The server validates roles/ownership independently of
 frontend navigation. Employee routes are allowlisted in the front controller.
 Both app origins belong in `cors_allowed_origins`; the API answers OPTIONS.
@@ -273,8 +274,8 @@ production API screens follow their existing local-state pattern instead.
 Use checks proportionate to the change:
 
 - PHP lint for changed PHP files and `php server/tests/production_validation.php`.
-- Jest: `npm test -- --watch=false --runInBand` with `CI=true`.
-- CI-mode platform and employee builds, sequentially; no TypeScript check exists.
+- Vitest: `npm test`.
+- Platform and employee production builds, sequentially; no TypeScript check exists.
 - After app deployment, verify assets and deep-route refreshes (`/tasks`,
   `/statistics`), not just root HTTP 200. Test appropriate authorized/denied roles.
 
@@ -294,7 +295,7 @@ tests having run. General offline write queues remain future work.
 | Symptom | Check / remedy |
 | --- | --- |
 | Employee deep-link refresh 404 | Employee doc-root SPA `.htaccess` upload |
-| Build fails with unused variable | CI treats lint warnings as failures |
+| Build warning about a large chunk | Inspect the Vite bundle report; current app surfaces include large existing route bundles |
 | Missing table/column API 500 | Apply required SQL in selected live database |
 | MySQL #1046 | Select `hadibt_business_platform` first |
 | Every authenticated call 401 | API `.htaccess` Authorization passthrough |

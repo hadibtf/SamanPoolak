@@ -497,7 +497,7 @@ function uploadTree(src, dest, excludes = []) {
 }
 
 function build(surface = 'management') {
-  console.log(`==> Building ${surface} front-end (REACT_APP_API_URL=${API_URL})`);
+  console.log(`==> Building ${surface} front-end (VITE_API_URL=${API_URL})`);
 
   // shell:true is required so Windows can execute npm.cmd.
   const result = spawnSync('npm', ['run', 'build'], {
@@ -506,8 +506,8 @@ function build(surface = 'management') {
     shell: true,
     env: {
       ...process.env,
-      REACT_APP_API_URL: API_URL,
-      REACT_APP_APP_SURFACE: surface,
+      VITE_API_URL: API_URL,
+      VITE_APP_SURFACE: surface,
       CI: 'true',
     },
   });

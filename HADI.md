@@ -37,7 +37,7 @@ npm start
 npm run build
 ```
 
-Run this before deploying. The build fails on lint warnings.
+Run this before deploying. Vite compiles the frontend to `build/`.
 
 ## Deploy
 

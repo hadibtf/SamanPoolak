@@ -44,7 +44,7 @@ team of users on different devices all see the same live data.
 
 | Area | Choice |
 | --- | --- |
-| UI | React 19 (Create React App / `react-scripts` 5) |
+| UI | React 19 + Vite |
 | Routing | React Router 7 |
 | Local mirror | Dexie.js 4 (IndexedDB) + `dexie-react-hooks` (`useLiveQuery`) |
 | Backend | Vanilla PHP 8 + PDO + MySQL/MariaDB (no framework) |
@@ -71,13 +71,13 @@ are isolated from production.
 ```bash
 npm install
 # point the app at an API (create .env.local from .env.sample):
-#   REACT_APP_API_URL=https://api.samanpoolak.ir
+#   VITE_API_URL=https://api.samanpoolak.ir
 npm start          # dev server at http://localhost:3000
-npm run build      # production build → ./build  (runs with CI=true: warnings fail)
+npm run build      # production build → ./build
 ```
 
 The app needs a reachable API to log in. Use the live API, or run the PHP backend
-locally (see [DEPLOY.md](DEPLOY.md)) and point `REACT_APP_API_URL`
+locally (see [DEPLOY.md](DEPLOY.md)) and point `VITE_API_URL`
 at it.
 
 ## Deploying

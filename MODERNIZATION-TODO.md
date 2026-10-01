@@ -152,8 +152,8 @@ The project currently uses React 19 with Create React App / `react-scripts`. CRA
 
 ## Tasks
 
-1. [ ] Treat this as a dedicated infrastructure migration; do not mix it into unrelated feature work.
-2. [ ] Audit the current CRA configuration and usages of:
+1. [x] Treat this as a dedicated infrastructure migration; do not mix it into unrelated feature work.
+2. [x] Audit the current CRA configuration and usages of:
    - `react-scripts`
    - `process.env.REACT_APP_*`
    - `public/`
@@ -162,23 +162,34 @@ The project currently uses React 19 with Create React App / `react-scripts`. CRA
    - platform build
    - employee build
    - deployment scripts
-3. [ ] List every `REACT_APP_*` environment variable and where it is used.
-4. [ ] Add Vite configuration while preserving React behavior and React Router SPA routing.
-5. [ ] Migrate environment access to Vite-compatible variables in a controlled way.
-6. [ ] Preserve `REACT_APP_APP_SURFACE` behavior conceptually, replacing it with an equivalent Vite environment variable.
-7. [ ] Preserve `REACT_APP_API_URL` behavior conceptually, replacing it with an equivalent Vite environment variable.
-8. [ ] Initially configure output paths to minimize deployment-script changes.
-9. [ ] Verify the management app build.
-10. [ ] Verify the employee app build.
-11. [ ] Verify deep-route refresh assumptions for `/tasks` and `/statistics`.
-12. [ ] Verify `.htaccess` handling remains correct.
-13. [ ] Verify dark mode, API URL configuration, login, navigation, and static assets.
-14. [ ] Verify PWA behavior if the current CRA setup still provides PWA functionality.
-15. [ ] Update npm scripts only after both surfaces build correctly.
-16. [ ] Update `DOC.md`, `MASTERCONTEXT.md`, `DEPLOY.md`, and any commands that still refer to CRA/react-scripts.
-17. [ ] Remove CRA dependencies only after Vite builds are confirmed.
-18. [ ] Run production builds for both app surfaces.
-19. [ ] Do not deploy unless explicitly asked.
+   - `REACT_APP_APP_SURFACE` was read by `src/index.js` and set by `scripts/dev.mjs` / `scripts/deploy.mjs`; it maps to `VITE_APP_SURFACE`.
+   - `REACT_APP_API_URL` was read by `src/api/client.js`, documented in `.env.sample`, and set by the dev/deploy scripts; it maps to `VITE_API_URL`.
+   - No other `REACT_APP_*` variables were found. `PUBLIC_URL` was used by the HTML template and three logo references; these now use root public paths / `import.meta.env.BASE_URL`.
+   - CRA auto-injected the app entry from `public/index.html`; Vite now uses the root `index.html` entry and copies the rest of `public/`, including the pass-through `service-worker.js`, manifest, assets and `.htaccess`.
+3. [x] List every `REACT_APP_*` environment variable and where it is used.
+4. [x] Add Vite configuration while preserving React behavior and React Router SPA routing.
+5. [x] Migrate environment access to Vite-compatible variables in a controlled way.
+6. [x] Preserve `REACT_APP_APP_SURFACE` behavior conceptually, replacing it with an equivalent Vite environment variable.
+7. [x] Preserve `REACT_APP_API_URL` behavior conceptually, replacing it with an equivalent Vite environment variable.
+8. [x] Initially configure output paths to minimize deployment-script changes.
+9. [x] Verify the management app build.
+10. [x] Verify the employee app build.
+11. [x] Verify deep-route refresh assumptions for `/tasks` and `/statistics`.
+12. [x] Verify `.htaccess` handling remains correct.
+13. [x] Verify dark mode, API URL configuration, login, navigation, and static assets.
+   - Vitest smoke checks confirm management/employee login submissions retain their surface values and saved dark mode is applied to the document. Built bundles contain the configured API URL, app routes and public assets. No real account/API login was attempted.
+14. [x] Verify PWA behavior if the current CRA setup still provides PWA functionality.
+   - The existing root-scoped service worker remains registered; the pass-through worker and install manifest are present in both build outputs.
+15. [x] Update npm scripts only after both surfaces build correctly.
+16. [x] Update `DOC.md`, `MASTERCONTEXT.md`, `DEPLOY.md`, and any commands that still refer to CRA/react-scripts.
+17. [x] Remove CRA dependencies only after Vite builds are confirmed.
+18. [x] Run production builds for both app surfaces.
+19. [x] Do not deploy unless explicitly asked.
+
+Verification: `npm test` passes 12 tests. CI-mode management and employee
+production builds pass sequentially to the existing `build/` directory. Vite
+preview returns the SPA entry for `/`, `/tasks`, and `/statistics`; deploy
+scripts still preserve the existing employee `.htaccess` upload behavior.
 
 ---
 
@@ -422,7 +433,7 @@ There is a risk of replacing working architecture simply because newer libraries
 4. [ ] Audit the production PHP runtime and prepare a supported runtime upgrade.
 5. [ ] Add CI verification.
 6. [ ] Design and implement tracked database migrations.
-7. [ ] Migrate CRA to Vite as a dedicated task.
+7. [x] Migrate CRA to Vite as a dedicated task.
 8. [ ] Split platform and employee build outputs.
 9. [ ] Introduce incremental stronger typing.
 10. [ ] Re-evaluate TanStack Query only after measuring repeated direct-fetch boilerplate.
