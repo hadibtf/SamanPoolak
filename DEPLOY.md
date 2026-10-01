@@ -38,7 +38,7 @@ owner's personal use — not this app). Each domain has its own doc root in
 From the project root on a machine that can reach the host:
 
 ```bash
-npm run deploy:web      # build + upload build/ → platform/ (platform.samanpoolak.ir)
+npm run deploy:web      # build + upload dist/platform/ → platform/ (platform.samanpoolak.ir)
 npm run deploy:platform # same as deploy:web, clearer name
 npm run deploy:api      # upload server/ → api/ (api.samanpoolak.ir)
 npm run deploy:landing  # upload landing/ → samanpoolak.ir/ (static marketing site)
@@ -58,12 +58,14 @@ npm run deploy:all      # api + platform + landing + jobs + employee
   `deploy-manual/`, and write `UPLOAD-INSTRUCTIONS.md` beside them. For example:
   `npm run deploy:all:manual`.
 - The underlying script also accepts `--mode=automatic` or `--mode=manual`.
-- Build platform and employee sequentially: they share the `build/` directory.
+- `npm run build:platform` writes to `dist/platform/`; `npm run build:employee`
+  writes to `dist/employee/`. `npm run build` remains an alias for the platform build.
+- Builds may run in either order. Each build clears only its own output directory.
 - Employee deploy explicitly uploads the SPA `.htaccess` through curl after
   WinSCP synchronization; its manual ZIP includes that file too. Verify refreshes
   on `/tasks` and `/statistics`, since a root-page check does not catch missing rewrites.
-- `deploy:web` builds first with Vite. The build output remains `build/` to keep
-  deployment paths stable during the tooling migration.
+- `deploy:web` and `deploy:platform` build from `dist/platform/`; employee deploys
+  use `dist/employee/`. Manual ZIP packages use the same surface-specific output.
 - Platform and landing deploys **do not upload** `.htaccess` because the server's
   copy has cPanel/PWA routing rules. API deploys include the API router
   `.htaccess`. Deploys never upload `server/config.php` (live DB creds).

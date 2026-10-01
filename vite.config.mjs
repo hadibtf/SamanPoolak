@@ -3,10 +3,8 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Keep the existing deploy scripts and target directories working during
-  // this migration. Problem 5 will handle independent output directories.
   build: {
-    outDir: 'build',
+    outDir: process.env.VITE_APP_SURFACE === 'employee' ? 'dist/employee' : 'dist/platform',
     emptyOutDir: true,
   },
   server: {

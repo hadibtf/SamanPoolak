@@ -497,10 +497,11 @@ function uploadTree(src, dest, excludes = []) {
 }
 
 function build(surface = 'management') {
+  const buildScript = surface === 'employee' ? 'build:employee' : 'build:platform';
   console.log(`==> Building ${surface} front-end (VITE_API_URL=${API_URL})`);
 
   // shell:true is required so Windows can execute npm.cmd.
-  const result = spawnSync('npm', ['run', 'build'], {
+  const result = spawnSync('npm', ['run', buildScript], {
     cwd: ROOT,
     stdio: 'inherit',
     shell: true,
@@ -663,11 +664,11 @@ function deployWeb() {
   build('management');
 
   console.log(
-    `==> Uploading build/ to ${FTP_WEB_DIR} ` +
+    `==> Uploading dist/platform/ to ${FTP_WEB_DIR} ` +
       `(excluding .htaccess so the server's copy stays intact)`,
   );
 
-  return uploadTree(path.join(ROOT, 'build'), FTP_WEB_DIR, [
+  return uploadTree(path.join(ROOT, 'dist', 'platform'), FTP_WEB_DIR, [
     '.htaccess',
   ]);
 }
@@ -698,12 +699,13 @@ function deployLanding() {
 
 function deployEmployee() {
   build('employee');
-  console.log(`==> Uploading employee build/ to ${FTP_EMPLOYEE_DIR}`);
-  const uploaded = uploadTree(path.join(ROOT, 'build'), FTP_EMPLOYEE_DIR);
+  const employeeBuild = path.join(ROOT, 'dist', 'employee');
+  console.log(`==> Uploading dist/employee/ to ${FTP_EMPLOYEE_DIR}`);
+  const uploaded = uploadTree(employeeBuild, FTP_EMPLOYEE_DIR);
   if (!uploaded) return false;
   // WinSCP synchronize skips this hidden dotfile on the host. Upload it
   // explicitly so BrowserRouter deep links survive a hard refresh.
-  const rewrite = uploadFile(path.join(ROOT, 'build', '.htaccess'), '.htaccess', FTP_EMPLOYEE_DIR);
+  const rewrite = uploadFile(path.join(employeeBuild, '.htaccess'), '.htaccess', FTP_EMPLOYEE_DIR);
   if (!rewrite.ok) console.error(`Employee SPA rewrite upload failed: ${rewrite.error}`);
   return rewrite.ok;
 }
@@ -732,7 +734,7 @@ const DEPLOY_TARGETS = {
   platform: {
     name: 'platform',
     label: 'Platform app',
-    source: path.join(ROOT, 'build'),
+    source: path.join(ROOT, 'dist', 'platform'),
     dest: FTP_WEB_DIR,
     excludes: ['.htaccess'],
     needsBuild: true,
@@ -756,7 +758,7 @@ const DEPLOY_TARGETS = {
   employee: {
     name: 'employee',
     label: 'Employee app',
-    source: path.join(ROOT, 'build'),
+    source: path.join(ROOT, 'dist', 'employee'),
     dest: FTP_EMPLOYEE_DIR,
     excludes: [],
     needsBuild: true,

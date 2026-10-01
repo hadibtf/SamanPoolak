@@ -203,7 +203,9 @@ paint `option { background-color; color }` explicitly (don't rely on
 ---
 
 ## 9. Conventions & gotchas
-- **Build:** Vite production output is written to `build/`; run `npm test` for Vitest checks.
+- **Build:** `npm run build:platform` writes to `dist/platform/` and
+  `npm run build:employee` writes to `dist/employee/`; `npm run build` aliases
+  the platform build. Run `npm test` for Vitest checks.
 - **Money in Rial**, **dates Jalali `YYYYMMDD`**, **server-assigned IDs/numbers**.
 - **Immutable updates** — rebuild arrays/objects; editing an order rebuilds
   `items[]` but preserves each item's `state/stateHistory/weight`.

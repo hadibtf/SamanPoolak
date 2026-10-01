@@ -73,7 +73,8 @@ npm install
 # point the app at an API (create .env.local from .env.sample):
 #   VITE_API_URL=https://api.samanpoolak.ir
 npm start          # dev server at http://localhost:3000
-npm run build      # production build → ./build
+npm run build:platform # management production build → ./dist/platform
+npm run build:employee # employee production build → ./dist/employee
 ```
 
 The app needs a reachable API to log in. Use the live API, or run the PHP backend
@@ -85,7 +86,7 @@ at it.
 Deploys run **from a local machine** (the host blocks CI/FTP from foreign IPs):
 
 ```bash
-npm run deploy:web     # build + upload build/ → platform/ (platform.samanpoolak.ir)
+npm run deploy:web     # build + upload dist/platform/ → platform/ (platform.samanpoolak.ir)
 npm run deploy:platform # same as deploy:web, clearer name
 npm run deploy:api     # upload server/ → api/ (api.samanpoolak.ir)
 npm run deploy:landing # upload landing/ → samanpoolak.ir/ (static marketing site)

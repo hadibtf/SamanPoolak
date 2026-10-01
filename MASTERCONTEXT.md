@@ -38,8 +38,9 @@ imply exhaustive test coverage.
 - Deploy commands default to automatic upload; `:manual` produces ZIP packages.
 - Apply required live database changes before dependent API deployment.
   Uploading schema files does not migrate an existing database.
-- Run production builds with `npm run build`; platform and employee builds
-  share `build/`, so run them sequentially with the appropriate Vite surface.
+- Build the platform and employee surfaces with `npm run build:platform` and
+  `npm run build:employee`; outputs are isolated in `dist/platform/` and
+  `dist/employee/`. `npm run build` aliases the platform build.
 - Keep passwords/tokens out of docs and commits. `deploy.env` and server
   `config.php` hold private configuration and must remain gitignored.
 

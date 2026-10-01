@@ -187,7 +187,7 @@ The project currently uses React 19 with Create React App / `react-scripts`. CRA
 19. [x] Do not deploy unless explicitly asked.
 
 Verification: `npm test` passes 12 tests. CI-mode management and employee
-production builds pass sequentially to the existing `build/` directory. Vite
+production builds pass sequentially to their respective `dist/` directories. Vite
 preview returns the SPA entry for `/`, `/tasks`, and `/statistics`; deploy
 scripts still preserve the existing employee `.htaccess` upload behavior.
 
@@ -195,26 +195,32 @@ scripts still preserve the existing employee `.htaccess` upload behavior.
 
 # 5. Problem: Management and employee builds share the same output directory
 
-The management and employee builds currently share `build/`, so they must be built sequentially and one build can overwrite the other.
+Before Problem 5, the management and employee builds shared `build/`, so one
+build could overwrite the other.
 
 - **Solution:** Give each application surface an independent build output.
 
 ## Tasks
 
-1. [ ] Complete this together with or after the Vite migration unless there is a strong reason to do it earlier.
-2. [ ] Introduce distinct outputs, for example:
+1. [x] Complete this together with or after the Vite migration unless there is a strong reason to do it earlier.
+2. [x] Introduce distinct outputs, for example:
    - `dist/platform/`
    - `dist/employee/`
-3. [ ] Add explicit build scripts such as:
+3. [x] Add explicit build scripts such as:
    - `npm run build:platform`
    - `npm run build:employee`
-4. [ ] Update deployment scripts to upload the correct surface directory.
-5. [ ] Preserve employee `.htaccess` behavior.
-6. [ ] Preserve management server-owned `.htaccess` behavior.
-7. [ ] Verify one build cannot overwrite the other.
-8. [ ] Verify both surfaces can be built in either order.
-9. [ ] Update deployment documentation.
-10. [ ] Run both production builds.
+4. [x] Update deployment scripts to upload the correct surface directory.
+5. [x] Preserve employee `.htaccess` behavior.
+6. [x] Preserve management server-owned `.htaccess` behavior.
+7. [x] Verify one build cannot overwrite the other.
+8. [x] Verify both surfaces can be built in either order.
+9. [x] Update deployment documentation.
+10. [x] Run both production builds.
+
+Verification: both production builds pass in either order. Each build writes to
+its own `dist/` subdirectory; the other directory's file manifest remains
+unchanged. Platform uploads exclude `.htaccess`, while employee deployment
+continues to include and explicitly upload its SPA rewrite file.
 
 ---
 
