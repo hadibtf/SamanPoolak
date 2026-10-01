@@ -107,51 +107,86 @@ export const authApi = {
 // Admin-only user management.
 export const usersApi = {
   list: () => api.get('/users'),
+  /** @param {Partial<import('../types/domain').User> & {password?: string}} user */
   create: (user) => api.post('/users', user),
   remove: (id) => api.del(`/users/${encodeURIComponent(id)}`),
 };
 
 export const peopleApi = {
+  /** @returns {Promise<{people: import('../types/domain').Person[]}>} */
   list: (updatedAfter) =>
     api.get(`/people${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  /** @returns {Promise<{person: import('../types/domain').Person}>} */
   get: (id) => api.get(`/people/${encodeURIComponent(id)}`),
+  /** @param {import('../types/domain').Person} person
+ * @returns {Promise<{person: import('../types/domain').Person}>}
+ */
   create: (person) => api.post('/people', person),
+  /** @param {string} id @param {Partial<import('../types/domain').Person>} patch
+ * @returns {Promise<{person: import('../types/domain').Person}>}
+ */
   update: (id, patch) => api.put(`/people/${encodeURIComponent(id)}`, patch),
   employeeAccount: (id) => api.get(`/people/${encodeURIComponent(id)}/employee-account`),
   remove: (id) => api.del(`/people/${encodeURIComponent(id)}`),
 };
 
 export const ordersApi = {
+  /** @returns {Promise<{orders: import('../types/domain').Order[]}>} */
   list: (updatedAfter) =>
     api.get(`/orders${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  /** @returns {Promise<{order: import('../types/domain').Order}>} */
   get: (id) => api.get(`/orders/${encodeURIComponent(id)}`),
+  /** @param {import('../types/domain').Order} order
+ * @returns {Promise<{order: import('../types/domain').Order}>}
+ */
   create: (order) => api.post('/orders', order),
+  /** @param {string|number} id @param {Partial<import('../types/domain').Order>} patch
+ * @returns {Promise<{order: import('../types/domain').Order}>}
+ */
   update: (id, patch) => api.put(`/orders/${encodeURIComponent(id)}`, patch),
   remove: (id) => api.del(`/orders/${encodeURIComponent(id)}`),
 };
 
 export const markingsApi = {
+  /** @returns {Promise<{markings: import('../types/domain').Marking[]}>} */
   list: (updatedAfter) =>
     api.get(`/markings${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  /** @param {Pick<import('../types/domain').Marking, 'customerId'|'name'|'src'|'location'>} marking
+ * @returns {Promise<{marking: import('../types/domain').Marking}>}
+ */
   create: (marking) => api.post('/markings', marking),
   remove: (id) => api.del(`/markings/${encodeURIComponent(id)}`),
 };
 
 export const expensesApi = {
+  /** @returns {Promise<{expenses: import('../types/domain').Expense[]}>} */
   list: (updatedAfter) =>
     api.get(`/expenses${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  /** @param {import('../types/domain').ExpenseRequest} expense
+ * @returns {Promise<{expense: import('../types/domain').Expense}>}
+ */
   create: (expense) => api.post('/expenses', expense),
+  /** @param {string|number} id @param {Partial<import('../types/domain').ExpenseRequest>} patch
+ * @returns {Promise<{expense: import('../types/domain').Expense}>}
+ */
   update: (id, patch) => api.put(`/expenses/${encodeURIComponent(id)}`, patch),
   remove: (id) => api.del(`/expenses/${encodeURIComponent(id)}`),
 };
 
 export const productionApi = {
   employees: () => api.get('/production/employees'),
+  /** @returns {Promise<{productionTasks: import('../types/domain').ProductionAssignment[]}>} */
   listTasks: (updatedAfter) => api.get(`/production/tasks${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  /** @param {import('../types/domain').ProductionAssignmentRequest} task
+ * @returns {Promise<{productionTask: import('../types/domain').ProductionAssignment}>}
+ */
   assignTask: (task) => api.post('/production/tasks', task),
   updateTask: (taskId, patch) => api.put(`/production/tasks/${encodeURIComponent(taskId)}`, patch),
   setTaskWeight: (taskId, weightOf10Grams) => api.put(`/production/tasks/${encodeURIComponent(taskId)}/weight`, { weightOf10Grams }),
   taskLogs: (taskId) => api.get(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
+  /** @param {number} taskId @param {import('../types/domain').ProductionLogRequest} log
+ * @returns {Promise<{productionLog: import('../types/domain').ProductionLog, productionTask: import('../types/domain').ProductionAssignment}>}
+ */
   logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
   updateProductionLog: (taskId, logId, patch) => api.put(`/production/tasks/${encodeURIComponent(taskId)}/logs/${encodeURIComponent(logId)}`, patch),
   deleteProductionLog: (taskId, logId) => api.del(`/production/tasks/${encodeURIComponent(taskId)}/logs/${encodeURIComponent(logId)}`),
