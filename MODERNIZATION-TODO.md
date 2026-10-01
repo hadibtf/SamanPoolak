@@ -326,33 +326,16 @@ The application now has complex domain data involving orders, item UIDs, product
 
 ## Tasks
 
-1. [ ] Do not start with a repository-wide TypeScript rewrite.
-2. [ ] First inventory important domain shapes:
-   - Person
-   - User
-   - Order
-   - OrderItem
-   - StateHistory entry
-   - ProductionAssignment
-   - ProductionLog
-   - Expense
-   - Marking
-3. [ ] Decide between:
-   - incremental TypeScript, or
-   - JSDoc typedefs as a lighter first step
-4. [ ] Prioritize boundaries where mistakes are expensive:
-   - API request/response shapes
-   - production weights
-   - quantities
-   - money values
-   - IDs
-   - dates
-5. [ ] Introduce types for new code first.
-6. [ ] Convert complex existing modules only when they are already being modified.
-7. [ ] Avoid mixing large UI redesigns and large typing migrations in one task.
-8. [ ] Preserve existing runtime behavior.
-9. [ ] If TypeScript is adopted, configure strictness incrementally rather than enabling a setting that makes the whole existing repository fail immediately.
-10. [ ] Document the chosen incremental typing convention.
+1. [x] Do not start with a repository-wide TypeScript rewrite. Existing app and build remain JavaScript/Vite.
+2. [x] Inventory important domain shapes in `src/types/domain.js`: Person uses server category-prefixed string IDs; User uses numeric server IDs; Order has server ID/number, Jalali date and item list; OrderItem has stable UID, piece quantity, Rial prices, gram weights and StateHistory; ProductionAssignment references order/item/user and piece quantities; ProductionLog stores piece quantity and total grams with a Jalali production date; Expense stores Rial and Jalali date; Marking has server ID and customer-scoped Person ID. Optional/legacy fields are marked where applicable.
+3. [x] Choose JSDoc typedefs first. Vite already uses JavaScript and has no TypeScript compiler/configuration; JSDoc adds editor guidance without stack or runtime changes.
+4. [x] Prioritize request boundaries and semantic unit names in `src/api/client.js` and `src/types/domain.js`. Production log request weight is kilograms while its response total is grams; money inputs/storage are Rial and display conversion stays in SettingsContext; dates use Jalali `YYYYMMDD`; quantities are pieces; IDs distinguish string Person IDs, numeric entity IDs and item UIDs.
+5. [x] Introduce shared contracts for new/actively touched API boundary code first; annotate CRUD/create requests and production assignment/log inputs.
+6. [x] Leave other complex modules in JavaScript; add annotations when they are next changed.
+7. [x] Keep this typing change isolated from UI redesign.
+8. [x] Typedefs/JSDoc are comments only; API payloads, runtime behavior and builds are unchanged.
+9. [x] TypeScript was not adopted, so no compiler strictness setting is introduced. If later adopted, start with a scoped file set and strict checking there.
+10. [x] Convention: define shared JSDoc typedefs in `src/types/domain.js`, reference them with `import()` types in JSDoc at API boundaries, keep units/currency/date semantics in property names and never use display values in wire contracts. These annotations provide editor checking; full static enforcement is deferred until a scoped checker is selected.
 
 ---
 
