@@ -27,9 +27,10 @@ owner's personal use — not this app). Each domain has its own doc root in
 > CORS handler answers preflight, and uploaded image URLs are **absolute**
 > (`https://api.samanpoolak.ir/uploads/…`) so they load cross-origin.
 
-> **Deploys are run from a local machine, not CI.** The host firewalls FTP from
-> foreign IPs, so GitHub Actions can't reach it. A `.github/workflows/deploy-api.yml`
-> exists but is effectively dead — **use the npm deploy scripts below.**
+> **CI verifies code; production deployment stays local.** The GitHub Actions
+> workflow runs frontend tests, both production builds, PHP lint, and production
+> validation. It does not deploy and does not need production secrets. The host
+> blocks GitHub runner FTP access, so use the local npm deploy scripts below.
 
 ---
 
@@ -254,8 +255,10 @@ Recorded here for rebuilding on a fresh host:
 - **401 on every authed call** — host stripped `Authorization`; the bundled
   `.htaccess` re-adds it — make sure it's present in the `api/` doc root.
 - **CORS errors** — add the app origin to `cors_allowed_origins` in `config.php`.
-- **Deploy says "Input required: server" / connection refused on CI** — ignore
-  GitHub Actions; deploy locally (host blocks CI).
+- **CI verification fails** — inspect the failing test, build, lint, or production
+  validation step in the `Verify` workflow. CI never deploys.
+- **Deployment connection refused** — deploy locally; the host blocks GitHub
+  runner FTP access.
 - **See error detail** — temporarily set `'debug' => true` in `config.php`.
 - **WinSCP not found** — install WinSCP, or set `WINSCP_PATH` in `deploy.env`
   to the full path to `WinSCP.com`.

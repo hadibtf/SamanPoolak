@@ -33,8 +33,8 @@ imply exhaustive test coverage.
 - Work on `main` by owner preference. Git identity is
   `Hadi Bastanfar <98bastanfar@gmail.com>`. Use an accurate agent coauthor trailer
   (for Codex: `Co-Authored-By: Codex <codex@openai.com>`). Push only when asked.
-- Deploy locally: the host blocks FTP from GitHub runners. The existing GitHub
-  deployment workflow is not the working delivery path.
+- GitHub Actions in `.github/workflows/verify.yml` runs verification only. Keep
+  production deployment local; the host blocks FTP from GitHub runners.
 - Deploy commands default to automatic upload; `:manual` produces ZIP packages.
 - Apply required live database changes before dependent API deployment.
   Uploading schema files does not migrate an existing database.
@@ -243,6 +243,11 @@ deployment uses Node and WinSCP FTPS through a persistent connection. Employee
 deployment explicitly uploads `.htaccess` through curl afterward; manual employee
 packages include it. Platform/landing preserve server-owned `.htaccess`; API
 includes its router. Never upload live `server/config.php`.
+
+GitHub Actions verifies frontend tests, management and employee builds, PHP
+lint, and production validation on pushes and pull requests. It requires no
+production secrets and never deploys. Production deployment remains a local
+operation using the commands above.
 
 Private `deploy.env` uses `FTP_SERVER`, `FTP_USER`, `FTP_PASSWORD`, `FTP_WEB_DIR`,
 `FTP_API_DIR`, `FTP_LANDING_DIR`, `FTP_JOBS_DIR`, `FTP_EMPLOYEE_DIR`, and `API_URL`;

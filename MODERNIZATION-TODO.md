@@ -301,18 +301,18 @@ The host blocks deployment from GitHub runners, but that does not prevent GitHub
 
 ## Tasks
 
-1. [ ] Inspect the existing `.github/workflows/` files.
-2. [ ] Do not attempt to restore remote FTP deployment through GitHub Actions.
-3. [ ] Create or revise a verification workflow that runs on appropriate pushes and pull requests.
-4. [ ] Run frontend tests with CI settings.
-5. [ ] Run the management production build.
-6. [ ] Run the employee production build.
-7. [ ] Run PHP lint on backend PHP files.
-8. [ ] Run `server/tests/production_validation.php`.
-9. [ ] Cache npm dependencies where appropriate.
-10. [ ] Ensure CI does not require production secrets.
-11. [ ] Keep deployment scripts local.
-12. [ ] Update documentation to distinguish:
+1. [x] Inspect the existing `.github/workflows/` files. Replaced the FTP deployment workflow with verification-only CI.
+2. [x] Do not attempt to restore remote FTP deployment through GitHub Actions.
+3. [x] Create or revise a verification workflow that runs on appropriate pushes and pull requests.
+4. [x] Run frontend tests with CI settings. `CI=true npm test` passed (4 files, 12 tests).
+5. [x] Run the management production build. `npm run build:platform` passed.
+6. [x] Run the employee production build. `npm run build:employee` passed.
+7. [x] Run PHP lint on backend PHP files. PHP 8.5.9 lint passed for all `server/**/*.php` files and `dev-router.php`.
+8. [x] Run `server/tests/production_validation.php`. Passed on local PHP 8.5.9.
+9. [x] Cache npm dependencies where appropriate. GitHub Actions uses `actions/setup-node` npm caching against `package-lock.json`.
+10. [x] Ensure CI does not require production secrets.
+11. [x] Keep deployment scripts local.
+12. [x] Update documentation to distinguish:
    - CI verification
    - local production deployment
 
