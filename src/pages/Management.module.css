@@ -598,7 +598,9 @@
 :local(.root) :global(.page-back) {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+  margin-bottom: 16px;
 }
 
 :local(.root) :global(.page-back) h2 {
@@ -612,6 +614,8 @@
 :local(.root) :global(.back-btn) {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
   gap: 6px;
   border: none;
   background: rgba(118, 118, 128, 0.12);
@@ -622,6 +626,20 @@
   padding: 8px 14px;
   border-radius: 12px;
   cursor: pointer;
+}
+
+:local(.root):global(.submit-order) :global(.page-back) h2 {
+  min-width: 0;
+}
+
+@media (max-width: 420px) {
+  :local(.root):global(.submit-order) :global(.page-back) {
+    gap: 8px;
+  }
+
+  :local(.root):global(.submit-order) :global(.page-back) h2 {
+    flex-basis: 100%;
+  }
 }
 
 :local(.root) :global(.page-actions) {
