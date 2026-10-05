@@ -83,6 +83,14 @@
   gap: 16px;
 }
 
+/* Keep order creation and editing aligned with the centered order detail view. */
+:local(.root):global(.submit-order) {
+  width: 100%;
+  max-width: 852px;
+  margin-inline: auto;
+  padding: 28px 16px 110px;
+}
+
 /* Form layout (scoped to order views) */
 :local(.root):global(.submit-order) :global(.form-grid),:local(.root):global(.order-list) :global(.filter-grid) {
   display: grid;
