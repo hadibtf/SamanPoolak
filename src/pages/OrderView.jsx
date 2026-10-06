@@ -26,6 +26,10 @@ void styles;
 const fa = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('fa-IR'));
 // Raw Rial formatting — the invoice is always in Rial, never converted.
 const faRial = (n) => Math.round(Number(n) || 0).toLocaleString('fa-IR');
+const formatDimension = (value) => {
+  const number = Number(value);
+  return (Number.isFinite(number) ? number : 0).toLocaleString('fa-IR');
+};
 
 const formatWeight = (grams) => {
   const g = Number(grams) || 0;
@@ -348,7 +352,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const isReady = item.state === 'READY';
 
   return (
-    <div className="glass-card item-panel">
+    <div className={`glass-card item-panel ${index % 2 === 0 ? 'item-panel-tone-white' : 'item-panel-tone-blue'}`}>
       <div className="item-panel-head">
         <h3 className="section-title">
           {(index + 1).toLocaleString('fa-IR')}. {item.productName || '—'}
@@ -867,13 +871,20 @@ const OrderView = () => {
               {items.map((item) => {
                 const produced = productionQuantities[item.uid];
                 const quantity = Number(item.quantity) || 0;
+                const diameter = formatDimension(item.diameter);
+                const thickness = formatDimension(item.thickness);
                 const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
                 const isDone = Boolean(item.productionStopped)
                   || stateIndex >= productionCompleteIndex
                   || (produced != null && produced >= quantity);
                 return (
                   <tr key={item.uid}>
-                    <th scope="row">{item.productName || '—'}</th>
+                    <th scope="row">
+                      <span className="order-glance-product">
+                        <span className="order-glance-product-name">{item.productName || '—'}</span>
+                        <bdi className="order-glance-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
+                      </span>
+                    </th>
                     <td>{fa(quantity)} <em>عدد</em></td>
                     <td>{produced == null ? '—' : <>{fa(produced)} <em>عدد</em></>}</td>
                     <td><span className={`order-glance-state${isDone ? ' is-done' : ''}`}><i className={`fa-solid ${isDone ? 'fa-circle-check' : 'fa-clock'}`} aria-hidden="true" /><span className="order-glance-state-full">{isDone ? 'تکمیل شده' : 'در حال انجام'}</span><span className="order-glance-state-short">{isDone ? 'کامل' : 'مانده'}</span></span></td>

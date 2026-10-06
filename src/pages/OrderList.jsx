@@ -6,7 +6,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
 import { ordersApi, ApiError } from '../api/client';
-import { ORDER_STATES } from '../constants';
+import { ORDER_STATES, PLATING_LABELS } from '../constants';
 import styles from './Management.module.css';
 
 const READY_STATE_INDEX = ORDER_STATES.findIndex((state) => state.value === 'READY');
@@ -231,12 +231,16 @@ const OrderList = () => {
                         const diameter = formatItemNumber(item.diameter) || '۰';
                         const thickness = formatItemNumber(item.thickness) || '۰';
                         const quantity = formatItemNumber(item.quantity);
+                        const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
+                          ? item.platingColor
+                          : 'NONE';
                         return (
                           <li className={`order-item ${done ? 'is-done' : ''}`} key={item.uid || index}>
                             <span className="order-item-title">{item.productName || 'بدون نام'}</span>
                             <span className="order-item-specs">
                               <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
                               {quantity && <span className="order-item-quantity">{quantity} عدد</span>}
+                              <span className={`order-item-plating is-${platingColor.toLowerCase()}`}>{PLATING_LABELS[platingColor]}</span>
                             </span>
                           </li>
                         );

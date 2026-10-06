@@ -1054,6 +1054,23 @@
   margin-bottom: 16px;
 }
 
+:local(.root):global(.order-view) :global(.item-panel.item-panel-tone-white) {
+  background: #fff;
+  border-color: var(--sp-border);
+}
+:local(.root):global(.order-view) :global(.item-panel.item-panel-tone-blue) {
+  background: color-mix(in srgb, #fff 92%, var(--sp-primary) 8%);
+  border-color: color-mix(in srgb, var(--sp-border) 78%, var(--sp-primary) 22%);
+}
+[data-theme="dark"] :local(.root):global(.order-view) :global(.item-panel.item-panel-tone-white) {
+  background: var(--sp-surface);
+  border-color: var(--sp-border);
+}
+[data-theme="dark"] :local(.root):global(.order-view) :global(.item-panel.item-panel-tone-blue) {
+  background: color-mix(in srgb, var(--sp-surface) 92%, var(--sp-primary) 8%);
+  border-color: color-mix(in srgb, var(--sp-border) 78%, var(--sp-primary) 22%);
+}
+
 :local(.root) :global(.item-panel-head) :global(.section-title) { margin: 0; }
 
 :local(.root) :global(.state-pill):global(.ready) {
@@ -1159,6 +1176,9 @@
 :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 25%; }
 :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 20%; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody th { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody th :global(.order-glance-product) { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+:local(.root):global(.order-view) :global(.order-glance-product-name) { min-width: 0; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.order-glance-dimensions) { flex: 0 0 auto; padding: 3px 7px; border-radius: 6px; background: color-mix(in srgb, var(--sp-primary) 10%, var(--sp-surface)); color: var(--sp-primary); direction: ltr; font-size: 12px; font-weight: 750; line-height: 1.5; unicode-bidi: isolate; white-space: nowrap; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody td { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody td em { color: var(--sp-text-muted); font-size: 10px; font-style: normal; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody tr:last-child th,
@@ -1436,6 +1456,33 @@
   font-size: 11px;
   font-weight: 650;
 }
+:local(.root):global(.order-list) :global(.order-item-plating) {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border: 1px solid var(--sp-border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+:local(.root):global(.order-list) :global(.order-item-plating.is-gold) {
+  border-color: color-mix(in srgb, #d6ad3b 45%, var(--sp-border));
+  background: color-mix(in srgb, #f0c94c 18%, var(--sp-surface));
+  color: color-mix(in srgb, #9a6b00 70%, var(--sp-text));
+}
+:local(.root):global(.order-list) :global(.order-item-plating.is-silver) {
+  border-color: color-mix(in srgb, #9aa7b7 50%, var(--sp-border));
+  background: color-mix(in srgb, #aeb9c8 16%, var(--sp-surface));
+  color: color-mix(in srgb, #687789 62%, var(--sp-text));
+}
+:local(.root):global(.order-list) :global(.order-item-plating.is-none) {
+  border-color: #1f242b;
+  background: #2b3038;
+  color: #f4f6f8;
+}
+[data-theme="dark"] :local(.root):global(.order-list) :global(.order-item-plating.is-none) { border-color: #4b5563; background: #303741; color: #f4f6f8; }
 :local(.root):global(.order-list) :global(.order-item.is-done) {
   border-color: color-mix(in srgb, var(--sp-success) 22%, var(--sp-border));
   border-inline-start-color: var(--sp-success);
@@ -1589,6 +1636,7 @@
   :local(.root):global(.order-view) :global(.order-glance-head-short),
   :local(.root):global(.order-view) :global(.order-glance-state-short) { display: inline; }
   :local(.root):global(.order-view) :global(.order-glance-table) tbody th { font-size: 11px; }
+  :local(.root):global(.order-view) :global(.order-glance-dimensions) { padding: 2px 5px; font-size: 11px; }
   :local(.root):global(.order-view) :global(.order-glance-table) tbody td { font-size: 10px; }
   :local(.root):global(.order-view) :global(.order-glance-state) { gap: 4px; font-size: 10px; }
   :local(.root):global(.order-view) :global(.production-metrics-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
