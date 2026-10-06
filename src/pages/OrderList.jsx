@@ -228,14 +228,14 @@ const OrderList = () => {
                     <ul className="order-items" aria-label="اقلام سفارش">
                       {orderItems.length ? orderItems.map((item, index) => {
                         const done = isOrderItemDone(item);
-                        const diameter = formatItemNumber(item.diameter);
-                        const thickness = formatItemNumber(item.thickness);
+                        const diameter = formatItemNumber(item.diameter) || '۰';
+                        const thickness = formatItemNumber(item.thickness) || '۰';
                         const quantity = formatItemNumber(item.quantity);
                         return (
                           <li className={`order-item ${done ? 'is-done' : ''}`} key={item.uid || index}>
                             <span className="order-item-title">{item.productName || 'بدون نام'}</span>
                             <span className="order-item-specs">
-                              {diameter && thickness && <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>}
+                              <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
                               {quantity && <span className="order-item-quantity">{quantity} عدد</span>}
                             </span>
                           </li>
