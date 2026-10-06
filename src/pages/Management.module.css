@@ -1110,14 +1110,35 @@
 :local(.root) :global(.production-assignment-edit) input { width: 100px; min-height: 34px; border: 1px solid #cdd9ec; border-radius: 8px; padding: 4px 8px; }
 
 /* Compact order sections and shadcn-inspired information grouping. */
-:local(.root):global(.order-view) :global(.order-section) { min-width: 0; }
+:local(.root):global(.order-view) :global(.order-section) {
+  --order-section-accent: var(--sp-primary);
+  min-width: 0;
+  margin-block-start: 14px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent) 24%, var(--sp-border));
+  border-inline-start: 4px solid color-mix(in srgb, var(--order-section-accent) 58%, var(--sp-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sp-surface) 96%, var(--order-section-accent) 4%);
+}
+:local(.root):global(.order-view) :global(.order-item-details) { --order-section-accent: var(--sp-primary); margin-block-start: 0; }
+:local(.root):global(.order-view) :global(.order-production-section) { --order-section-accent: var(--sp-success); }
+:local(.root):global(.order-view) :global(.order-state-section) { --order-section-accent: #7162aa; }
 :local(.root):global(.order-view) :global(.order-section-title) {
   margin: 0 0 12px;
   padding-bottom: 9px;
-  border-bottom: 1px solid var(--sp-border);
+  border-bottom: 2px solid color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
   color: var(--sp-text);
   font-size: 14px;
   font-weight: 750;
+}
+:local(.root):global(.order-view) :global(.sub-title) {
+  margin: 16px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent, var(--sp-primary)) 22%, var(--sp-border));
+  border-inline-start: 3px solid color-mix(in srgb, var(--order-section-accent, var(--sp-primary)) 58%, var(--sp-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sp-surface) 94%, var(--order-section-accent, var(--sp-primary)) 6%);
+  color: var(--sp-text);
 }
 
 :local(.root):global(.order-view) :global(.order-glance-section) {
@@ -1240,8 +1261,6 @@
 :local(.root):global(.order-view) :global(.marking-detail-body) { margin-top: 6px; }
 :local(.root):global(.order-view) :global(.marking-detail-body) img { width: 42px; height: 42px; border-radius: 9px; }
 
-:local(.root):global(.order-view) :global(.order-production-section),
-:local(.root):global(.order-view) :global(.order-state-section) { padding-top: 14px; border-top: 1px solid var(--sp-border); }
 :local(.root):global(.order-view) :global(.production-metrics-grid) {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1342,9 +1361,16 @@
 :local(.root):global(.order-view) :global(.weight-measure-initial) :global(.weight-measure-control) { grid-row: 1 / span 2; align-items: center; }
 :local(.root):global(.order-view) :global(.weight-measure-initial) :global(.weight-measure-control) button { min-height: 48px; padding-inline: 20px; border-radius: 12px; }
 :local(.root):global(.order-view) :global(.order-assignment-section),
-:local(.root):global(.order-view) :global(.manager-production-log-section) { margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--sp-border); }
+:local(.root):global(.order-view) :global(.manager-production-log-section) {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent, var(--sp-primary)) 18%, var(--sp-border));
+  border-inline-start: 3px solid color-mix(in srgb, var(--order-section-accent, var(--sp-primary)) 42%, var(--sp-border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sp-surface) 98%, var(--order-section-accent, var(--sp-primary)) 2%);
+}
 :local(.root):global(.order-view) :global(.order-assignment-section) :global(.sub-title),
-:local(.root):global(.order-view) :global(.manager-production-log-section) :global(.sub-title) { margin-top: 0; padding-top: 0; border-top: 0; }
+:local(.root):global(.order-view) :global(.manager-production-log-section) :global(.sub-title) { margin-top: 0; }
 :local(.root):global(.order-view) :global(.manager-production-log-form) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(130px, .8fr) minmax(0, 1fr) auto;
@@ -1617,6 +1643,8 @@
 
 @media (max-width: 480px) {
   :local(.root):global(.order-view) { padding-inline: 12px; }
+  :local(.root):global(.order-view) :global(.order-section) { padding: 11px; }
+  :local(.root):global(.order-view) :global(.order-section-title) { margin-bottom: 10px; font-size: 13px; }
   :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 7px; }
   :local(.root):global(.order-view) :global(.order-header-customer),
   :local(.root):global(.order-view) :global(.order-header-date) { gap: 7px; padding: 7px; }
