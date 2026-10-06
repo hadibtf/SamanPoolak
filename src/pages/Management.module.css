@@ -1101,6 +1101,72 @@
   font-weight: 750;
 }
 
+:local(.root):global(.order-view) :global(.order-glance-section) {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+:local(.root):global(.order-view) :global(.order-header-card) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  align-items: stretch;
+  gap: 8px;
+  padding: 9px;
+  border: 1px solid var(--sp-border);
+  border-radius: 13px;
+  background: var(--sp-surface);
+}
+:local(.root):global(.order-view) :global(.order-header-customer),
+:local(.root):global(.order-view) :global(.order-header-company),
+:local(.root):global(.order-view) :global(.order-header-date) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--sp-surface-muted);
+}
+:local(.root):global(.order-view) :global(.order-header-company) { border-inline-start: 2px solid #8b72c5; }
+:local(.root):global(.order-view) :global(.order-header-customer) > div,
+:local(.root):global(.order-view) :global(.order-header-company),
+:local(.root):global(.order-view) :global(.order-header-date) > div { display: grid; align-content: center; gap: 3px; }
+:local(.root):global(.order-view) :global(.order-header-icon) {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--sp-primary) 11%, var(--sp-surface));
+  color: var(--sp-primary);
+  font-size: 13px;
+}
+:local(.root):global(.order-view) :global(.order-header-company) { color: var(--sp-text); }
+:local(.root):global(.order-view) :global(.order-header-card) small { color: var(--sp-text-muted); font-size: 10px; line-height: 1.4; }
+:local(.root):global(.order-view) :global(.order-header-card) strong { min-width: 0; color: var(--sp-text); font-size: 13px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.order-glance-table-wrap) { min-width: 0; overflow: hidden; border: 1px solid var(--sp-border); border-radius: 12px; background: var(--sp-surface); }
+:local(.root):global(.order-view) :global(.order-glance-table) { width: 100%; table-layout: fixed; border-collapse: collapse; color: var(--sp-text); }
+:local(.root):global(.order-view) :global(.order-glance-table) th,
+:local(.root):global(.order-view) :global(.order-glance-table) td { padding: 10px 12px; border-bottom: 1px solid var(--sp-border); text-align: center; vertical-align: middle; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th { background: var(--sp-surface-muted); color: var(--sp-text-muted); font-size: 11px; font-weight: 700; line-height: 1.5; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:first-child,
+:local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 36%; text-align: start; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(2) { width: 19%; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 25%; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 20%; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody th { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody td { font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody td em { color: var(--sp-text-muted); font-size: 10px; font-style: normal; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody tr:last-child th,
+:local(.root):global(.order-view) :global(.order-glance-table) tbody tr:last-child td { border-bottom: 0; }
+:local(.root):global(.order-view) :global(.order-glance-state) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--sp-text-muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.order-glance-state) i { font-size: 12px; }
+:local(.root):global(.order-view) :global(.order-glance-state.is-done) { color: #16834b; }
+:local(.root):global(.order-view) :global(.order-glance-head-short),
+:local(.root):global(.order-view) :global(.order-glance-state-short) { display: none; }
+
 @media (max-width: 420px) {
   :local(.root):global(.order-list) :global(.order-list-status-tabs) { width: 100%; margin-block: 10px; }
   :local(.root):global(.order-list) :global(.order-list-status-tabs) button { gap: 6px; padding-inline: 7px; font-size: 12px; }
@@ -1270,6 +1336,27 @@
 
 @media (max-width: 480px) {
   :local(.root):global(.order-view) { padding-inline: 12px; }
+  :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 7px; }
+  :local(.root):global(.order-view) :global(.order-header-customer),
+  :local(.root):global(.order-view) :global(.order-header-date) { gap: 7px; padding: 7px; }
+  :local(.root):global(.order-view) :global(.order-header-company) { grid-column: 1 / -1; min-height: 40px; }
+  :local(.root):global(.order-view) :global(.order-header-icon) { flex-basis: 28px; width: 28px; height: 28px; }
+  :local(.root):global(.order-view) :global(.order-header-card) strong { font-size: 12px; }
+  :local(.root):global(.order-view) :global(.order-glance-table) th,
+  :local(.root):global(.order-view) :global(.order-glance-table) td { padding: 9px 5px; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th { font-size: 10px; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:first-child,
+  :local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 34%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(2) { width: 18%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 26%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 22%; }
+  :local(.root):global(.order-view) :global(.order-glance-head-full),
+  :local(.root):global(.order-view) :global(.order-glance-state-full) { display: none; }
+  :local(.root):global(.order-view) :global(.order-glance-head-short),
+  :local(.root):global(.order-view) :global(.order-glance-state-short) { display: inline; }
+  :local(.root):global(.order-view) :global(.order-glance-table) tbody th { font-size: 11px; }
+  :local(.root):global(.order-view) :global(.order-glance-table) tbody td { font-size: 10px; }
+  :local(.root):global(.order-view) :global(.order-glance-state) { gap: 4px; font-size: 10px; }
   :local(.root):global(.order-view) :global(.production-metrics-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.production-metric)[data-kind="produced-quantity"] { grid-column: 1 / -1; }
   :local(.root):global(.order-view) :global(.production-completion-panel) { gap: 10px; padding: 11px; }

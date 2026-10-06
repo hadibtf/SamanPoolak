@@ -6,7 +6,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { db, deriveOrderStatus } from '../db';
+import { db } from '../db';
 import { ordersApi, productionApi, ApiError } from '../api/client';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import { productionDateKey } from '../productionStatistics';
@@ -70,7 +70,7 @@ const invoiceDescription = (item) => {
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
-const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderDate, canAssign, canViewProduction }) => {
+const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, orderDate, canAssign, canViewProduction }) => {
   const [nextState, setNextState] = useState('');
   const [stageWeight, setStageWeight] = useState('');
   const [stateNote, setStateNote] = useState('');
@@ -100,8 +100,8 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, orderId, orderD
   const loadSummary = () => {
     if (!canViewProduction) return;
     return productionApi.itemSummary(orderId, item.uid)
-      .then((summary) => { setProductionSummary(summary); setSummaryError(''); return summary; })
-      .catch(() => { setProductionSummary(null); setSummaryError('سوابق تولید دریافت نشد.'); });
+      .then((summary) => { setProductionSummary(summary); onProductionSummaryChange(item.uid, summary); setSummaryError(''); return summary; })
+      .catch(() => { setProductionSummary(null); onProductionSummaryChange(item.uid, null); setSummaryError('سوابق تولید دریافت نشد.'); });
   };
 
   useEffect(() => {
@@ -546,6 +546,7 @@ const OrderView = () => {
   );
 
   const [toast, setToast] = useState(null);
+  const [productionQuantities, setProductionQuantities] = useState({});
   const invoiceRef = useRef(null);
 
   const markingMap = useMemo(() => {
@@ -576,7 +577,13 @@ const OrderView = () => {
   }
 
   const items = order.items || [];
-  const status = deriveOrderStatus(order);
+  const productionCompleteIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
+  const reportItemProduction = (uid, summary) => {
+    const quantity = summary == null ? null : Number(summary.totalProduced) || 0;
+    setProductionQuantities((previous) => previous[uid] === quantity
+      ? previous
+      : { ...previous, [uid]: quantity });
+  };
 
   const updateItem = async (index, patch) => {
     const newItems = items.map((it, i) => (i === index ? { ...it, ...patch } : it));
@@ -667,22 +674,47 @@ const OrderView = () => {
         </div>
       </div>
 
-      {/* Order header / status */}
-      <div className="glass-card order-summary">
-        <div className="detail-grid">
-          <div className="detail"><span>مشتری</span><strong>{order.customerName}</strong></div>
-          <div className="detail"><span>تاریخ</span><strong>{formatJalali(order.date)}</strong></div>
-          <div className="detail"><span>تعداد اقلام</span><strong>{fa(items.length)}</strong></div>
-          {order.createdByName && (
-            <div className="detail"><span>ثبت‌کننده</span><strong>{order.createdByName}</strong></div>
+      <section className="order-glance-section" aria-label="خلاصه سریع سفارش">
+        <div className="order-header-card">
+          <div className="order-header-customer">
+            <span className="order-header-icon" aria-hidden="true"><i className="fa-solid fa-user" /></span>
+            <div><small>مشتری</small><strong>{order.customerName || '—'}</strong></div>
+          </div>
+          {customer?.companyName?.trim() && (
+            <div className="order-header-company">
+              <small>شرکت</small><strong>{customer.companyName.trim()}</strong>
+            </div>
           )}
+          <div className="order-header-date">
+            <span className="order-header-icon" aria-hidden="true"><i className="fa-solid fa-calendar-days" /></span>
+            <div><small>تاریخ ثبت سفارش</small><strong dir="ltr">{formatJalali(order.date)}</strong></div>
+          </div>
         </div>
-        <div className={`order-status-banner ${status.done ? 'done' : ''}`}>
-          {status.done
-            ? '✅ تکمیل شده — همهٔ اقلام آماده تحویل'
-            : `در حال انجام — ${fa(status.ready)} از ${fa(status.total)} قلم آماده تحویل`}
+
+        <div className="order-glance-table-wrap">
+          <table className="order-glance-table">
+            <thead><tr><th scope="col">نام محصول</th><th scope="col"><span className="order-glance-head-full">تعداد سفارش</span><span className="order-glance-head-short">تعداد</span></th><th scope="col"><span className="order-glance-head-full">تعداد تولیدشده</span><span className="order-glance-head-short">تولید</span></th><th scope="col"><span className="order-glance-head-full">وضعیت</span><span className="order-glance-head-short">انجام</span></th></tr></thead>
+            <tbody>
+              {items.map((item) => {
+                const produced = productionQuantities[item.uid];
+                const quantity = Number(item.quantity) || 0;
+                const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
+                const isDone = Boolean(item.productionStopped)
+                  || stateIndex >= productionCompleteIndex
+                  || (produced != null && produced >= quantity);
+                return (
+                  <tr key={item.uid}>
+                    <th scope="row">{item.productName || '—'}</th>
+                    <td>{fa(quantity)} <em>عدد</em></td>
+                    <td>{produced == null ? '—' : <>{fa(produced)} <em>عدد</em></>}</td>
+                    <td><span className={`order-glance-state${isDone ? ' is-done' : ''}`}><i className={`fa-solid ${isDone ? 'fa-circle-check' : 'fa-clock'}`} aria-hidden="true" /><span className="order-glance-state-full">{isDone ? 'تکمیل شده' : 'در حال انجام'}</span><span className="order-glance-state-short">{isDone ? 'کامل' : 'مانده'}</span></span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
 
       {/* Item panels */}
       {items.map((item, index) => (
@@ -693,6 +725,7 @@ const OrderView = () => {
           markingMap={markingMap}
           onUpdate={updateItem}
           onToast={showToast}
+          onProductionSummaryChange={reportItemProduction}
           orderId={orderId}
           orderDate={order.date}
           canAssign={user?.role === 'admin'}
