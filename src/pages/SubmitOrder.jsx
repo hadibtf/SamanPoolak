@@ -33,6 +33,7 @@ const blankItem = () => ({
   stateHistory: null,
   weightOf10: null,
   producedTotalWeight: null,
+  productionStopped: false,
 });
 
 // One editable product block.
@@ -255,6 +256,7 @@ const SubmitOrder = () => {
           stateHistory: it.stateHistory || null,
           weightOf10: it.weightOf10 ?? null,
           producedTotalWeight: it.producedTotalWeight ?? null,
+          productionStopped: Boolean(it.productionStopped),
         })));
       }
 
@@ -372,6 +374,7 @@ const SubmitOrder = () => {
           : it.stateHistory,
         weightOf10: it.weightOf10 ?? null,
         producedTotalWeight: it.producedTotalWeight ?? null,
+        productionStopped: Boolean(it.productionStopped),
       };
     });
 

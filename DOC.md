@@ -40,8 +40,10 @@ mirror so the UI updates instantly.
 
 Production screens are an exception: `productionApi` calls the server directly
 and stores responses in local React state. Employee logs are not mirrored through
-the management sync engine. See [employee production](MASTERCONTEXT.md#employee-production)
-for units, ownership, edits/deletes, dates, and aggregation rules.
+the management sync engine. Manager-entered item logs are also read directly and
+are kept separate from employee assignments. See
+[employee production](MASTERCONTEXT.md#employee-production) for units, ownership,
+dates, and aggregation rules.
 
 🤖 **Analogy:** like a Room cache fed by a Retrofit-backed repository with a
 WorkManager sync — except there's no explicit repository/VM; components call the
@@ -168,10 +170,13 @@ use-case, provided app-wide.
 - **Order item** (`orders.items[]`): `productName, quantity, material,
   thickness, diameter, markingId/markingName, platingColor, isHardened,
   hardeningIntensity, description, salePrice, unitCost, state, stateHistory[],
-  weightOf10, producedTotalWeight`.
-- **Workflow states** (`constants.js → ORDER_STATES`): ثبت شده → درحال ضرب →
+  weightOf10, producedTotalWeight, productionStopped`.
+- **Workflow states** (`constants.js → ORDER_STATES`): ثبت شده → درحال ضرب → تولید تکمیل شد →
   ارسال/بازگشت سختکاری → ارسال/بازگشت آبکاری → آماده تحویل. Free-select; each
   change appends `{state, date, totalWeight}`. Order "done" when all items READY.
+- **Production stop**: after production exceeds the order quantity, manager
+  confirmation sets `productionStopped` and `PRODUCTION_COMPLETE`, then prevents
+  further assignment and production entries for that item.
 - **Weights** (`computeWeights`): unit weight = `weightOf10/10` (grams); expected
   total = unit × qty; produced qty = `producedTotalWeight / unitWeight`.
 - **Order number** `YYMMN` and **person id** `0-/1-/2-` are **server-assigned**.

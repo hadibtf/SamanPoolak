@@ -34,6 +34,7 @@ export const INVOICE_PLATING_LABELS = {
 export const ORDER_STATES = [
   { value: 'REGISTERED', label: 'ثبت شده' },
   { value: 'MINTING', label: 'درحال ضرب' },
+  { value: 'PRODUCTION_COMPLETE', label: 'تولید تکمیل شد' },
   { value: 'SENT_HARDENING', label: 'ارسال به سختکاری' },
   { value: 'RETURN_HARDENING', label: 'بازگشت از سختکاری' },
   { value: 'SENT_PLATING', label: 'ارسال به آبکاری' },

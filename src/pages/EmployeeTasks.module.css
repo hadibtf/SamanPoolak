@@ -89,6 +89,7 @@
 :local(.root) :global(.production-form) :global(.full-width-date-picker) :global(.rmdp-container) { display: flex !important; width: 100% !important; }
 :local(.root) :global(.task-error) { padding: 10px 12px; border-radius: 10px; background: #fff0f0; color: #c81e1e; font-weight: 600; }
 :local(.root) :global(.weight-first) { display: grid; gap: 8px; border: 1px solid #afd2f7; border-radius: 13px; padding: 14px; background: #eff7ff; }
+:local(.root) :global(.production-stopped-note) { margin: 14px 0; padding: 12px 14px; border: 1px solid rgba(36, 112, 68, .24); border-inline-start: 4px solid #247044; border-radius: 11px; background: #eff8f2; color: #20583a; font-size: 13px; font-weight: 700; line-height: 1.7; }
 :local(.root) :global(.weight-first) label { font-weight: 700; color: #1a4571; }
 :local(.root) :global(.weight-first) small { color: #52677d; }
 :local(.root) :global(.weight-preview) { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 12px 14px; border-radius: 11px; background: #e8f4ed; color: #20583a; }

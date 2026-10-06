@@ -10,9 +10,9 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
     {error && <div className="detail-state error">{error}</div>}
     {details && details.records.length === 0 && <div className="detail-state">در این روز تولیدی ثبت نشده است.</div>}
     {details?.records.map((record) => <article key={record.id}>
-      <div><h3>{record.productName}</h3><p>{showEmployee && <>{record.employeeName} · </>}سفارش {record.orderNumber} · وظیفه {productionFa(record.taskId)}</p></div>
+      <div><h3>{record.productName}</h3><p>{showEmployee && <>{record.employeeName} · </>}سفارش {record.orderNumber} · {record.isManagerEntry ? <span className="production-manager-entry">ثبت دستی مدیر</span> : <>وظیفه {productionFa(record.taskId)}</>}</p></div>
       <strong>{productionFa(record.quantity)} عدد</strong>
-      <dl><div><dt>وضعیت وظیفه</dt><dd>{productionStatusLabel(record.taskStatus)}</dd></div><div><dt>مقدار تخصیص</dt><dd>{productionFa(record.taskRequiredQuantity)}</dd></div><div><dt>وزن تولید</dt><dd>{record.totalWeightGrams ? `${productionFa(record.totalWeightGrams / 1000)} کیلوگرم` : '—'}</dd></div><div><dt>ابعاد</dt><dd>{record.thickness ?? '—'} × {record.diameter ?? '—'} میلی‌متر</dd></div><div><dt>زمان ثبت</dt><dd>{record.createdAt ? new Date(record.createdAt).toLocaleString('fa-IR') : '—'}</dd></div></dl>
+      <dl>{!record.isManagerEntry && <><div><dt>وضعیت وظیفه</dt><dd>{productionStatusLabel(record.taskStatus)}</dd></div><div><dt>مقدار تخصیص</dt><dd>{productionFa(record.taskRequiredQuantity)}</dd></div></>}<div><dt>وزن تولید</dt><dd>{record.totalWeightGrams ? `${productionFa(record.totalWeightGrams / 1000)} کیلوگرم` : '—'}</dd></div><div><dt>ابعاد</dt><dd>{record.thickness ?? '—'} × {record.diameter ?? '—'} میلی‌متر</dd></div><div><dt>زمان ثبت</dt><dd>{record.createdAt ? new Date(record.createdAt).toLocaleString('fa-IR') : '—'}</dd></div></dl>
     </article>)}
   </section>;
 }

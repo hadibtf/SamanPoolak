@@ -65,6 +65,7 @@ $routes = [
     ['PUT',    '/production/tasks/{id}/logs/{logId}', 'production_task_log_update', true],
     ['DELETE', '/production/tasks/{id}/logs/{logId}', 'production_task_log_delete', true],
     ['GET',    '/production/orders/{orderId}/items/{itemUid}/summary', 'production_item_summary', true],
+    ['POST',   '/production/orders/{orderId}/items/{itemUid}/logs', 'production_manager_log_create', true],
     ['GET',    '/markings',         'markings_list',   true],
     ['POST',   '/markings',         'markings_create', true],
     ['DELETE', '/markings/{id}',    'markings_delete', true],

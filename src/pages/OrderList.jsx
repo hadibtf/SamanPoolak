@@ -15,6 +15,7 @@ const OrderList = () => {
   const [fProduct, setFProduct] = useState('');
   const [fFrom, setFFrom] = useState(null);
   const [fTo, setFTo] = useState(null);
+  const [statusTab, setStatusTab] = useState('in-progress');
 
   const orders = useLiveQuery(() => db.orders.orderBy('id').reverse().toArray(), []);
 
@@ -38,6 +39,10 @@ const OrderList = () => {
       return true;
     });
   }, [orders, fOrderNumber, fCustomer, fProduct, fromKey, toKey]);
+
+  const completedOrders = useMemo(() => filtered.filter((order) => deriveOrderStatus(order).done), [filtered]);
+  const inProgressOrders = useMemo(() => filtered.filter((order) => !deriveOrderStatus(order).done), [filtered]);
+  const visibleOrders = statusTab === 'completed' ? completedOrders : inProgressOrders;
 
   const hasFilters = fOrderNumber || fCustomer || fProduct || fFrom || fTo;
 
@@ -134,7 +139,7 @@ const OrderList = () => {
         </div>
 
         <div className="filter-footer">
-          <span className="result-count">{filtered.length} سفارش</span>
+          <span className="result-count">{visibleOrders.length.toLocaleString('fa-IR')} سفارش</span>
           {hasFilters && (
             <button type="button" className="clear-btn" onClick={clearFilters}>
               پاک کردن فیلترها
@@ -143,18 +148,41 @@ const OrderList = () => {
         </div>
       </div>
 
+      <div className="order-list-status-tabs" role="group" aria-label="فیلتر وضعیت سفارش">
+        <button
+          type="button"
+          className={statusTab === 'in-progress' ? 'active' : ''}
+          aria-pressed={statusTab === 'in-progress'}
+          onClick={() => setStatusTab('in-progress')}
+        >
+          <span>در حال انجام</span><small>{inProgressOrders.length.toLocaleString('fa-IR')}</small>
+        </button>
+        <button
+          type="button"
+          className={statusTab === 'completed' ? 'active' : ''}
+          aria-pressed={statusTab === 'completed'}
+          onClick={() => setStatusTab('completed')}
+        >
+          <span>تکمیل شده</span><small>{completedOrders.length.toLocaleString('fa-IR')}</small>
+        </button>
+      </div>
+
       <div className="orders-grid">
-        {filtered.length === 0 ? (
+        {visibleOrders.length === 0 ? (
           <div className="empty-state">
             <i className="fa-solid fa-box-open"></i>
             <p>
               {orders && orders.length === 0
                 ? 'هنوز سفارشی ثبت نشده است.'
-                : 'سفارشی با این فیلترها یافت نشد.'}
+                : hasFilters
+                  ? 'سفارشی با این فیلترها و وضعیت یافت نشد.'
+                  : statusTab === 'completed'
+                    ? 'هنوز سفارش تکمیل‌شده‌ای وجود ندارد.'
+                    : 'سفارشی در حال انجام نیست.'}
             </p>
           </div>
         ) : (
-          filtered.map((o) => {
+          visibleOrders.map((o) => {
             const orderItems = o.items || [];
             const status = deriveOrderStatus(o);
             const names = orderItems.map((it) => it.productName).filter(Boolean);

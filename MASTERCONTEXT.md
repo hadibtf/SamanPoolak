@@ -138,13 +138,14 @@ schema declarations list keys/indexes, not every property on stored objects.
   preserve each item's state/history/weights. Production references order ID
   plus item UID rather than duplicating financial/customer data.
 - Items contain product, quantity, material, thickness, diameter, marking,
-  hardening/plating details, description, prices, state/history, and weights.
+  hardening/plating details, description, prices, state/history, weights, and the
+  manager's `productionStopped` confirmation flag.
 - Order workflow labels come from `ORDER_STATES`: registered, pressing,
-  hardening sent/returned, plating sent/returned, ready. A state change appends
+  production complete, hardening sent/returned, plating sent/returned, ready. A state change appends
   `{state, date, totalWeight}`; an order is done when all items are READY.
 - `computeWeights()` derives unit grams = 10-piece grams / 10 and expected
-  weight = unit × quantity. Legacy order weight reconciliation and employee
-  log-derived totals are distinct; use active logs for employee production totals.
+  weight = unit × quantity. The order view derives actual produced weight and
+  quantity from active production logs rather than the legacy manual weight field.
 - Payroll calculation results are not persisted. Keep insured-base insurance,
   non-insured additions/deductions, and Jalali working-day calculations intact.
 - Images are compressed before upload; marking records belong to customers.
@@ -203,6 +204,18 @@ lock parent records, enforce remaining capacity, and recalculate ASSIGNED,
 IN_PROGRESS, or COMPLETED status. Management order summaries show assignments,
 per-employee production, log dates and audit times. Admin statistics support
 individual/all employees; employee statistics expose only the caller's records.
+
+Admins can also enter a dated production log for an order item and employee.
+These entries live in `manager_production_logs`, record the entering admin, and
+derive piece quantity from the order item's saved 10-piece weight. They do not
+create or change an assignment and have no order-quantity cap. Active manager
+entries count in order progress and employee/management statistics, but do not
+change assignment status and cannot be edited through employee task endpoints.
+The order progress bar caps visually at 100% while the produced totals retain any
+overproduction. When an item's produced quantity exceeds its order quantity, an
+admin can confirm production completion. This records `PRODUCTION_COMPLETE` in
+the state history, persists `productionStopped`, hides assignment/manager entry,
+and blocks new assignment, employee weight setup, and production log writes.
 
 Charts include every valid day, zero-fill empty days, and allow daily drill-down.
 Tooltips show quantity only; years have no thousands separators. Scale labels
@@ -271,6 +284,10 @@ those four columns in `hadibt_business_platform` and bootstrapped
 (2026-10-01 09:21:21 UTC). Legacy log weight zero remains unknown measured
 weight, not a fabricated estimate. Full operating steps are in
 [DEPLOY.md](DEPLOY.md#database-migrations).
+
+The `2026-10-06-manager-production-logs` migration adds the separate manager
+log table. Apply it to the intended database before deploying API code that
+reads or writes manager-entered production logs.
 
 Fresh host sequence: create DB/user and privileges; configure domains and PHP;
 upload API; create private config with DB credentials, allowed origins and a

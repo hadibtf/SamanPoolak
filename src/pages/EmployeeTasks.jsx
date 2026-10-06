@@ -157,6 +157,7 @@ export default function EmployeeTasks() {
       {selected.markingName && <p>مارک: {selected.markingName}</p>}
       <div className="task-specs"><span>تعداد تخصیص: <b>{fa(selected.requiredQuantity)} عدد</b></span><span>باقی‌مانده: <b>{fa(remaining)} عدد</b></span><span>وزن هر عدد: <b>{weights?.unitWeight ? `${fa(weights.unitWeight)} گرم` : '—'}</b></span><span>وزن کل مورد انتظار: <b>{weights?.expectedTotalWeight ? `${fa(weights.expectedTotalWeight / 1000)} کیلوگرم` : '—'}</b></span><span>وزن تخمینی باقی‌مانده: <b>{weights?.unitWeight ? `${fa(remaining * weights.unitWeight / 1000)} کیلوگرم` : '—'}</b></span></div>
       {(selected.thickness || selected.diameter || selected.hardeningIntensity || selected.description) && <p className="task-description">ابعاد: {selected.thickness || '—'} × {selected.diameter || '—'} میلی‌متر {selected.isHardened ? `• سخت‌کاری ${selected.hardeningIntensity || ''}` : ''}<br />{selected.description}</p>}
+      {selected.productionStopped ? <p className="production-stopped-note" role="status">تولید این قلم تکمیل و متوقف شده است؛ ثبت تولید جدید امکان‌پذیر نیست.</p> : <>
       {!selected.weightOf10 && <form onSubmit={saveWeight} className="production-form weight-first">
         <h3>مرحله ۱ · وزن‌کشی نمونه</h3>
         <label htmlFor="weight-of-10">وزن ۱۰ عدد (گرم)</label>
@@ -174,6 +175,7 @@ export default function EmployeeTasks() {
         <Button type="submit" disabled={busy} loading={busy} className={`${styles.submitButton} production-submit`}>{busy ? 'در حال ثبت...' : 'ثبت تولید'}</Button>
         {error && <p className="task-error">{error}</p>}
       </form>}
+      </>}
       <div className="task-logs">
         <div className="task-logs-heading"><h3>سوابق ثبت تولید</h3>{logs.length > 0 && <button type="button" className="log-clear" disabled={mutatingLog} onClick={clearLogs}>پاک کردن همه سوابق این مورد</button>}</div>
         {logs.length ? logs.map((log) => <div className="task-log-row" key={log.id}>

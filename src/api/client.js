@@ -197,6 +197,10 @@ export const productionApi = {
   managementMonthStatistics: (year, month, employeeUserId) => api.get(`/production/statistics/management/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
   managementDayStatistics: (date, employeeUserId) => api.get(`/production/statistics/management/day?date=${encodeURIComponent(date)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
   itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),
+  /** @param {number} orderId @param {string} itemUid @param {import('../types/domain').ManagerProductionLogRequest} log
+   * @returns {Promise<{productionLog: import('../types/domain').ProductionLog}>}
+   */
+  logManagerProduction: (orderId, itemUid, log) => api.post(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/logs`, log),
 };
 
 export const issueNotesApi = {

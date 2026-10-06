@@ -44,6 +44,15 @@ final class FakeMigrationDatabase implements MigrationDatabase
             $this->failOnceWhen = null;
             throw new RuntimeException('Simulated DDL failure.');
         }
+        if (preg_match('/^CREATE TABLE IF NOT EXISTS `?([^`\s(]+)`?\s*\(/i', $sql, $matches)) {
+            $table = $matches[1];
+            preg_match_all('/^\s*`([^`]+)`\s+[^,\r\n]+/m', $sql, $columnMatches);
+            foreach ($columnMatches[1] as $column) {
+                $this->columns[$table][$column] = true;
+            }
+            $this->executed[] = $sql;
+            return;
+        }
         if (!preg_match('/^ALTER TABLE `([^`]+)` ADD COLUMN `([^`]+)`/i', $sql, $matches)) {
             throw new RuntimeException('Unexpected SQL in migration test: ' . $sql);
         }
@@ -110,6 +119,7 @@ $migrations = migrations_discover($migrationDirectory);
 $expectedIds = [
     '2026-09-26-production-log-edit-delete',
     '2026-09-26-production-weight',
+    '2026-10-06-manager-production-logs',
 ];
 migration_check(array_column($migrations, 'id') === $expectedIds, 'Migrations must be discovered in stable lexical order.');
 
@@ -120,6 +130,7 @@ foreach ([
     'total_weight_grams',
     'updated_at          DATETIME      NULL',
     'deleted_at          DATETIME      NULL',
+    'CREATE TABLE IF NOT EXISTS manager_production_logs',
 ] as $schemaToken) {
     migration_check(strpos($schema, $schemaToken) !== false, "Fresh-install schema is missing {$schemaToken}.");
 }
@@ -137,21 +148,21 @@ $adopted->columns = [
 ];
 $initialStatus = migrations_status($adopted, $migrations);
 migration_check(!$initialStatus['tracking_table_exists'], 'Status must not create the tracking table.');
-migration_check(count($initialStatus['pending']) === 2, 'Untracked historical migrations must remain visible.');
+migration_check(count($initialStatus['pending']) === 3, 'Untracked migrations must remain visible.');
 migration_check(count($initialStatus['schema_present']) === 2, 'Status should recognize confirmed historical schema before tracking exists.');
 $adoptResult = migrations_apply($adopted, $migrations);
 migration_check($adoptResult['created_tracking_table'], 'Apply should create tracking on an existing database.');
-migration_check(count($adopted->executed) === 0, 'Existing production columns must not be altered again.');
-migration_check(count($adopted->applied) === 2, 'Verified historical migrations must be recorded.');
+migration_check(count($adopted->executed) === 1, 'Existing production columns must not be altered again; the new manager log table must be created.');
+migration_check(count($adopted->applied) === 3, 'Verified historical migrations and the new manager log table must be recorded.');
 
 // Missing columns are added once; recorded migrations are skipped on rerun.
 $fresh = new FakeMigrationDatabase();
 $firstRun = migrations_apply($fresh, $migrations);
-migration_check(count($firstRun['applied']) === 2, 'Apply must record both pending migrations.');
-migration_check(count($fresh->executed) === 4, 'Apply must add each missing column exactly once.');
+migration_check(count($firstRun['applied']) === 3, 'Apply must record all pending migrations.');
+migration_check(count($fresh->executed) === 5, 'Apply must add missing columns and create the manager log table once.');
 $secondRun = migrations_apply($fresh, $migrations);
 migration_check(count($secondRun['applied']) === 0, 'A second apply must not rerun recorded migrations.');
-migration_check(count($fresh->executed) === 4, 'A second apply must not rerun ALTER statements.');
+migration_check(count($fresh->executed) === 5, 'A second apply must not rerun schema changes.');
 
 // A failed multi-column DDL migration is not recorded, stops the run, and can
 // be safely retried because already-added columns are checked individually.
@@ -167,8 +178,8 @@ migration_check(isset($retry->applied['2026-09-26-production-log-edit-delete']),
 migration_check(!isset($retry->applied['2026-09-26-production-weight']), 'Failed migration must not be recorded.');
 migration_check(!$retry->lockHeld, 'The advisory lock must be released after failure.');
 $retryResult = migrations_apply($retry, $migrations);
-migration_check(count($retryResult['applied']) === 1, 'Retry must finish only the failed migration.');
-migration_check(count($retry->executed) === 4, 'Retry must preserve completed DDL and add only the missing column.');
+migration_check(count($retryResult['applied']) === 2, 'Retry must finish the failed migration and then create the manager log table.');
+migration_check(count($retry->executed) === 5, 'Retry must preserve completed DDL and apply each pending change once.');
 
 // Destructive migrations are rejected before their callback can execute.
 $destructiveDatabase = new FakeMigrationDatabase();

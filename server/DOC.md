@@ -108,7 +108,12 @@ in [employee production](../MASTERCONTEXT.md#employee-production).
   employeeUserId, requiredQuantity, assignedDate, splitFromTaskId?`.
 - `PUT /production/tasks/{id}` *(admin)* changes `requiredQuantity`.
 - `GET /production/orders/{orderId}/items/{itemUid}/summary` *(management)*
-  returns assignments, progress, per-employee totals, and logs.
+  returns assignments, progress, per-employee totals, and both employee and
+  manager-entered logs.
+- `POST /production/orders/{orderId}/items/{itemUid}/logs` *(admin)* accepts
+  `{ employeeUserId, weightKg, productionDate, submissionKey }`. It derives
+  pieces from the order item's saved 10-piece weight, has no order-quantity cap,
+  and returns `{ productionLog }` with 201 (or 200 for an identical UUID retry).
 - `PUT /production/tasks/{id}/weight` *(own employee task)* saves
   `{ weightOf10Grams }` once; an existing measurement returns 409.
 - `GET /production/tasks/{id}/logs` *(own employee task)* lists active logs.
@@ -121,16 +126,22 @@ in [employee production](../MASTERCONTEXT.md#employee-production).
 - `DELETE /production/tasks/{id}/logs` clears only the employee's selected task
   logs, returning `{ deletedCount, productionTask }`.
 - `GET /production/statistics/month?year&month` and `/day?date` return the
-  authenticated employee's aggregates and daily details.
+  authenticated employee's aggregates and daily details, including manager
+  entries attributed to that employee.
 - `GET /production/statistics/management/employees`, `/month?year&month`, and
   `/day?date` *(admin)* support combined statistics; month/day accept optional
   `employeeUserId` to restrict results to one employee.
 
-Batch kg are stored as `total_weight_grams`; piece quantity is rounded from the
-task's saved 10-piece gram measurement. Past Jalali dates are accepted within
+Employee batch kg and manager-entered kg are stored as `total_weight_grams` in
+their respective log tables. Employee piece quantity is rounded from the task's
+saved 10-piece gram measurement; manager entries use the order item's saved
+10-piece measurement. Manager entries are separate from assignments and do not
+change assignment status. Past Jalali dates are accepted within
 1405–1499. All aggregates exclude `deleted_at` rows. Transactions lock parent
-rows, enforce capacity, and recalculate status after changes. An identical UUID
-retry returns the original log; changed content or a deleted key returns 409.
+rows; employee task logs enforce assignment capacity and recalculate task status,
+while manager logs have no assignment capacity check. An identical UUID retry
+returns the original log; changed content or a deleted key returns 409. Apply
+the `2026-10-06-manager-production-logs` migration before deploying this route.
 Employee projections exclude customer contacts, pricing, and administrative data.
 
 ### Users *(admin only)*

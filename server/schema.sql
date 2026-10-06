@@ -296,6 +296,30 @@ CREATE TABLE IF NOT EXISTS production_logs (
     INDEX idx_production_logs_order_item (order_id, order_item_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Admin-entered logs are separate from employee assignment logs: they have no
+-- production task and deliberately do not inherit an assignment quantity cap.
+CREATE TABLE IF NOT EXISTS manager_production_logs (
+    id                  INT AUTO_INCREMENT PRIMARY KEY,
+    employee_user_id    INT           NOT NULL,
+    entered_by          INT           NOT NULL,
+    order_id            INT           NOT NULL,
+    order_item_uid      VARCHAR(128)  NOT NULL,
+    quantity            DECIMAL(14,3) NOT NULL,
+    total_weight_grams  DECIMAL(14,3) NOT NULL,
+    production_date     VARCHAR(8)    NOT NULL,
+    submission_key      CHAR(36)      NOT NULL,
+    created_at          DATETIME      NOT NULL,
+    updated_at          DATETIME      NULL,
+    deleted_at          DATETIME      NULL,
+    CONSTRAINT fk_manager_production_logs_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
+    CONSTRAINT fk_manager_production_logs_entered_by FOREIGN KEY (entered_by) REFERENCES users(id),
+    CONSTRAINT fk_manager_production_logs_order FOREIGN KEY (order_id) REFERENCES orders(id),
+    UNIQUE KEY uq_manager_production_logs_submission (submission_key),
+    INDEX idx_manager_production_logs_employee_date (employee_user_id, production_date),
+    INDEX idx_manager_production_logs_order_item (order_id, order_item_uid),
+    INDEX idx_manager_production_logs_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- This complete schema includes the results of the historical production
 -- migrations. The migration runner verifies existing columns before recording
 -- those stable migration IDs, so importing this file does not seed false history.

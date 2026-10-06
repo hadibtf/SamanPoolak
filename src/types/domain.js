@@ -62,6 +62,7 @@
  * @property {StateHistory[]} stateHistory
  * @property {Grams|null} [weightOf10] Weight of ten pieces, in grams.
  * @property {Grams|null} [producedTotalWeight] Legacy/reconciled grams.
+ * @property {boolean} [productionStopped] Manager confirmed production is complete.
  *
  * @typedef {Object} Order
  * @property {OrderId} id
@@ -83,8 +84,9 @@
  * @property {string} status
  *
  * @typedef {Object} ProductionLog
- * @property {number} id
- * @property {number} taskId
+ * @property {number|string} id Manager-entered log IDs use a `manager-` prefix.
+ * @property {number|null} taskId Manager-entered logs have no employee task.
+ * @property {boolean} isManagerEntry
  * @property {UserId} employeeUserId
  * @property {OrderId} orderId
  * @property {string} orderItemUid
@@ -110,6 +112,12 @@
  *
  * @typedef {Object} ProductionLogRequest
  * @property {Kilograms} weightKg API input is kilograms; response total is grams.
+ * @property {JalaliDateKey} productionDate
+ * @property {string} submissionKey
+ *
+ * @typedef {Object} ManagerProductionLogRequest
+ * @property {UserId} employeeUserId
+ * @property {Kilograms} weightKg
  * @property {JalaliDateKey} productionDate
  * @property {string} submissionKey
  *
