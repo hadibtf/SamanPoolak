@@ -1482,7 +1482,7 @@
   font-size: 11px;
   font-weight: 650;
 }
-:local(.root):global(.order-list) :global(.order-item-plating) {
+:local(.root) :global(.order-item-plating) {
   display: inline-flex;
   align-items: center;
   padding: 2px 7px;
@@ -1493,22 +1493,22 @@
   line-height: 1.5;
   white-space: nowrap;
 }
-:local(.root):global(.order-list) :global(.order-item-plating.is-gold) {
+:local(.root) :global(.order-item-plating.is-gold) {
   border-color: color-mix(in srgb, #d6ad3b 45%, var(--sp-border));
   background: color-mix(in srgb, #f0c94c 18%, var(--sp-surface));
   color: color-mix(in srgb, #9a6b00 70%, var(--sp-text));
 }
-:local(.root):global(.order-list) :global(.order-item-plating.is-silver) {
+:local(.root) :global(.order-item-plating.is-silver) {
   border-color: color-mix(in srgb, #9aa7b7 50%, var(--sp-border));
   background: color-mix(in srgb, #aeb9c8 16%, var(--sp-surface));
   color: color-mix(in srgb, #687789 62%, var(--sp-text));
 }
-:local(.root):global(.order-list) :global(.order-item-plating.is-none) {
+:local(.root) :global(.order-item-plating.is-none) {
   border-color: #1f242b;
   background: #2b3038;
   color: #f4f6f8;
 }
-[data-theme="dark"] :local(.root):global(.order-list) :global(.order-item-plating.is-none) { border-color: #4b5563; background: #303741; color: #f4f6f8; }
+[data-theme="dark"] :local(.root) :global(.order-item-plating.is-none) { border-color: #4b5563; background: #303741; color: #f4f6f8; }
 :local(.root):global(.order-list) :global(.order-item.is-done) {
   border-color: color-mix(in srgb, var(--sp-success) 22%, var(--sp-border));
   border-inline-start-color: var(--sp-success);

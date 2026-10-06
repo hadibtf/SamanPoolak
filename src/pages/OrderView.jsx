@@ -873,6 +873,9 @@ const OrderView = () => {
                 const quantity = Number(item.quantity) || 0;
                 const diameter = formatDimension(item.diameter);
                 const thickness = formatDimension(item.thickness);
+                const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
+                  ? item.platingColor
+                  : 'NONE';
                 const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
                 const isDone = Boolean(item.productionStopped)
                   || stateIndex >= productionCompleteIndex
@@ -883,6 +886,7 @@ const OrderView = () => {
                       <span className="order-glance-product">
                         <span className="order-glance-product-name">{item.productName || '—'}</span>
                         <bdi className="order-glance-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
+                        <span className={`order-item-plating is-${platingColor.toLowerCase()}`}>{PLATING_LABELS[platingColor]}</span>
                       </span>
                     </th>
                     <td>{fa(quantity)} <em>عدد</em></td>
