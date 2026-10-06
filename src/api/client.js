@@ -201,6 +201,8 @@ export const productionApi = {
    * @returns {Promise<{productionLog: import('../types/domain').ProductionLog}>}
    */
   logManagerProduction: (orderId, itemUid, log) => api.post(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/logs`, log),
+  updateManagerProduction: (orderId, itemUid, logId, patch) => api.put(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/logs/${encodeURIComponent(logId)}`, patch),
+  deleteManagerProduction: (orderId, itemUid, logId) => api.del(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/logs/${encodeURIComponent(logId)}`),
 };
 
 export const issueNotesApi = {

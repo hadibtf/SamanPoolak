@@ -963,6 +963,8 @@
   background: var(--active-color);
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
 }
+:local(.root) :global(.timeline-item):global(.resumed) :global(.timeline-dot) { background: var(--sp-success, #247044); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sp-success, #247044) 14%, transparent); }
+:local(.root) :global(.timeline-item):global(.resumed) :global(.timeline-body) strong { color: var(--sp-success, #247044); }
 
 :local(.root) :global(.timeline-body) {
   display: flex;
@@ -1272,8 +1274,20 @@
 :local(.root):global(.order-view) :global(.production-completion-confirm):hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 15px color-mix(in srgb, var(--sp-warning) 32%, transparent); }
 :local(.root):global(.order-view) :global(.production-completion-confirm):focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 3px; }
 :local(.root):global(.order-view) :global(.production-completion-confirm):disabled { opacity: .7; cursor: wait; }
+:local(.root):global(.order-view) :global(.production-completion-resume) { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; color: var(--sp-primary); font: inherit; font-size: 12px; font-weight: 750; white-space: nowrap; cursor: pointer; }
+:local(.root):global(.order-view) :global(.production-completion-resume):hover:not(:disabled) { background: color-mix(in srgb, var(--sp-primary) 8%, transparent); }
+:local(.root):global(.order-view) :global(.production-completion-resume):focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 2px; }
+:local(.root):global(.order-view) :global(.production-completion-resume):disabled { opacity: .65; cursor: wait; }
 :local(.root):global(.order-view) :global(.production-completion-panel.is-confirmed) { border-color: color-mix(in srgb, var(--sp-success) 35%, var(--sp-border)); border-inline-start-color: var(--sp-success); background: linear-gradient(110deg, color-mix(in srgb, var(--sp-success) 11%, var(--sp-surface)), color-mix(in srgb, var(--sp-success) 4%, var(--sp-surface))); }
 :local(.root):global(.order-view) :global(.production-completion-panel.is-confirmed) :global(.production-completion-icon) { background: color-mix(in srgb, var(--sp-success) 16%, var(--sp-surface)); color: var(--sp-success); }
+:local(.root):global(.order-view) :global(.production-short-completion) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 10px; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--sp-warning) 27%, var(--sp-border)); border-inline-start: 3px solid var(--sp-warning); border-radius: 11px; background: color-mix(in srgb, var(--sp-warning) 5%, var(--sp-surface)); }
+:local(.root):global(.order-view) :global(.production-short-completion) > div { display: grid; gap: 3px; min-width: 0; }
+:local(.root):global(.order-view) :global(.production-short-completion) strong { color: var(--sp-text); font-size: 12px; }
+:local(.root):global(.order-view) :global(.production-short-completion) span { color: var(--sp-text-muted); font-size: 11px; line-height: 1.65; }
+:local(.root):global(.order-view) :global(.production-short-completion) button { min-height: 42px; padding: 8px 13px; border: 1px solid color-mix(in srgb, var(--sp-warning) 35%, var(--sp-border)); border-radius: 9px; background: var(--sp-surface); color: var(--sp-warning); font: inherit; font-size: 11px; font-weight: 750; white-space: nowrap; cursor: pointer; }
+:local(.root):global(.order-view) :global(.production-short-completion) button:hover:not(:disabled) { background: color-mix(in srgb, var(--sp-warning) 9%, var(--sp-surface)); }
+:local(.root):global(.order-view) :global(.production-short-completion) button:focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 2px; }
+:local(.root):global(.order-view) :global(.production-short-completion) button:disabled { opacity: .65; cursor: wait; }
 :local(.root):global(.order-view) :global(.unit-weight-value-row) { display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; gap: 6px; direction: rtl; }
 :local(.root):global(.order-view) :global(.weight-edit-link) { flex: 0 0 auto; min-height: 24px; padding: 0; border: 0; background: transparent; color: var(--sp-primary); font: inherit; font-size: 11px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 :local(.root):global(.order-view) :global(.weight-edit-link):hover { color: var(--sp-primary-hover, var(--sp-primary)); }
@@ -1324,14 +1338,34 @@
 :local(.root):global(.order-view) :global(.production-summary-error) { margin: 0; color: var(--sp-text-muted); font-size: 12px; line-height: 1.65; }
 :local(.root):global(.order-view) :global(.production-summary-error) { margin-top: 10px; color: #b54732; }
 :local(.root):global(.order-view) :global(.manager-log-badge) { display: inline-flex; margin-inline-start: 5px; padding: 2px 7px; border-radius: 999px; background: rgba(180, 125, 34, .12); color: #8a6319; font-size: 10px; font-style: normal; font-weight: 700; }
+:local(.root):global(.order-view) :global(.manager-production-log-row) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3px 12px; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) { display: flex; grid-column: 2; grid-row: 1 / span 2; gap: 6px; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button,
+:local(.root):global(.order-view) :global(.manager-log-cancel) { min-height: 38px; padding: 6px 11px; border: 1px solid var(--sp-border); border-radius: 8px; background: var(--sp-surface); color: var(--sp-primary); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button.danger { color: #c43e3e; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:hover:not(:disabled),
+:local(.root):global(.order-view) :global(.manager-log-cancel):hover:not(:disabled) { border-color: var(--sp-primary); background: var(--sp-surface-muted); }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button.danger:hover:not(:disabled) { border-color: #c43e3e; background: rgba(196, 62, 62, .06); }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:focus-visible,
+:local(.root):global(.order-view) :global(.manager-log-cancel):focus-visible { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:disabled,
+:local(.root):global(.order-view) :global(.manager-log-cancel):disabled { opacity: .55; cursor: not-allowed; }
+:local(.root):global(.order-view) :global(.manager-production-log-edit-form) { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 9px; padding: 4px 0 6px; }
+:local(.root):global(.order-view) :global(.manager-production-log-edit-form) label { display: grid; gap: 5px; min-width: 0; color: var(--sp-text-muted); font-size: 11px; }
+:local(.root):global(.order-view) :global(.manager-production-log-edit-actions) { display: flex; grid-column: 1 / -1; justify-content: flex-start; gap: 8px; }
+:local(.root):global(.order-view) :global(.manager-production-log-edit-actions) button { min-height: 42px; }
 
 @media (max-width: 760px) {
   :local(.root):global(.order-view) :global(.order-detail-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.production-metrics-grid) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.manager-production-log-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.manager-production-log-form) button { grid-column: 1 / -1; }
+  :local(.root):global(.order-view) :global(.manager-production-log-edit-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.production-completion-panel) { grid-template-columns: auto minmax(0, 1fr); }
   :local(.root):global(.order-view) :global(.production-completion-confirm) { grid-column: 1 / -1; }
+  :local(.root):global(.order-view) :global(.production-completion-resume) { grid-column: 1 / -1; justify-self: start; }
+  :local(.root):global(.order-view) :global(.production-short-completion) { grid-template-columns: minmax(0, 1fr); }
+  :local(.root):global(.order-view) :global(.production-short-completion) button { width: 100%; }
 }
 
 @media (max-width: 480px) {
@@ -1373,6 +1407,10 @@
   :local(.root):global(.order-view) :global(.weight-measure-edit-actions) > button { width: auto; }
   :local(.root):global(.order-view) :global(.manager-production-log-form) { grid-template-columns: minmax(0, 1fr); }
   :local(.root):global(.order-view) :global(.manager-production-log-form) button { grid-column: 1; }
+  :local(.root):global(.order-view) :global(.manager-production-log-row) { grid-template-columns: minmax(0, 1fr); }
+  :local(.root):global(.order-view) :global(.manager-production-log-actions) { grid-column: 1; grid-row: auto; }
+  :local(.root):global(.order-view) :global(.manager-production-log-edit-form) { grid-template-columns: minmax(0, 1fr); }
+  :local(.root):global(.order-view) :global(.manager-production-log-edit-actions) { grid-column: 1; }
 }
 
 [data-theme="dark"] :local(.root):global(.order-view) input,

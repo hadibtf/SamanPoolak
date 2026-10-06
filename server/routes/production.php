@@ -386,6 +386,92 @@ function production_manager_log_create($params, $body, $user)
     production_manager_log_response($id, 201);
 }
 
+function production_manager_log_id($value)
+{
+    if (!preg_match('/^(?:manager-)?([1-9]\d*)$/', (string) $value, $matches)) return 0;
+    return (int) $matches[1];
+}
+
+function production_manager_log_update($params, $body, $user)
+{
+    require_admin($user);
+    require_fields($body, ['employeeUserId', 'weightKg', 'productionDate']);
+    $orderId = (int) $params['orderId'];
+    $itemUid = trim((string) $params['itemUid']);
+    $logId = production_manager_log_id($params['logId'] ?? '');
+    $employeeRaw = production_normalize_digits($body['employeeUserId']);
+    $employeeId = ctype_digit($employeeRaw) ? (int) $employeeRaw : 0;
+    $weightKg = (float) production_normalize_digits($body['weightKg']);
+    $date = production_normalize_digits($body['productionDate']);
+    if ($orderId <= 0 || $itemUid === '' || $logId <= 0 || $employeeId <= 0
+        || !production_valid_quantity($body['weightKg']) || $weightKg * 1000 > 99999999999.999
+        || !production_valid_date($date)) {
+        json_error('Invalid manager production log', 422);
+    }
+
+    db()->beginTransaction();
+    try {
+        $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
+        $orderStmt->execute([':id' => $orderId]);
+        $order = $orderStmt->fetch();
+        if (!$order) { db()->rollBack(); json_error('Order not found', 404); }
+        $item = null;
+        foreach (($order['items'] ? json_decode($order['items'], true) : []) as $candidate) {
+            if (($candidate['uid'] ?? '') === $itemUid) { $item = $candidate; break; }
+        }
+        $weightOf10 = (float) ($item['weightOf10'] ?? 0);
+        if (!$item || $weightOf10 <= 0) { db()->rollBack(); json_error('Record the order item 10-piece weight before editing production', 422); }
+
+        $employee = db()->prepare("SELECT ea.user_id FROM employee_accounts ea JOIN users u ON u.id = ea.user_id
+            WHERE ea.user_id = :id AND u.role = 'employee' AND u.disabled = 0 LIMIT 1");
+        $employee->execute([':id' => $employeeId]);
+        if (!$employee->fetch()) { db()->rollBack(); json_error('Employee not found or disabled', 422); }
+
+        $existing = db()->prepare('SELECT id FROM manager_production_logs
+            WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL FOR UPDATE');
+        $existing->execute([':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
+        if (!$existing->fetch()) { db()->rollBack(); json_error('Manager production log not found', 404); }
+
+        $quantity = production_pieces_from_weight($weightKg, $weightOf10);
+        if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $update = db()->prepare('UPDATE manager_production_logs SET employee_user_id = :employeeId, quantity = :quantity,
+            total_weight_grams = :weight, production_date = :date, updated_at = :updated
+            WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL');
+        $update->execute([':employeeId' => $employeeId, ':quantity' => $quantity, ':weight' => $weightKg * 1000,
+            ':date' => $date, ':updated' => now_utc(), ':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
+        production_sync_order_item_completion($orderId, $itemUid, (int) $user['id']);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to edit manager production log', 500, $e->getMessage());
+    }
+    production_manager_log_response($logId, 200);
+}
+
+function production_manager_log_delete($params, $body, $user)
+{
+    require_admin($user);
+    $orderId = (int) $params['orderId'];
+    $itemUid = trim((string) $params['itemUid']);
+    $logId = production_manager_log_id($params['logId'] ?? '');
+    if ($orderId <= 0 || $itemUid === '' || $logId <= 0) json_error('Invalid manager production log', 422);
+
+    db()->beginTransaction();
+    try {
+        $update = db()->prepare('UPDATE manager_production_logs SET deleted_at = :deleted, updated_at = :updated
+            WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL');
+        $now = now_utc();
+        $update->execute([':deleted' => $now, ':updated' => $now, ':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
+        if ($update->rowCount() !== 1) { db()->rollBack(); json_error('Manager production log not found', 404); }
+        production_sync_order_item_completion($orderId, $itemUid, (int) $user['id']);
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to delete manager production log', 500, $e->getMessage());
+    }
+    json_response(['ok' => true]);
+}
+
 function production_manager_log_response($id, $status)
 {
     $log = db()->prepare("SELECT l.*, u.display_name AS employee_name, 'manager' AS source
@@ -485,6 +571,67 @@ function production_refresh_task_status($task)
         ':updatedAt' => $now, ':id' => $task['id']]);
 }
 
+function production_state_is_after_completion($state)
+{
+    return in_array($state, [
+        'SENT_HARDENING', 'RETURN_HARDENING', 'SENT_PLATING', 'RETURN_PLATING', 'READY',
+        'PACKAGED', 'SENT_FREIGHT', 'DELIVERED_WORKSHOP', 'DELIVERED_PLATING',
+    ], true);
+}
+
+function production_sync_order_item_completion($orderId, $itemUid, $updatedBy)
+{
+    $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
+    $orderStmt->execute([':id' => $orderId]);
+    $order = $orderStmt->fetch();
+    if (!$order) return;
+
+    $items = $order['items'] ? json_decode($order['items'], true) : [];
+    if (!is_array($items)) return;
+    $itemIndex = null;
+    foreach ($items as $index => $item) {
+        if (($item['uid'] ?? '') === $itemUid) { $itemIndex = $index; break; }
+    }
+    if ($itemIndex === null) return;
+
+    $sum = db()->prepare('SELECT
+        (SELECT COALESCE(SUM(quantity), 0) FROM production_logs WHERE order_id = :employeeOrder AND order_item_uid = :employeeUid AND deleted_at IS NULL)
+        +
+        (SELECT COALESCE(SUM(quantity), 0) FROM manager_production_logs WHERE order_id = :managerOrder AND order_item_uid = :managerUid AND deleted_at IS NULL)');
+    $sum->execute([':employeeOrder' => $orderId, ':employeeUid' => $itemUid, ':managerOrder' => $orderId, ':managerUid' => $itemUid]);
+    $produced = (float) $sum->fetchColumn();
+    $item = $items[$itemIndex];
+    $ordered = (float) ($item['quantity'] ?? 0);
+    if ($produced + 0.00001 >= $ordered) return;
+
+    $history = is_array($item['stateHistory'] ?? null) ? $item['stateHistory'] : [];
+    $hasCompletion = !empty($item['productionStopped']) || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE';
+    $hasCompletion = $hasCompletion || array_reduce($history, static function ($found, $entry) {
+        return $found || (($entry['state'] ?? '') === 'PRODUCTION_COMPLETE');
+    }, false);
+    if (!$hasCompletion) return;
+
+    $previousState = null;
+    if (($item['state'] ?? '') === 'PRODUCTION_COMPLETE') {
+        for ($index = count($history) - 1; $index >= 0; $index--) {
+            $state = $history[$index]['state'] ?? '';
+            if ($state !== '' && $state !== 'PRODUCTION_COMPLETE') { $previousState = $state; break; }
+        }
+    }
+    $item['stateHistory'] = array_values(array_filter($history, static function ($entry) {
+        return ($entry['state'] ?? '') !== 'PRODUCTION_COMPLETE';
+    }));
+    if ($previousState !== null) $item['state'] = $previousState;
+    elseif (($item['state'] ?? '') === 'PRODUCTION_COMPLETE') $item['state'] = 'REGISTERED';
+    $item['productionStopped'] = production_state_is_after_completion($item['state'] ?? '');
+    $items[$itemIndex] = $item;
+
+    $encoded = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($encoded === false) throw new RuntimeException('Could not encode corrected order state');
+    $updateOrder = db()->prepare('UPDATE orders SET items = :items, updated_at = :updated, updated_by = :updatedBy WHERE id = :id');
+    $updateOrder->execute([':items' => $encoded, ':updated' => now_utc(), ':updatedBy' => $updatedBy, ':id' => $orderId]);
+}
+
 function production_task_wire_after_log_change($taskId)
 {
     $stmt = db()->prepare('SELECT t.*, u.display_name AS employee_name FROM production_tasks t JOIN users u ON u.id = t.employee_user_id WHERE t.id = :id');
@@ -518,6 +665,7 @@ function production_task_log_update($params, $body, $user)
         $update = db()->prepare('UPDATE production_logs SET quantity = :quantity, total_weight_grams = :weight, production_date = :date, updated_at = :updated WHERE id = :id');
         $update->execute([':quantity' => $quantity, ':weight' => $weightKg * 1000, ':date' => $date, ':updated' => now_utc(), ':id' => $logId]);
         production_refresh_task_status($task);
+        production_sync_order_item_completion((int) $task['order_id'], $task['order_item_uid'], (int) $user['id']);
         db()->commit();
     } catch (Throwable $e) {
         if (db()->inTransaction()) db()->rollBack();
@@ -541,6 +689,7 @@ function production_task_log_delete($params, $body, $user)
         $update->execute([':deleted' => $now, ':updated' => $now, ':id' => $logId, ':taskId' => $taskId, ':employee' => $user['id']]);
         if ($update->rowCount() !== 1) { db()->rollBack(); json_error('Production log not found', 404); }
         production_refresh_task_status($task);
+        production_sync_order_item_completion((int) $task['order_id'], $task['order_item_uid'], (int) $user['id']);
         db()->commit();
     } catch (Throwable $e) {
         if (db()->inTransaction()) db()->rollBack();
@@ -562,6 +711,7 @@ function production_task_logs_clear($params, $body, $user)
         $update->execute([':deleted' => $now, ':updated' => $now, ':taskId' => $taskId, ':employee' => $user['id']]);
         $count = $update->rowCount();
         production_refresh_task_status($task);
+        production_sync_order_item_completion((int) $task['order_id'], $task['order_item_uid'], (int) $user['id']);
         db()->commit();
     } catch (Throwable $e) {
         if (db()->inTransaction()) db()->rollBack();
@@ -825,6 +975,15 @@ function production_management_day_statistics($params, $body, $user)
 function production_item_summary($params, $body, $user)
 {
     require_management($user); $orderId = (int) $params['orderId']; $uid = (string) $params['itemUid'];
+    $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1');
+    $orderStmt->execute([':id' => $orderId]);
+    $order = $orderStmt->fetch();
+    if (!$order) json_error('Order not found', 404);
+    $orderItem = null;
+    foreach (($order['items'] ? json_decode($order['items'], true) : []) as $candidate) {
+        if (($candidate['uid'] ?? '') === $uid) { $orderItem = $candidate; break; }
+    }
+    if (!$orderItem) json_error('Order item not found', 404);
     $tasks = db()->prepare("SELECT t.*, COALESCE(CONCAT(p.first_name, ' ', p.last_name), u.display_name, u.username) AS employee_name, COALESCE(SUM(l.quantity),0) AS produced_quantity
         FROM production_tasks t JOIN users u ON u.id=t.employee_user_id LEFT JOIN employee_accounts ea ON ea.user_id=u.id LEFT JOIN people p ON p.id=ea.person_id LEFT JOIN production_logs l ON l.task_id=t.id AND l.deleted_at IS NULL
         WHERE t.order_id=:orderId AND t.order_item_uid=:uid AND t.deleted_at IS NULL GROUP BY t.id ORDER BY t.created_at ASC");
@@ -848,5 +1007,5 @@ function production_item_summary($params, $body, $user)
     $logs->execute([':taskOrderId' => $orderId, ':taskUid' => $uid, ':managerOrderId' => $orderId, ':managerUid' => $uid]);
     $logRows = $logs->fetchAll();
     $byEmployee = []; foreach ($logRows as $log) { $id = (int) $log['employee_user_id']; if (!isset($byEmployee[$id])) $byEmployee[$id] = ['employeeUserId'=>$id,'employeeName'=>$log['employee_name'],'quantity'=>0]; $byEmployee[$id]['quantity'] += (float) $log['quantity']; }
-    json_response(['tasks' => array_map('production_task_to_wire', $taskRows), 'totalProduced' => array_sum(array_map(fn($l)=>(float)$l['quantity'],$logRows)), 'byEmployee' => array_values($byEmployee), 'logs' => array_map('production_logs_to_wire',$logRows)]);
+    json_response(['tasks' => array_map('production_task_to_wire', $taskRows), 'totalProduced' => array_sum(array_map(fn($l)=>(float)$l['quantity'],$logRows)), 'byEmployee' => array_values($byEmployee), 'logs' => array_map('production_logs_to_wire',$logRows), 'orderItem' => $orderItem]);
 }

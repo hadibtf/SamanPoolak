@@ -90,8 +90,15 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const [manualWeightKg, setManualWeightKg] = useState('');
   const [manualEmployeeId, setManualEmployeeId] = useState('');
   const [savingManualLog, setSavingManualLog] = useState(false);
+  const [resumingProduction, setResumingProduction] = useState(false);
+  const [editingManagerLogId, setEditingManagerLogId] = useState(null);
+  const [managerLogEditDate, setManagerLogEditDate] = useState('');
+  const [managerLogEditWeightKg, setManagerLogEditWeightKg] = useState('');
+  const [managerLogEditEmployeeId, setManagerLogEditEmployeeId] = useState('');
+  const [mutatingManagerLogId, setMutatingManagerLogId] = useState(null);
   const [confirmingProductionStop, setConfirmingProductionStop] = useState(false);
   const manualPickerDate = useMemo(() => pickerDateFromKey(manualDate), [manualDate]);
+  const managerLogEditPickerDate = useMemo(() => pickerDateFromKey(managerLogEditDate), [managerLogEditDate]);
   const managerDateBounds = useMemo(() => ({
     min: pickerDateFromKey('14050101'),
     max: pickerDateFromKey('14991229'),
@@ -196,6 +203,55 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     } finally { setSavingManualLog(false); }
   };
 
+  const beginManagerLogEdit = (log) => {
+    setEditingManagerLogId(log.id);
+    setManagerLogEditDate(log.productionDate);
+    setManagerLogEditWeightKg(String(Number(log.totalWeightGrams) / 1000));
+    setManagerLogEditEmployeeId(String(log.employeeUserId));
+  };
+
+  const cancelManagerLogEdit = () => {
+    setEditingManagerLogId(null);
+    setManagerLogEditDate('');
+    setManagerLogEditWeightKg('');
+    setManagerLogEditEmployeeId('');
+  };
+
+  const saveManagerLogEdit = async (event, log) => {
+    event.preventDefault();
+    const weightKg = Number(managerLogEditWeightKg);
+    if (!managerLogEditDate || !managerLogEditEmployeeId || !Number.isFinite(weightKg) || weightKg <= 0) {
+      onToast('تاریخ، وزن و کارمند را کامل کنید.', 'error');
+      return;
+    }
+    setMutatingManagerLogId(log.id);
+    try {
+      await productionApi.updateManagerProduction(orderId, item.uid, log.id, {
+        employeeUserId: Number(managerLogEditEmployeeId),
+        weightKg,
+        productionDate: managerLogEditDate,
+      });
+      cancelManagerLogEdit();
+      await loadSummary();
+      onToast('ثبت تولید ویرایش شد.');
+    } catch (error) {
+      onToast(error instanceof ApiError ? error.message : 'ویرایش ثبت تولید انجام نشد.', 'error');
+    } finally { setMutatingManagerLogId(null); }
+  };
+
+  const deleteManagerLog = async (log) => {
+    if (!window.confirm('این ثبت دستی تولید حذف شود؟')) return;
+    setMutatingManagerLogId(log.id);
+    try {
+      await productionApi.deleteManagerProduction(orderId, item.uid, log.id);
+      if (editingManagerLogId === log.id) cancelManagerLogEdit();
+      await loadSummary();
+      onToast('ثبت تولید حذف شد.');
+    } catch (error) {
+      onToast(error instanceof ApiError ? error.message : 'حذف ثبت تولید انجام نشد.', 'error');
+    } finally { setMutatingManagerLogId(null); }
+  };
+
   const history = [...(item.stateHistory || [])].reverse();
   const markImg = markingMap[item.markingId]?.src;
   const measuredWeightOf10 = Number(item.weightOf10) || 0;
@@ -210,14 +266,19 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
         : `${hasUnknownProducedWeight ? 'حداقل ' : ''}${formatWeight(totalProducedWeight)}`;
   const totalProducedQuantity = Number(productionSummary?.totalProduced) || 0;
   const orderQuantity = Number(item.quantity) || 0;
-  const productionOverrun = Boolean(productionSummary) && totalProducedQuantity > orderQuantity;
+  const productionReachedTarget = Boolean(productionSummary) && totalProducedQuantity >= orderQuantity;
   const productionStopped = Boolean(item.productionStopped) || item.state === 'PRODUCTION_COMPLETE';
+  const productionCompleteStateIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
+  const itemStateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
+  const workflowAdvancedPastProduction = itemStateIndex > productionCompleteStateIndex;
   const progress = Number(item.quantity) > 0 ? Math.min(100, Math.max(0, totalProducedQuantity / Number(item.quantity) * 100)) : 0;
   const remainingQuantity = productionSummary ? Math.max(0, orderQuantity - totalProducedQuantity) : null;
   const remainingWeight = remainingQuantity == null ? null : unitWeight * remainingQuantity;
 
   const confirmProductionStop = async () => {
     if (confirmingProductionStop) return;
+    if (totalProducedQuantity < orderQuantity
+      && !window.confirm(`تولید ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش کمتر است. با تأیید، تولید همین مقدار نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد. ادامه می‌دهید؟`)) return;
     setConfirmingProductionStop(true);
     try {
       const completionState = 'PRODUCTION_COMPLETE';
@@ -235,8 +296,33 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     }
   };
 
+  const resumeProduction = async () => {
+    if (resumingProduction) return;
+    if (!window.confirm('با ادامه تولید، ثبت تولید و تخصیص این قلم دوباره فعال می‌شود. ادامه می‌دهید؟')) return;
+    setResumingProduction(true);
+    try {
+      const stateHistory = (item.stateHistory || []).filter((entry) => entry.state !== 'PRODUCTION_COMPLETE');
+      const resumedState = item.state === 'PRODUCTION_COMPLETE'
+        ? [...stateHistory].reverse().find((entry) => entry.state)?.state || 'REGISTERED'
+        : item.state;
+      stateHistory.push({ state: resumedState, event: 'PRODUCTION_RESUMED', date: Date.now(), totalWeight: null });
+      const saved = await onUpdate(index, {
+        productionStopped: false,
+        state: resumedState,
+        stateHistory,
+      });
+      if (saved) {
+        setNextState('');
+        onToast('تولید ادامه پیدا می‌کند؛ ثبت و تخصیص دوباره فعال شد.');
+      }
+    } finally {
+      setResumingProduction(false);
+    }
+  };
+
   const addState = () => {
     if (!nextState) { onToast('یک وضعیت انتخاب کنید.', 'error'); return; }
+    if (nextState === 'PRODUCTION_RESUMED') { resumeProduction(); return; }
     const entry = {
       state: nextState,
       date: Date.now(),
@@ -396,7 +482,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
               </div>
               <small>{totalProducedQuantity > Number(item.quantity) ? `${fa(totalProducedQuantity - Number(item.quantity))} عدد بیشتر از مقدار سفارش` : `${fa(Math.max(0, Number(item.quantity) - totalProducedQuantity))} عدد باقی‌مانده`}</small>
             </div>
-            {canAssign && (productionOverrun || productionStopped) && (
+            {canAssign && (productionStopped || (productionSummary && productionReachedTarget)) && (
               <section className={`production-completion-panel${productionStopped ? ' is-confirmed' : ''}`} aria-live="polite">
                 <span className="production-completion-icon" aria-hidden="true">
                   <i className={`fa-solid ${productionStopped ? 'fa-circle-check' : 'fa-boxes-stacked'}`} />
@@ -404,14 +490,36 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                 <div className="production-completion-copy">
                   <strong>{productionStopped ? 'پایان تولید تأیید شد' : 'به نظر می‌رسد تولید این قلم کامل شده است'}</strong>
                   <span>{productionStopped
-                    ? 'ثبت تولید و تخصیص این قلم بسته شد؛ برای پیگیری مرحله بعد، آبکاری یا تحویل آماده است.'
-                    : `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) از سفارش (${fa(orderQuantity)}) بیشتر شده است. با تأیید، وضعیت قلم «تولید تکمیل شد» ثبت می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`}</span>
+                    ? !productionSummary
+                      ? 'پایان تولید تأیید شده است؛ ثبت تولید و تخصیص این قلم بسته شده است.'
+                      : totalProducedQuantity < orderQuantity
+                        ? `پایان تولید با ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش تأیید شده است. ثبت تولید و تخصیص این قلم بسته شد.`
+                        : 'تعداد تولید به مقدار سفارش رسیده است؛ ثبت تولید و تخصیص این قلم بسته شد و برای مرحله بعد آماده است.'
+                    : totalProducedQuantity === orderQuantity
+                      ? `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) به مقدار سفارش (${fa(orderQuantity)}) رسیده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`
+                      : `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) از مقدار سفارش (${fa(orderQuantity)}) بیشتر شده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`}</span>
                 </div>
-                {!productionStopped && (
+                {productionStopped ? (
+                  <button type="button" className="production-completion-resume" disabled={resumingProduction} onClick={resumeProduction}>
+                    <i className="fa-solid fa-rotate-left" aria-hidden="true" />
+                    {resumingProduction ? 'در حال ادامه...' : 'ادامه تولید'}
+                  </button>
+                ) : !workflowAdvancedPastProduction && (
                   <button type="button" className="production-completion-confirm" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
                     {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان تولید'}
                   </button>
                 )}
+              </section>
+            )}
+            {canAssign && productionSummary && !productionReachedTarget && !productionStopped && !workflowAdvancedPastProduction && (
+              <section className="production-short-completion" aria-label="پایان دستی تولید با کسری">
+                <div>
+                  <strong>پایان تولید پیش از تکمیل مقدار سفارش</strong>
+                  <span>{fa(totalProducedQuantity)} از {fa(orderQuantity)} عدد تولید شده؛ در صورت نهایی بودن همین مقدار، می‌توانید پایان تولید را دستی ثبت کنید.</span>
+                </div>
+                <button type="button" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
+                  {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان با کسری'}
+                </button>
               </section>
             )}
           </>
@@ -474,7 +582,50 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           <h5 className="sub-title">سوابق تولید</h5>
           {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
           {productionSummary.byEmployee.length > 0 && <div className="production-summary-list"><b>تولید هر کارمند</b>{productionSummary.byEmployee.map((row) => <div key={row.employeeUserId}>{row.employeeName}: <strong>{fa(row.quantity)} عدد</strong></div>)}</div>}
-          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => <div key={log.id}><span>{log.employeeName} — {fa(log.quantity)} عدد — {log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم — ` : ''}{formatJalali(log.productionDate)} {log.isManagerEntry && <em className="manager-log-badge">ثبت مدیر</em>}</span><small>{log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : ''}</small></div>)}</div>}
+          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => {
+            const isEditing = editingManagerLogId === log.id;
+            return <div key={log.id} className={log.isManagerEntry ? 'manager-production-log-row' : undefined}>
+              {isEditing ? (
+                <form className="manager-production-log-edit-form" onSubmit={(event) => saveManagerLogEdit(event, log)}>
+                  <label>تاریخ تولید
+                    <JalaliDatePicker
+                      value={managerLogEditPickerDate}
+                      onChange={(date) => setManagerLogEditDate(productionDateKey(date))}
+                      calendar={persian}
+                      locale={persian_fa}
+                      weekDays={weekDays}
+                      placeholder="انتخاب تاریخ"
+                      calendarPosition="bottom-right"
+                      minDate={managerDateBounds.min}
+                      maxDate={managerDateBounds.max}
+                      inputClass="rmdp-input"
+                      containerClassName="manager-production-date"
+                    />
+                  </label>
+                  <label>وزن (کیلوگرم)
+                    <input type="number" min="0.001" step="0.001" inputMode="decimal" dir="ltr" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} required />
+                  </label>
+                  <label>کارمند
+                    <select value={managerLogEditEmployeeId} onChange={(event) => setManagerLogEditEmployeeId(event.target.value)} required>
+                      <option value="">انتخاب کارمند...</option>
+                      {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+                    </select>
+                  </label>
+                  <div className="manager-production-log-edit-actions">
+                    <button type="submit" className="primary-btn compact" disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال ذخیره...' : 'ذخیره'}</button>
+                    <button type="button" className="manager-log-cancel" onClick={cancelManagerLogEdit} disabled={mutatingManagerLogId === log.id}>انصراف</button>
+                  </div>
+                </form>
+              ) : <>
+                <span>{log.employeeName} — {fa(log.quantity)} عدد — {log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم — ` : ''}{formatJalali(log.productionDate)} {log.isManagerEntry && <em className="manager-log-badge">ثبت مدیر</em>}</span>
+                <small>{log.updatedAt ? `${new Date(log.updatedAt).toLocaleString('fa-IR')} · ویرایش‌شده` : (log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : '')}</small>
+                {log.isManagerEntry && <div className="manager-production-log-actions">
+                  <button type="button" onClick={() => beginManagerLogEdit(log)} disabled={mutatingManagerLogId === log.id}>ویرایش</button>
+                  <button type="button" className="danger" onClick={() => deleteManagerLog(log)} disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال انجام...' : 'حذف'}</button>
+                </div>}
+              </>}
+            </div>;
+          })}</div>}
         </div>
       )}
         {summaryError && <p className="production-summary-error" role="status">{summaryError}</p>}
@@ -487,6 +638,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       <div className="state-form">
         <select value={nextState} onChange={(e) => setNextState(e.target.value)}>
           <option value="">انتخاب وضعیت جدید...</option>
+          <option value="PRODUCTION_RESUMED">ادامه تولید</option>
           {ORDER_STATES.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
@@ -516,10 +668,10 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           )}
         </div>
         {history.map((h, i) => (
-          <div key={i} className={`timeline-item ${i === 0 ? 'current' : ''}`}>
+          <div key={i} className={`timeline-item${i === 0 ? ' current' : ''}${h.event === 'PRODUCTION_RESUMED' ? ' resumed' : ''}`}>
             <span className="timeline-dot" />
             <div className="timeline-body">
-              <strong>{ORDER_STATE_LABELS[h.state] || h.state}</strong>
+              <strong>{h.event === 'PRODUCTION_RESUMED' ? 'ادامه تولید' : (ORDER_STATE_LABELS[h.state] || h.state)}</strong>
               {h.date && <span className="timeline-date">{formatStamp(h.date)}</span>}
               {h.totalWeight != null && <span className="timeline-weight">وزن: {formatWeight(h.totalWeight)}</span>}
               {h.note && <span className="timeline-note">یادداشت: {h.note}</span>}
@@ -583,6 +735,23 @@ const OrderView = () => {
     setProductionQuantities((previous) => previous[uid] === quantity
       ? previous
       : { ...previous, [uid]: quantity });
+    if (summary?.orderItem) {
+      const currentState = summary.orderItem;
+      db.orders.get(orderId).then((currentOrder) => {
+        if (!currentOrder) return;
+        let changed = false;
+        const updatedItems = (currentOrder.items || []).map((currentItem) => {
+          if (currentItem.uid !== uid) return currentItem;
+          const nextHistory = currentState.stateHistory || [];
+          if (currentItem.state === currentState.state
+            && Boolean(currentItem.productionStopped) === Boolean(currentState.productionStopped)
+            && JSON.stringify(currentItem.stateHistory || []) === JSON.stringify(nextHistory)) return currentItem;
+          changed = true;
+          return { ...currentItem, state: currentState.state, stateHistory: nextHistory, productionStopped: Boolean(currentState.productionStopped) };
+        });
+        if (changed) db.orders.put({ ...currentOrder, items: updatedItems });
+      }).catch((error) => console.error('Failed to refresh production state:', error));
+    }
   };
 
   const updateItem = async (index, patch) => {

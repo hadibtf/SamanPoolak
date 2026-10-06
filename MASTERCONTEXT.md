@@ -211,11 +211,21 @@ derive piece quantity from the order item's saved 10-piece weight. They do not
 create or change an assignment and have no order-quantity cap. Active manager
 entries count in order progress and employee/management statistics, but do not
 change assignment status and cannot be edited through employee task endpoints.
+Admins can correct the date, weight, and employee through dedicated manager-log
+endpoints; corrections recalculate piece quantity from the saved 10-piece weight,
+and deletions are soft-deleted so they remain recoverable in the database.
 The order progress bar caps visually at 100% while the produced totals retain any
-overproduction. When an item's produced quantity exceeds its order quantity, an
-admin can confirm production completion. This records `PRODUCTION_COMPLETE` in
-the state history, persists `productionStopped`, hides assignment/manager entry,
-and blocks new assignment, employee weight setup, and production log writes.
+overproduction. When an item's produced quantity reaches or exceeds its order
+quantity, an admin can confirm production completion; admins can also manually
+confirm completion below the ordered quantity after acknowledging the shortfall.
+This records `PRODUCTION_COMPLETE` in the state history, persists
+`productionStopped`, hides assignment/manager entry, and blocks new assignments,
+employee weight setup, and new employee/manager production entries. Admins can
+still correct or soft-delete existing manager entries after completion, or use
+the `ادامه تولید` action in the order view or status selector to clear the
+completion event and reopen production logging and assignment; resuming adds an
+`ادامه تولید` timeline entry. If the item had already moved to a later workflow
+state, resuming production preserves that later state.
 
 Charts include every valid day, zero-fill empty days, and allow daily drill-down.
 Tooltips show quantity only; years have no thousands separators. Scale labels

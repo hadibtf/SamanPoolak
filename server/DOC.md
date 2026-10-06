@@ -109,11 +109,15 @@ in [employee production](../MASTERCONTEXT.md#employee-production).
 - `PUT /production/tasks/{id}` *(admin)* changes `requiredQuantity`.
 - `GET /production/orders/{orderId}/items/{itemUid}/summary` *(management)*
   returns assignments, progress, per-employee totals, and both employee and
-  manager-entered logs.
+  manager-entered logs, plus the canonical order item state/history.
 - `POST /production/orders/{orderId}/items/{itemUid}/logs` *(admin)* accepts
   `{ employeeUserId, weightKg, productionDate, submissionKey }`. It derives
   pieces from the order item's saved 10-piece weight, has no order-quantity cap,
   and returns `{ productionLog }` with 201 (or 200 for an identical UUID retry).
+- `PUT /production/orders/{orderId}/items/{itemUid}/logs/{logId}` *(admin)* accepts
+  `{ employeeUserId, weightKg, productionDate }` and recalculates quantity from
+  the item's saved 10-piece weight. `DELETE` on the same path soft-deletes the
+  manager entry; refreshed totals are available through the item summary.
 - `PUT /production/tasks/{id}/weight` *(own employee task)* saves
   `{ weightOf10Grams }` once; an existing measurement returns 409.
 - `GET /production/tasks/{id}/logs` *(own employee task)* lists active logs.
