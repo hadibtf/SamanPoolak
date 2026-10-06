@@ -6,7 +6,21 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
 import { ordersApi, ApiError } from '../api/client';
+import { ORDER_STATES } from '../constants';
 import styles from './Management.module.css';
+
+const READY_STATE_INDEX = ORDER_STATES.findIndex((state) => state.value === 'READY');
+
+const isOrderItemDone = (item) => {
+  const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
+  return stateIndex >= READY_STATE_INDEX;
+};
+
+const formatItemNumber = (value) => {
+  if (value === null || value === undefined || String(value).trim() === '') return '';
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString('fa-IR') : value;
+};
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -18,6 +32,11 @@ const OrderList = () => {
   const [statusTab, setStatusTab] = useState('in-progress');
 
   const orders = useLiveQuery(() => db.orders.orderBy('id').reverse().toArray(), []);
+  const people = useLiveQuery(() => db.people.toArray(), []);
+  const companyByCustomerId = useMemo(
+    () => new Map((people || []).map((person) => [String(person.id), person.companyName?.trim() || ''])),
+    [people]
+  );
 
   const fromKey = useMemo(() => jalaliDateKey(fFrom), [fFrom]);
   const toKey = useMemo(() => jalaliDateKey(fTo), [fTo]);
@@ -184,43 +203,58 @@ const OrderList = () => {
         ) : (
           visibleOrders.map((o) => {
             const orderItems = o.items || [];
-            const status = deriveOrderStatus(o);
-            const names = orderItems.map((it) => it.productName).filter(Boolean);
+            const companyName = companyByCustomerId.get(String(o.customerId));
             return (
               <div
                 key={o.id}
                 className="order-card clickable"
                 onClick={() => navigate(`/orders/view/${o.id}`)}
               >
-                <div className="order-card-head">
-                  <span className="order-number">#{o.orderNumber}</span>
-                  <span className={`state-pill ${status.done ? 'ready' : ''}`}>
-                    {status.done
-                      ? 'تکمیل شده'
-                      : `${status.ready.toLocaleString('fa-IR')}/${status.total.toLocaleString('fa-IR')} آماده`}
-                  </span>
-                </div>
+                <header className="order-card-summary">
+                  <div className="order-summary-parties" dir="rtl">
+                    <span className="order-summary-customer" title={o.customerName || 'مشتری نامشخص'}>
+                      {o.customerName || 'مشتری نامشخص'}
+                    </span>
+                    {companyName && (
+                      <span className="order-summary-company" title={companyName}>
+                        {companyName}
+                      </span>
+                    )}
+                  </div>
+                </header>
 
                 <div className="order-card-body">
                   <div className="order-card-main">
-                    <h3 className="order-product">
-                      {names.length ? names.join('، ') : '—'}
-                    </h3>
-                    <div className="order-meta">
-                      <span><i className="fa-solid fa-user"></i> {o.customerName}</span>
-                      <span><i className="fa-solid fa-layer-group"></i> {orderItems.length.toLocaleString('fa-IR')} قلم</span>
-                      <span><i className="fa-solid fa-calendar"></i> {formatDate(o.date)}</span>
-                      {o.createdByName && <span><i className="fa-solid fa-user-pen"></i> {o.createdByName}</span>}
-                    </div>
+                    <ul className="order-items" aria-label="اقلام سفارش">
+                      {orderItems.length ? orderItems.map((item, index) => {
+                        const done = isOrderItemDone(item);
+                        const diameter = formatItemNumber(item.diameter);
+                        const thickness = formatItemNumber(item.thickness);
+                        const quantity = formatItemNumber(item.quantity);
+                        return (
+                          <li className={`order-item ${done ? 'is-done' : ''}`} key={item.uid || index}>
+                            <span className="order-item-title">{item.productName || 'بدون نام'}</span>
+                            <span className="order-item-specs">
+                              {diameter && thickness && <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>}
+                              {quantity && <span className="order-item-quantity">{quantity} عدد</span>}
+                            </span>
+                          </li>
+                        );
+                      }) : (
+                        <li className="order-item order-item-empty">—</li>
+                      )}
+                    </ul>
                   </div>
                 </div>
 
                 <div className="card-actions">
-                  <button className="icon-btn" onClick={(e) => handleEdit(e, o)} title="ویرایش">
-                    <i className="fa-solid fa-pen-to-square"></i>
+                  <button type="button" className="order-list-action" onClick={(e) => handleEdit(e, o)}>
+                    <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                    <span>ویرایش</span>
                   </button>
-                  <button className="icon-btn danger" onClick={(e) => handleDelete(e, o)} title="حذف">
-                    <i className="fa-solid fa-trash"></i>
+                  <button type="button" className="order-list-action danger" onClick={(e) => handleDelete(e, o)}>
+                    <i className="fa-solid fa-trash" aria-hidden="true"></i>
+                    <span>حذف</span>
                   </button>
                 </div>
               </div>
