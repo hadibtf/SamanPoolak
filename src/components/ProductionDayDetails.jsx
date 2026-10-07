@@ -30,15 +30,15 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
         return <article className="statistics-production-record" key={record.id} dir="rtl">
           <p className="statistics-production-sentence">
             <strong className="statistics-production-product">{record.productName || '—'}</strong>
-            <span className="statistics-production-separator">، </span>
+            {' '}
             <span>{record.customerName || '—'}</span>
-            <span className="statistics-production-separator">، </span>
+            {' '}
             <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
-            <span className="statistics-production-separator">، </span>
+            {' '}
             <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
-            <span className="statistics-production-separator">، </span>
+            {' '}
             <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
-            <span className="statistics-production-separator">، </span>
+            {' '}
             <span className="statistics-production-employee">{record.employeeName || '—'}</span>
           </p>
         </article>;
