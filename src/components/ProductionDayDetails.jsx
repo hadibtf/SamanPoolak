@@ -31,7 +31,7 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
           <dl className="statistics-production-fields">
             <div className="statistics-production-field statistics-production-product">
               <dt className="statistics-production-label">نام محصول</dt>
-              <dd>{record.productName || '—'}{record.isManagerEntry && <small className="production-manager-entry">ثبت دستی مدیر</small>}</dd>
+              <dd>{record.productName || '—'}</dd>
             </div>
             <div className="statistics-production-field">
               <dt className="statistics-production-label">نام مشتری</dt>
