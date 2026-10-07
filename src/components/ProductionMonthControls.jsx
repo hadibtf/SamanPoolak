@@ -6,6 +6,6 @@ export default function ProductionMonthControls({ year, month, onYearChange, onM
     {children}
     <label>سال<select value={year} onChange={(event) => onYearChange(Number(event.target.value))}>{PRODUCTION_YEARS.map((item) => <option key={item} value={item}>{productionFaYear(item)}</option>)}</select></label>
     <label>ماه<select value={month} onChange={(event) => onMonthChange(Number(event.target.value))}>{PRODUCTION_MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select></label>
-    <button type="button" onClick={onView} disabled={loading}>{loading ? 'در حال دریافت...' : 'نمایش آمار'}</button>
+    <button type="button" onClick={() => onView()} disabled={loading}>{loading ? 'در حال دریافت...' : 'نمایش آمار'}</button>
   </section>;
 }

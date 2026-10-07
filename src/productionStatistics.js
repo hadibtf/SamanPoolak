@@ -29,6 +29,10 @@ export function currentProductionMonth() {
   return { year: Math.min(1499, Math.max(1405, date.year)), month: date.month.number };
 }
 
+export function currentProductionDate() {
+  return productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
+}
+
 export function productionMonthDays(year, month, daily = []) {
   const length = new DateObject({ calendar: persian, locale: persian_fa, year: Number(year), month: Number(month), day: 1 }).month.length;
   const totals = new Map(daily.map((row) => [row.date, Number(row.quantity || 0)]));
