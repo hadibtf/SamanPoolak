@@ -7,6 +7,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
 import { ordersApi, ApiError } from '../api/client';
 import { ORDER_STATES, PLATING_LABELS } from '../constants';
+import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
 
 const READY_STATE_INDEX = ORDER_STATES.findIndex((state) => state.value === 'READY');
@@ -75,7 +76,8 @@ const OrderList = () => {
 
   const formatDate = (dateKey) => {
     if (!dateKey || dateKey.length !== 8) return '—';
-    return `${dateKey.slice(0, 4)}/${dateKey.slice(4, 6)}/${dateKey.slice(6, 8)}`;
+    return `${dateKey.slice(0, 4)}/${dateKey.slice(4, 6)}/${dateKey.slice(6, 8)}`
+      .replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
   };
 
   const handleDelete = async (e, o) => {
@@ -221,6 +223,7 @@ const OrderList = () => {
                       </span>
                     )}
                   </div>
+                  <span className="order-summary-date" dir="ltr">{formatDate(o.date)}</span>
                 </header>
 
                 <div className="order-card-body">
@@ -234,13 +237,14 @@ const OrderList = () => {
                         const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
                           ? item.platingColor
                           : 'NONE';
+                        const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
                         return (
                           <li className={`order-item ${done ? 'is-done' : ''}`} key={item.uid || index}>
                             <span className="order-item-title">{item.productName || 'بدون نام'}</span>
                             <span className="order-item-specs">
                               <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
-                              {quantity && <span className="order-item-quantity">{quantity} عدد</span>}
-                              <span className={`order-item-plating is-${platingColor.toLowerCase()}`}>{PLATING_LABELS[platingColor]}</span>
+                              {quantity && <span className="order-item-quantity">{quantity}</span>}
+                              <MetallicText tone={platingTone}>{PLATING_LABELS[platingColor]}</MetallicText>
                             </span>
                           </li>
                         );

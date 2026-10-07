@@ -61,6 +61,46 @@
     --glass-border: rgba(255, 255, 255, 0.6);
 }
 
+/* Reusable metallic finish for short labels and values. */
+.metallic-text {
+    display: inline-block;
+    font-weight: 800;
+}
+
+.metallic-text--gold {
+    color: #9b710d;
+    background-image: linear-gradient(105deg, #8f6500 0%, #c89a1e 28%, #f0d46c 48%, #a97a0b 70%, #d0a92e 84%, #805900 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.metallic-text--silver {
+    color: #405a72;
+    background-image: linear-gradient(105deg, #314a62 0%, #547590 20%, #91aec7 39%, #c1d1df 48%, #7898b4 58%, #486783 80%, #304960 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 .35px 0 rgba(28, 49, 68, .35);
+}
+
+.metallic-text--green {
+    color: #135e38;
+    background-image: linear-gradient(105deg, #0b5b32 0%, #1a8148 22%, #70b98a 40%, #b9dcc6 48%, #39925b 61%, #17683d 82%, #0a512d 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 .35px 0 rgba(20, 69, 43, .3);
+}
+
+.metallic-text--matte {
+    color: #858b94;
+}
+
+[data-theme="dark"] .metallic-text--matte {
+    color: #a8afb8;
+}
+
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;

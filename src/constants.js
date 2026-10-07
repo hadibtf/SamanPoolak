@@ -17,8 +17,8 @@ export const PLATING_OPTIONS = [
 ];
 
 export const PLATING_LABELS = {
-  GOLD: 'آبکاری زرد',
-  SILVER: 'آبکاری سفید',
+  GOLD: 'زرد',
+  SILVER: 'سفید',
   NONE: 'بدون آبکاری',
 };
 

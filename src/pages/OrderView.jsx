@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas';
 import { db } from '../db';
 import { ordersApi, productionApi, ApiError } from '../api/client';
 import JalaliDatePicker from '../components/JalaliDatePicker';
+import MetallicText from '../components/MetallicText';
 import { productionDateKey } from '../productionStatistics';
 import { useAuth } from '../auth/AuthContext';
 import {
@@ -24,6 +25,7 @@ const managementRootClass = styles.root;
 void styles;
 
 const fa = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('fa-IR'));
+const faDigits = (value) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
 // Raw Rial formatting — the invoice is always in Rial, never converted.
 const faRial = (n) => Math.round(Number(n) || 0).toLocaleString('fa-IR');
 const formatDimension = (value) => {
@@ -45,7 +47,7 @@ const formatStamp = (ms) => {
 
 const formatJalali = (dateKey) => {
   if (!dateKey || dateKey.length !== 8) return '—';
-  return `${dateKey.slice(0, 4)}/${dateKey.slice(4, 6)}/${dateKey.slice(6, 8)}`;
+  return faDigits(`${dateKey.slice(0, 4)}/${dateKey.slice(4, 6)}/${dateKey.slice(6, 8)}`);
 };
 
 const currentJalaliDateKey = () => productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
@@ -74,7 +76,7 @@ const invoiceDescription = (item) => {
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
-const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, orderDate, canAssign, canViewProduction }) => {
+const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, canAssign, canViewProduction, hidden = false }) => {
   const [nextState, setNextState] = useState('');
   const [stageWeight, setStageWeight] = useState('');
   const [stateNote, setStateNote] = useState('');
@@ -82,10 +84,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const [savingWeightOf10, setSavingWeightOf10] = useState(false);
   const [editingWeightOf10, setEditingWeightOf10] = useState(false);
   const [employees, setEmployees] = useState([]);
-  const [employeeUserId, setEmployeeUserId] = useState('');
-  const [assignQuantity, setAssignQuantity] = useState(String(item.quantity || ''));
   const [assigning, setAssigning] = useState(false);
-  const [splitFromTaskId, setSplitFromTaskId] = useState('');
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingQuantity, setEditingQuantity] = useState('');
   const [productionSummary, setProductionSummary] = useState(null);
@@ -126,37 +125,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     const interval = window.setInterval(loadSummary, 15000);
     return () => window.clearInterval(interval);
   }, [canViewProduction, orderId, item.uid]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const assignTask = async () => {
-    if (!employeeUserId || !assignQuantity || assigning) { onToast('کارمند و مقدار را انتخاب کنید.', 'error'); return; }
-    const requested = Number(assignQuantity);
-    if (!Number.isFinite(requested) || requested <= 0) { onToast('تعداد معتبر وارد کنید.', 'error'); return; }
-    const assigned = (productionSummary?.tasks || []).reduce((sum, task) => sum + Number(task.requiredQuantity), 0);
-    const deficit = Math.max(0, assigned + requested - Number(item.quantity));
-    let sourceId = null;
-    if (deficit > 0) {
-      const eligible = (productionSummary?.tasks || []).filter((task) =>
-        task.employeeUserId !== Number(employeeUserId) && Number(task.requiredQuantity) - Number(task.producedQuantity || 0) >= deficit);
-      const source = eligible.find((task) => String(task.id) === splitFromTaskId) || (eligible.length === 1 ? eligible[0] : null);
-      if (!source) { onToast('برای تقسیم تولید، یک تخصیص قبلی با مقدار آزاد کافی انتخاب کنید.', 'error'); return; }
-      if (!window.confirm(`آیا می‌خواهید ${fa(deficit)} عدد از وظیفه ${source.employeeName} کم شود و بین دو کارمند تقسیم گردد؟ مقدار تولید ثبت‌شده قبلی تغییر نمی‌کند.`)) return;
-      sourceId = source.id;
-    }
-    setAssigning(true);
-    try {
-      await productionApi.assignTask({
-        orderId, orderItemUid: item.uid, employeeUserId: Number(employeeUserId),
-        requiredQuantity: requested, assignedDate: orderDate,
-        ...(sourceId ? { splitFromTaskId: sourceId } : {}),
-      });
-      loadSummary();
-      setEmployeeUserId('');
-      setSplitFromTaskId('');
-      onToast('وظیفه تولید تخصیص داده شد.');
-    } catch (error) {
-      onToast(error instanceof ApiError ? error.message : 'خطا در تخصیص وظیفه.', 'error');
-    } finally { setAssigning(false); }
-  };
 
   const saveTaskQuantity = async (taskId) => {
     const value = Number(editingQuantity);
@@ -268,6 +236,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     : productionLogs.length === 0 ? '۰ گرم'
       : totalProducedWeight <= 0 ? 'وزن ثبت نشده'
         : `${hasUnknownProducedWeight ? 'حداقل ' : ''}${formatWeight(totalProducedWeight)}`;
+  const compactProducedWeightLabel = producedWeightLabel.replace(/ کیلوگرم/g, ' کیلو');
   const totalProducedQuantity = Number(productionSummary?.totalProduced) || 0;
   const orderQuantity = Number(item.quantity) || 0;
   const productionReachedTarget = Boolean(productionSummary) && totalProducedQuantity >= orderQuantity;
@@ -275,7 +244,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const productionCompleteStateIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
   const itemStateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
   const workflowAdvancedPastProduction = itemStateIndex > productionCompleteStateIndex;
-  const progress = Number(item.quantity) > 0 ? Math.min(100, Math.max(0, totalProducedQuantity / Number(item.quantity) * 100)) : 0;
   const remainingQuantity = productionSummary ? Math.max(0, orderQuantity - totalProducedQuantity) : null;
   const remainingWeight = remainingQuantity == null ? null : unitWeight * remainingQuantity;
 
@@ -350,9 +318,13 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   };
 
   const isReady = item.state === 'READY';
+  const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
+    ? item.platingColor
+    : 'NONE';
+  const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
 
   return (
-    <div className={`glass-card item-panel ${index % 2 === 0 ? 'item-panel-tone-white' : 'item-panel-tone-blue'}`}>
+    <div hidden={hidden} className={`glass-card item-panel ${index % 2 === 0 ? 'item-panel-tone-white' : 'item-panel-tone-blue'}`}>
       <div className="item-panel-head">
         <h3 className="section-title">
           {(index + 1).toLocaleString('fa-IR')}. {item.productName || '—'}
@@ -364,26 +336,80 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
       <section className="order-section order-item-details" aria-label="جزئیات سفارش">
         <h4 className="order-section-title">جزئیات سفارش</h4>
-        <div className="order-detail-grid">
-          <div className="order-detail-tile" data-kind="quantity">
-            <span className="order-detail-icon"><i className="fa-solid fa-boxes-stacked" aria-hidden="true" /></span>
-            <span><small>تعداد</small><strong>{fa(item.quantity)} <em>عدد</em></strong></span>
+        <div className="order-spec-ribbon" aria-label="مشخصات سفارش">
+          <div className="order-spec-item" data-kind="quantity">
+            <small>تعداد سفارش</small>
+            <strong>{fa(item.quantity)}</strong>
           </div>
-          <div className="order-detail-tile" data-kind="material">
-            <span className="order-detail-icon"><i className="fa-solid fa-layer-group" aria-hidden="true" /></span>
-            <span><small>جنس ورق</small><strong>{MATERIAL_LABELS[item.material] || '—'}</strong></span>
+          <div className="order-spec-item" data-kind="plating" data-plating={platingColor}>
+            <small>آبکاری</small>
+            <MetallicText as="strong" className="order-spec-plating" tone={platingTone}>
+              {PLATING_LABELS[platingColor]}
+            </MetallicText>
           </div>
-          <div className="order-detail-tile" data-kind="plating">
-            <span className="order-detail-icon"><i className="fa-solid fa-droplet" aria-hidden="true" /></span>
-            <span><small>آبکاری</small><strong>{PLATING_LABELS[item.platingColor] || '—'}</strong></span>
+          <div className="order-spec-item" data-kind="material">
+            <small>جنس ورق</small>
+            <strong>{MATERIAL_LABELS[item.material] || '—'}</strong>
           </div>
-          <div className="order-detail-tile" data-kind="dimensions">
-            <span className="order-detail-icon"><i className="fa-solid fa-ruler-combined" aria-hidden="true" /></span>
-            <span><small>ابعاد</small><strong dir="ltr">{fa(item.thickness)} × {fa(item.diameter)} mm</strong></span>
+          <div className="order-spec-item" data-kind="hardening">
+            <small>سخت‌کاری</small>
+            <strong>{item.isHardened ? `بله${item.hardeningIntensity ? ` · ${item.hardeningIntensity}` : ''}` : 'خیر'}</strong>
+          </div>
+          <div className="order-spec-item" data-kind="estimated-weight">
+            <small>وزن برآوردی</small>
+            <strong>{measuredWeightOf10 > 0 ? formatWeight(expectedTotalWeight) : '—'}</strong>
+          </div>
+          <div className="order-spec-item" data-kind="unit-weight">
+            <small>وزن واحد</small>
+            <span className="order-spec-weight-value">
+              {measuredWeightOf10 > 0 ? <button
+                type="button"
+                className="order-spec-weight-edit"
+                aria-label="ویرایش وزن نمونه"
+                onClick={() => {
+                  setWeightOf10Input(String(measuredWeightOf10));
+                  setEditingWeightOf10(true);
+                }}
+              >{formatWeight(unitWeight)}</button> : <strong>—</strong>}
+            </span>
           </div>
         </div>
-        <div className="order-detail-extra">
-          <span><small>سخت‌کاری</small><strong>{item.isHardened ? `بله${item.hardeningIntensity ? ` · ${item.hardeningIntensity}` : ''}` : 'خیر'}</strong></span>
+        {(measuredWeightOf10 <= 0 || editingWeightOf10) && (
+          <div className="order-sample-weight-form">
+            <label htmlFor={`weight-of-10-${item.uid}`}>وزن ۱۰ عدد (گرم)</label>
+            <input
+              id={`weight-of-10-${item.uid}`}
+              aria-label="وزن ۱۰ عدد به گرم"
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              dir="ltr"
+              value={weightOf10Input}
+              onChange={(event) => setWeightOf10Input(event.target.value)}
+              placeholder="۰"
+            />
+            <button type="button" className="primary-btn compact" disabled={savingWeightOf10} onClick={saveWeightOf10}>
+              {savingWeightOf10 ? 'در حال ذخیره...' : measuredWeightOf10 > 0 ? 'ذخیره' : 'ثبت'}
+            </button>
+            {editingWeightOf10 && <button type="button" className="weight-edit-cancel" disabled={savingWeightOf10} onClick={() => { setEditingWeightOf10(false); setWeightOf10Input(''); }}>انصراف</button>}
+          </div>
+        )}
+        <div className="order-weight-facts" aria-label="مقادیر وزن و تولید">
+          <div className="order-weight-fact" data-kind="remaining">
+            <MetallicText as="small" tone="gold">باقی‌مانده</MetallicText>
+            <strong><MetallicText tone="gold">{measuredWeightOf10 > 0 && remainingWeight != null ? formatWeight(remainingWeight) : '—'}</MetallicText></strong>
+            <MetallicText as="span" tone="gold">{remainingQuantity == null ? '— عدد' : `${fa(remainingQuantity)} عدد`}</MetallicText>
+          </div>
+          <div className="order-weight-fact" data-kind="produced">
+            <MetallicText as="small" tone="green">تولید شده</MetallicText>
+            <strong><MetallicText tone="green">{productionSummary ? `${fa(totalProducedQuantity)} عدد` : '—'}</MetallicText></strong>
+            <MetallicText as="span" tone="green">{compactProducedWeightLabel}</MetallicText>
+          </div>
+          <div className="order-weight-fact" data-kind="dimensions">
+            <MetallicText as="small" tone="silver">ابعاد</MetallicText>
+            <MetallicText as="strong" tone="silver" dir="ltr">{fa(item.thickness)} × {fa(item.diameter)} mm</MetallicText>
+          </div>
         </div>
         {(markImg || item.markingName) && (
           <div className="marking-detail">
@@ -399,155 +425,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
       <section className="order-section order-production-section" aria-label="تولید">
         <h4 className="order-section-title">تولید</h4>
-        {measuredWeightOf10 > 0 && editingWeightOf10 && (
-          <div className="weight-measure-step weight-measure-edit">
-            <div className="weight-measure-copy">
-              <strong>ویرایش وزن ۱۰ قطعه</strong>
-              <span>این تغییر برآورد سفارش و ثبت‌های بعدی را به‌روز می‌کند؛ سوابق قبلی دست‌نخورده می‌مانند.</span>
-            </div>
-            <label htmlFor={`weight-of-10-${item.uid}`}>وزن ۱۰ قطعه (گرم)</label>
-            <div className="weight-measure-control">
-              <input id={`weight-of-10-${item.uid}`} type="number" min="1" step="1" inputMode="numeric" dir="ltr" value={weightOf10Input} onChange={(event) => setWeightOf10Input(event.target.value)} />
-              <div className="weight-measure-edit-actions">
-                <button type="button" className="primary-btn compact" disabled={savingWeightOf10} onClick={saveWeightOf10}>{savingWeightOf10 ? 'در حال ذخیره...' : 'ذخیره تغییر'}</button>
-                <button type="button" className="weight-edit-cancel" disabled={savingWeightOf10} onClick={() => { setEditingWeightOf10(false); setWeightOf10Input(''); }}>انصراف</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {measuredWeightOf10 <= 0 ? (
-          <div className="weight-measure-step weight-measure-initial">
-            <div className="weight-measure-copy">
-              <span>وزن 10 عدد نمونه</span>
-            </div>
-            <div className="weight-measure-control">
-              <input
-                id={`weight-of-10-${item.uid}`}
-                aria-label="وزن ۱۰ قطعه به گرم"
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                dir="ltr"
-                value={weightOf10Input}
-                onChange={(event) => setWeightOf10Input(event.target.value)}
-                placeholder="۰"
-              />
-              <button type="button" className="primary-btn compact" disabled={savingWeightOf10} onClick={saveWeightOf10}>
-                {savingWeightOf10 ? 'در حال ثبت...' : 'ثبت وزن نمونه'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="production-metrics-grid">
-              <div className="production-metric" data-kind="unit-weight">
-                <small>وزن یک قطعه</small>
-                <div className="unit-weight-value-row">
-                  <strong>{formatWeight(unitWeight)}</strong>
-                  {!editingWeightOf10 && (
-                    <button type="button" className="weight-edit-link" onClick={() => {
-                      setWeightOf10Input(String(measuredWeightOf10));
-                      setEditingWeightOf10(true);
-                    }}>ویرایش</button>
-                  )}
-                </div>
-              </div>
-              <div className="production-metric" data-kind="order-quantity"><small>تعداد سفارش</small><strong>{fa(item.quantity)} <em>عدد</em></strong></div>
-              <div className="production-metric" data-kind="estimated-weight"><small>وزن کل برآوردی</small><strong>{formatWeight(expectedTotalWeight)}</strong></div>
-              <div className="production-metric" data-kind="produced-weight"><small>وزن تولیدشده</small><strong>{producedWeightLabel}</strong></div>
-              <div className="production-metric" data-kind="produced-quantity"><small>تعداد تولیدشده</small><strong>{productionSummary ? `${fa(totalProducedQuantity)} عدد` : '—'}</strong></div>
-            </div>
-            <div className="production-remaining-row" aria-label="مقدار باقی‌مانده سفارش">
-              <div className="production-remaining-item" data-kind="remaining-quantity">
-                <small>تعداد باقی‌مانده</small>
-                <strong>{remainingQuantity == null ? '—' : `${fa(remainingQuantity)} عدد`}</strong>
-              </div>
-              <div className="production-remaining-item" data-kind="remaining-weight">
-                <small>وزن باقی‌مانده</small>
-                <strong>{remainingWeight == null ? '—' : remainingWeight === 0 ? '۰ گرم' : formatWeight(remainingWeight)}</strong>
-              </div>
-            </div>
-            <div className="production-progress-block">
-              <div className="production-progress-labels">
-                <span>پیشرفت تولید</span>
-                <strong>{productionSummary ? `${fa(totalProducedQuantity)} از ${fa(item.quantity)} عدد` : 'در حال دریافت...'}</strong>
-              </div>
-              <div
-                className="production-progress-track"
-                role="progressbar"
-                aria-label="پیشرفت تولید سفارش"
-                aria-valuemin="0"
-                aria-valuemax="100"
-                aria-valuenow={Math.round(progress)}
-                aria-valuetext={`${fa(totalProducedQuantity)} از ${fa(item.quantity)} عدد`}
-              >
-                <span style={{ width: `${progress}%` }} />
-              </div>
-              <small>{totalProducedQuantity > Number(item.quantity) ? `${fa(totalProducedQuantity - Number(item.quantity))} عدد بیشتر از مقدار سفارش` : `${fa(Math.max(0, Number(item.quantity) - totalProducedQuantity))} عدد باقی‌مانده`}</small>
-            </div>
-            {canAssign && (productionStopped || (productionSummary && productionReachedTarget)) && (
-              <section className={`production-completion-panel${productionStopped ? ' is-confirmed' : ''}`} aria-live="polite">
-                <span className="production-completion-icon" aria-hidden="true">
-                  <i className={`fa-solid ${productionStopped ? 'fa-circle-check' : 'fa-boxes-stacked'}`} />
-                </span>
-                <div className="production-completion-copy">
-                  <strong>{productionStopped ? 'پایان تولید تأیید شد' : 'به نظر می‌رسد تولید این قلم کامل شده است'}</strong>
-                  <span>{productionStopped
-                    ? !productionSummary
-                      ? 'پایان تولید تأیید شده است؛ ثبت تولید و تخصیص این قلم بسته شده است.'
-                      : totalProducedQuantity < orderQuantity
-                        ? `پایان تولید با ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش تأیید شده است. ثبت تولید و تخصیص این قلم بسته شد.`
-                        : 'تعداد تولید به مقدار سفارش رسیده است؛ ثبت تولید و تخصیص این قلم بسته شد و برای مرحله بعد آماده است.'
-                    : totalProducedQuantity === orderQuantity
-                      ? `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) به مقدار سفارش (${fa(orderQuantity)}) رسیده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`
-                      : `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) از مقدار سفارش (${fa(orderQuantity)}) بیشتر شده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`}</span>
-                </div>
-                {productionStopped ? (
-                  <button type="button" className="production-completion-resume" disabled={resumingProduction} onClick={resumeProduction}>
-                    <i className="fa-solid fa-rotate-left" aria-hidden="true" />
-                    {resumingProduction ? 'در حال ادامه...' : 'ادامه تولید'}
-                  </button>
-                ) : !workflowAdvancedPastProduction && (
-                  <button type="button" className="production-completion-confirm" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
-                    {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان تولید'}
-                  </button>
-                )}
-              </section>
-            )}
-            {canAssign && productionSummary && !productionReachedTarget && !productionStopped && !workflowAdvancedPastProduction && (
-              <section className="production-short-completion" aria-label="پایان دستی تولید با کسری">
-                <div>
-                  <strong>پایان تولید پیش از تکمیل مقدار سفارش</strong>
-                  <span>{fa(totalProducedQuantity)} از {fa(orderQuantity)} عدد تولید شده؛ در صورت نهایی بودن همین مقدار، می‌توانید پایان تولید را دستی ثبت کنید.</span>
-                </div>
-                <button type="button" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
-                  {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان با کسری'}
-                </button>
-              </section>
-            )}
-          </>
-        )}
-
-        {canAssign && !productionStopped && (
-          <section className="order-assignment-section" aria-label="تخصیص تولید">
-            <h5 className="sub-title">تخصیص تولید</h5>
-          <div className="state-form">
-            <select value={employeeUserId} onChange={(e) => setEmployeeUserId(e.target.value)}>
-              <option value="">انتخاب کارمند...</option>
-              {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
-            </select>
-            <input type="number" min="0.001" step="0.001" dir="ltr" className="ltr-num" value={assignQuantity} onChange={(e) => setAssignQuantity(e.target.value)} placeholder="تعداد" />
-            <button type="button" className="primary-btn compact" disabled={assigning} onClick={assignTask}>{assigning ? 'در حال تخصیص...' : 'تخصیص'}</button>
-          </div>
-          {productionSummary?.tasks?.length > 1 && <label className="production-split-source">در صورت تقسیم، از کدام وظیفه کم شود؟
-            <select value={splitFromTaskId} onChange={(event) => setSplitFromTaskId(event.target.value)}><option value="">انتخاب تخصیص قبلی...</option>{productionSummary.tasks.map((task) => <option key={task.id} value={task.id}>{task.employeeName} — {fa(task.requiredQuantity - (task.producedQuantity || 0))} عدد آزاد</option>)}</select>
-          </label>}
-          </section>
-        )}
-
         {canAssign && !productionStopped && measuredWeightOf10 > 0 && (
           <section className="manager-production-log-section" aria-label="ثبت دستی تولید توسط مدیر">
+            <h5 className="order-production-subtitle">گزارش تولید</h5>
             <form className="manager-production-log-form" onSubmit={saveManualProduction}>
               <label>تاریخ تولید
                 <JalaliDatePicker
@@ -583,7 +463,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
       {canAssign && productionSummary && (
         <div className="production-summary">
-          <h5 className="sub-title">سوابق تولید</h5>
+          <h5 className="order-production-subtitle">سوابق تولید</h5>
           {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
           {productionSummary.byEmployee.length > 0 && <div className="production-summary-list"><b>تولید هر کارمند</b>{productionSummary.byEmployee.map((row) => <div key={row.employeeUserId}>{row.employeeName}: <strong>{fa(row.quantity)} عدد</strong></div>)}</div>}
           {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => {
@@ -632,6 +512,47 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           })}</div>}
         </div>
       )}
+        {canAssign && (productionStopped || (productionSummary && productionReachedTarget)) && (
+          <section className={`production-completion-panel${productionStopped ? ' is-confirmed' : ''}`} aria-live="polite">
+            <span className="production-completion-icon" aria-hidden="true">
+              <i className={`fa-solid ${productionStopped ? 'fa-circle-check' : 'fa-boxes-stacked'}`} />
+            </span>
+            <div className="production-completion-copy">
+              <strong>{productionStopped ? 'پایان تولید تأیید شد' : 'به نظر می‌رسد تولید این قلم کامل شده است'}</strong>
+              <span>{productionStopped
+                ? !productionSummary
+                  ? 'پایان تولید تأیید شده است؛ ثبت تولید و تخصیص این قلم بسته شده است.'
+                  : totalProducedQuantity < orderQuantity
+                    ? `پایان تولید با ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش تأیید شده است. ثبت تولید و تخصیص این قلم بسته شد.`
+                    : 'تعداد تولید به مقدار سفارش رسیده است؛ ثبت تولید و تخصیص این قلم بسته شد و برای مرحله بعد آماده است.'
+                : totalProducedQuantity === orderQuantity
+                  ? `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) به مقدار سفارش (${fa(orderQuantity)}) رسیده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`
+                  : `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) از مقدار سفارش (${fa(orderQuantity)}) بیشتر شده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`}</span>
+            </div>
+            {productionStopped ? (
+              <button type="button" className="production-completion-resume" disabled={resumingProduction} onClick={resumeProduction}>
+                <i className="fa-solid fa-rotate-left" aria-hidden="true" />
+                {resumingProduction ? 'در حال ادامه...' : 'ادامه تولید'}
+              </button>
+            ) : !workflowAdvancedPastProduction && (
+              <button type="button" className="production-completion-confirm" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
+                {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان تولید'}
+              </button>
+            )}
+          </section>
+        )}
+        {canAssign && productionSummary && !productionReachedTarget && !productionStopped && !workflowAdvancedPastProduction && (
+          <section className="production-short-completion" aria-label="پایان دستی تولید با کسری">
+            <div>
+              <strong>پایان تولید پیش از تکمیل مقدار سفارش</strong>
+              <span>{fa(totalProducedQuantity)} از {fa(orderQuantity)} عدد تولید شده؛ در صورت نهایی بودن همین مقدار، می‌توانید پایان تولید را دستی ثبت کنید.</span>
+            </div>
+            <button type="button" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
+              {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان با کسری'}
+            </button>
+          </section>
+        )}
+
         {summaryError && <p className="production-summary-error" role="status">{summaryError}</p>}
       </section>
 
@@ -703,6 +624,7 @@ const OrderView = () => {
 
   const [toast, setToast] = useState(null);
   const [productionQuantities, setProductionQuantities] = useState({});
+  const [selectedItemUid, setSelectedItemUid] = useState(null);
   const invoiceRef = useRef(null);
 
   const markingMap = useMemo(() => {
@@ -733,6 +655,7 @@ const OrderView = () => {
   }
 
   const items = order.items || [];
+  const selectedItem = items.find((item) => item.uid === selectedItemUid) || items[0] || null;
   const productionCompleteIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
   const reportItemProduction = (uid, summary) => {
     const quantity = summary == null ? null : Number(summary.totalProduced) || 0;
@@ -866,9 +789,9 @@ const OrderView = () => {
 
         <div className="order-glance-table-wrap">
           <table className="order-glance-table">
-            <thead><tr><th scope="col">نام محصول</th><th scope="col"><span className="order-glance-head-full">تعداد سفارش</span><span className="order-glance-head-short">تعداد</span></th><th scope="col"><span className="order-glance-head-full">تعداد تولیدشده</span><span className="order-glance-head-short">تولید</span></th><th scope="col"><span className="order-glance-head-full">وضعیت</span><span className="order-glance-head-short">انجام</span></th></tr></thead>
+            <thead><tr><th scope="col" className="order-glance-row-number">ردیف</th><th scope="col">نام محصول</th><th scope="col"><span className="order-glance-head-full">تعداد سفارش</span><span className="order-glance-head-short">تعداد</span></th><th scope="col"><span className="order-glance-head-full">تعداد تولیدشده</span><span className="order-glance-head-short">تولید</span></th><th scope="col"><span className="order-glance-head-full">وضعیت</span><span className="order-glance-head-short">انجام</span></th></tr></thead>
             <tbody>
-              {items.map((item) => {
+              {items.map((item, index) => {
                 const produced = productionQuantities[item.uid];
                 const quantity = Number(item.quantity) || 0;
                 const diameter = formatDimension(item.diameter);
@@ -876,21 +799,36 @@ const OrderView = () => {
                 const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
                   ? item.platingColor
                   : 'NONE';
+                const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
                 const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
                 const isDone = Boolean(item.productionStopped)
                   || stateIndex >= productionCompleteIndex
                   || (produced != null && produced >= quantity);
                 return (
-                  <tr key={item.uid}>
+                  <tr
+                    key={item.uid}
+                    className={selectedItem?.uid === item.uid ? 'is-selected' : undefined}
+                    onClick={() => setSelectedItemUid(item.uid)}
+                  >
+                    <td className="order-glance-row-number">{fa(index + 1)}</td>
                     <th scope="row">
-                      <span className="order-glance-product">
-                        <span className="order-glance-product-name">{item.productName || '—'}</span>
-                        <bdi className="order-glance-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
-                        <span className={`order-item-plating is-${platingColor.toLowerCase()}`}>{PLATING_LABELS[platingColor]}</span>
-                      </span>
+                      <button
+                        type="button"
+                        className="order-glance-select"
+                        aria-pressed={selectedItem?.uid === item.uid}
+                        onClick={() => setSelectedItemUid(item.uid)}
+                      >
+                        <span className="order-glance-product">
+                          <span className="order-glance-product-name" title={item.productName || '—'}>{item.productName || '—'}</span>
+                          <bdi className="order-glance-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
+                          <MetallicText className="order-glance-plating" tone={platingTone}>
+                            {PLATING_LABELS[platingColor]}
+                          </MetallicText>
+                        </span>
+                      </button>
                     </th>
-                    <td>{fa(quantity)} <em>عدد</em></td>
-                    <td>{produced == null ? '—' : <>{fa(produced)} <em>عدد</em></>}</td>
+                    <td>{fa(quantity)}</td>
+                    <td>{produced == null ? '—' : fa(produced)}</td>
                     <td><span className={`order-glance-state${isDone ? ' is-done' : ''}`}><i className={`fa-solid ${isDone ? 'fa-circle-check' : 'fa-clock'}`} aria-hidden="true" /><span className="order-glance-state-full">{isDone ? 'تکمیل شده' : 'در حال انجام'}</span><span className="order-glance-state-short">{isDone ? 'کامل' : 'مانده'}</span></span></td>
                   </tr>
                 );
@@ -911,9 +849,9 @@ const OrderView = () => {
           onToast={showToast}
           onProductionSummaryChange={reportItemProduction}
           orderId={orderId}
-          orderDate={order.date}
           canAssign={user?.role === 'admin'}
           canViewProduction={user?.role !== 'employee'}
+          hidden={item.uid !== selectedItem?.uid}
         />
       ))}
 
