@@ -19,12 +19,15 @@ export default function ManagementStatistics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [detailsView, setDetailsView] = useState('day');
   const [details, setDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
+  const [detailsNavigationId, setDetailsNavigationId] = useState(0);
   const autoLoadRequested = useRef(true);
   const monthRequestId = useRef(0);
   const detailsRequestId = useRef(0);
+  const detailsPanelRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -35,13 +38,14 @@ export default function ManagementStatistics() {
   }, []);
 
   const days = useMemo(() => stats ? productionMonthDays(stats.year, stats.month, stats.daily) : [], [stats]);
+  const productiveDays = useMemo(() => days.filter((day) => Number(day.quantity) > 0), [days]);
   const selectedEmployeeId = mode === 'employee' ? employeeId : null;
   const selectedEmployee = employees.find((employee) => String(employee.userId) === employeeId);
 
   const clearResults = () => {
     monthRequestId.current += 1;
     detailsRequestId.current += 1;
-    setStats(null); setSelectedDate(''); setDetails(null); setDetailsLoading(false); setDetailsError(''); setError(''); setLoading(false);
+    setStats(null); setSelectedDate(''); setDetailsView('day'); setDetails(null); setDetailsLoading(false); setDetailsError(''); setError(''); setLoading(false);
   };
   const changeMode = (value) => { if (value === mode) return; autoLoadRequested.current = true; setMode(value); clearResults(); };
   const changeEmployee = (value) => { if (value === employeeId) return; autoLoadRequested.current = true; setEmployeeId(value); clearResults(); };
@@ -68,7 +72,7 @@ export default function ManagementStatistics() {
     const today = currentProductionDate();
     const todayIsInSelectedMonth = Number(today.slice(0, 4)) === Number(year) && Number(today.slice(4, 6)) === Number(month);
     const dateToSelect = todayIsInSelectedMonth ? today : '';
-    setLoading(true); setError(''); setSelectedDate(''); setDetails(null); setDetailsLoading(false); setDetailsError(''); setStats(null);
+    setLoading(true); setError(''); setSelectedDate(''); setDetailsView('day'); setDetails(null); setDetailsLoading(false); setDetailsError(''); setStats(null);
     try {
       const monthStats = await productionApi.managementMonthStatistics(year, month, selectedEmployeeId);
       if (requestId !== monthRequestId.current) return;
@@ -89,13 +93,26 @@ export default function ManagementStatistics() {
     loadMonth();
   }, [employeeId, loadMonth, mode]);
 
+  useEffect(() => {
+    if (detailsNavigationId > 0) detailsPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+  }, [detailsNavigationId]);
+
   const selectDay = (day) => {
+    setDetailsView('day');
     setSelectedDate(day.date);
+    setDetailsNavigationId((current) => current + 1);
     loadDayDetails(day.date, selectedEmployeeId);
   };
 
+  const showMonthReport = () => {
+    detailsRequestId.current += 1;
+    setDetails(null); setDetailsLoading(false); setDetailsError('');
+    setDetailsView('month');
+    setDetailsNavigationId((current) => current + 1);
+  };
+
   return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
-    <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <strong>{fa(stats.total)} <small>عدد</small></strong>}</header>
+    <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <button className={styles.monthReportButton} type="button" onClick={showMonthReport} aria-pressed={detailsView === 'month'}>گزارش این ماه</button>}</header>
     <div className="statistics-mode" role="group" aria-label="نمایش آمار">
       <button type="button" className={mode === 'all' ? 'active' : ''} onClick={() => changeMode('all')}>همه کارکنان</button>
       <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => changeMode('employee')}>یک کارمند</button>
@@ -110,7 +127,10 @@ export default function ManagementStatistics() {
     {stats && <>
       <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{mode === 'employee' ? `${selectedEmployee?.name || 'کارمند'} · ` : ''}{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن خلاصه تولید روز، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
       {mode === 'all' && <section className="statistics-comparison glass-card"><div className="statistics-card-title"><div><h2>تولید هر کارمند</h2><p>جمع تولید ثبت‌شده در این ماه</p></div></div>{stats.byEmployee.length ? stats.byEmployee.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}><span>{row.employeeName}</span><div className="statistics-employee-meter"><span style={{ width: `${stats.total ? row.quantity / stats.total * 100 : 0}%` }} /></div><strong>{fa(row.quantity)} عدد</strong></div>) : <p className="statistics-no-production">در این ماه تولیدی ثبت نشده است.</p>}</section>}
+      {detailsView === 'month' ? <section ref={detailsPanelRef} className={`statistics-month-details glass-card ${styles.monthDetails}`}>
+        <div className="statistics-card-title"><div><h2>گزارش کامل {PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>جمع تولید ثبت‌شده در هر روز این ماه</p></div><b>{fa(stats.total)} عدد</b></div>
+        {productiveDays.length ? <ol className={styles.monthDayList}>{productiveDays.map((day) => <li key={day.date}><span>روز {fa(day.day)}</span><strong>{fa(day.quantity)} عدد</strong></li>)}</ol> : <p className={styles.monthEmpty}>در این ماه تولیدی ثبت نشده است.</p>}
+      </section> : <div ref={detailsPanelRef}><ProductionDayDetails date={selectedDate} details={details} loading={detailsLoading} error={detailsError} showEmployee={mode === 'all'} /></div>}
     </>}
-    <ProductionDayDetails date={selectedDate} details={details} loading={detailsLoading} error={detailsError} showEmployee={mode === 'all'} />
   </div>;
 }
