@@ -19,9 +19,11 @@
 :local(.root) :global(.statistics-employee-meter) { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
 :local(.root) :global(.statistics-employee-meter) span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#67b7ff,#007aff); }
 :local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 11px; background: #f5f8fc; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { margin: 0; padding: 11px 13px; color: #303844; font-size: 13px; font-weight: 600; line-height: 1.9; text-align: right; overflow-wrap: anywhere; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-item-title) { display: inline-flex; flex-direction: column; align-items: flex-start; margin-inline-end: 5px; vertical-align: middle; line-height: 1.4; }
+:local(.root) :global(.statistics-details) { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; width: 100%; min-width: 0; box-sizing: border-box; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 11px; background: #f5f8fc; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-record):last-child { border-bottom: 1px solid #c9d8e9; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; margin: 0; padding: 11px 13px; color: #303844; font-size: 13px; font-weight: 600; line-height: 1.9; text-align: right; overflow-wrap: anywhere; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-item-title) { display: inline-flex; min-width: 0; flex-direction: column; align-items: flex-start; line-height: 1.4; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-product) { color: #202124; font-weight: 800; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-customer) { color: #7b8491; font-size: 10px; font-weight: 500; line-height: 1.35; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) { color: #0875df; white-space: nowrap; }

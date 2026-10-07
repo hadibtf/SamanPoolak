@@ -9,13 +9,13 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
   const day = Number(date.slice(6, 8));
 
   return <section className="statistics-details glass-card">
-    <div className="statistics-card-title">
+    {!showEmployee && <div className="statistics-card-title">
       <div>
         <h2>تولید روز {productionFa(day)} {PRODUCTION_MONTHS[Number(date.slice(4, 6)) - 1]}</h2>
         <p>{date.slice(0, 4)}/{date.slice(4, 6)}/{date.slice(6, 8)}</p>
       </div>
       {details && <b>{productionFa(details.total)} عدد</b>}
-    </div>
+    </div>}
     {loading && <div className="detail-state">در حال دریافت جزئیات...</div>}
     {error && <div className="detail-state error">{error}</div>}
     {details && details.records.length === 0 && <div className="detail-state">در این روز تولیدی ثبت نشده است.</div>}
@@ -33,13 +33,9 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
               <strong className="statistics-production-product">{record.productName || '—'}</strong>
               <small className="statistics-production-customer">{record.customerName || '—'}</small>
             </span>
-            {' '}
             <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
-            {' '}
             <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
-            {' '}
             <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
-            {' '}
             <span className="statistics-production-employee">{record.employeeName || '—'}</span>
           </p>
         </article>;
