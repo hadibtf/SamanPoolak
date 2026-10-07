@@ -1,4 +1,16 @@
 :local(.root) { max-width: 900px; }
+:local(.panel) { min-width: 0; }
+:local(.root) > :local(.pageHeader) { display: block; width: 100%; margin: 0 0 12px; padding: 0; text-align: center; }
+:local(.root) > :local(.pageHeader) h1 { margin: 0; color: #1c1c1e; font-size: 25px; font-weight: 800; }
+:local(.viewTabs) { display: flex; justify-content: center; gap: 4px; width: max-content; max-width: 100%; padding: 4px; margin: 0 auto 18px; border-radius: 14px; background: rgba(118,118,128,.13); }
+:local(.viewTab) { min-width: 100px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 11px; background: transparent; color: #505866; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+:local(.viewTab):focus-visible { outline: 2px solid #007aff; outline-offset: 2px; }
+:local(.viewTab.active) { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
+:local(.monthTotal) { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; padding: 20px; }
+:local(.monthTotal) h2 { margin: 0; color: #1c1c1e; font-size: 19px; }
+:local(.monthTotal) p { margin: 5px 0 0; color: #777f8b; font-size: 13px; }
+:local(.monthTotal) strong { color: #007aff; font-size: 23px; white-space: nowrap; }
+:local(.monthTotal) small { font-size: 13px; }
 :local(.root) :global(.statistics-comparison) { margin-top: 16px; padding: 20px; }
 :local(.root) :global(.statistics-employee-row) { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(100px, 2fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 13px; }
 :local(.root) :global(.statistics-employee-row):last-child { border-bottom: 0; }
@@ -11,5 +23,17 @@
   :local(.root) :global(.statistics-employee-row) { grid-template-columns: 1fr auto; }
   :local(.root) :global(.statistics-employee-meter) { grid-column: 1/-1; grid-row: 2; }
 }
+@media (max-width: 560px) {
+  :local(.root) > :local(.pageHeader) h1 { font-size: 22px; }
+  :local(.viewTabs) { margin-bottom: 14px; }
+  :local(.viewTab) { min-width: 92px; }
+  :local(.monthTotal) { align-items: flex-start; flex-direction: column; gap: 10px; padding: 16px; }
+}
+[data-theme="dark"] :local(.root) > :local(.pageHeader) h1 { color: #f5f5f7; }
+[data-theme="dark"] :local(.viewTabs) { background: rgba(255,255,255,.08); }
+[data-theme="dark"] :local(.viewTab) { color: #bfc3ce; }
+[data-theme="dark"] :local(.viewTab.active) { background: rgba(255,255,255,.15); color: #79b8ff; }
+[data-theme="dark"] :local(.monthTotal) h2 { color: #f5f5f7; }
+[data-theme="dark"] :local(.monthTotal) p { color: #a5a8b3; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-row) > span { color: #e5e5ea; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-meter) { background: rgba(255,255,255,.12); }
