@@ -21,9 +21,9 @@
 :local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-inline-start: 3px solid #78a9d4; border-radius: 11px; background: #f5f8fc; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-fields) { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .75fr) minmax(0, .95fr) minmax(0, 1fr); align-items: center; gap: 0; margin: 0; padding: 0; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div { display: grid; min-width: 0; gap: 4px; padding: 9px 10px; border-inline-end: 1px solid rgba(120, 145, 172, .17); border-radius: 0; background: transparent; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div { display: grid; min-width: 0; align-content: center; gap: 0; padding: 9px 10px; border-inline-end: 1px solid rgba(120, 145, 172, .17); border-radius: 0; background: transparent; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div:last-child { border-inline-end: 0; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-fields) dt { color: #788393; font-size: 10px; line-height: 1.4; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) :global(.statistics-production-label) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-fields) dd { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-width: 0; margin: 0; color: #303844; font-size: 12px; font-weight: 700; line-height: 1.6; overflow-wrap: anywhere; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-product) dd { color: #202124; font-size: 13px; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) dd { color: #0875df; white-space: nowrap; }

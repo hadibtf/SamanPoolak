@@ -30,27 +30,27 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
         return <article className="statistics-production-record" key={record.id} dir="rtl">
           <dl className="statistics-production-fields">
             <div className="statistics-production-field statistics-production-product">
-              <dt>نام محصول</dt>
+              <dt className="statistics-production-label">نام محصول</dt>
               <dd>{record.productName || '—'}{record.isManagerEntry && <small className="production-manager-entry">ثبت دستی مدیر</small>}</dd>
             </div>
             <div className="statistics-production-field">
-              <dt>نام مشتری</dt>
+              <dt className="statistics-production-label">نام مشتری</dt>
               <dd>{record.customerName || '—'}</dd>
             </div>
             <div className="statistics-production-field statistics-production-dimensions">
-              <dt>اندازه و ابعاد</dt>
+              <dt className="statistics-production-label">اندازه و ابعاد</dt>
               <dd><bdi dir="ltr">{dimension}</bdi><small>میلی‌متر</small></dd>
             </div>
             <div className="statistics-production-field statistics-production-color" data-tone={tone}>
-              <dt>رنگ</dt>
+              <dt className="statistics-production-label">رنگ</dt>
               <dd>{platingLabels[colorKey]}</dd>
             </div>
             <div className="statistics-production-field statistics-production-quantity">
-              <dt>تعداد تولید شده</dt>
+              <dt className="statistics-production-label">تعداد تولید شده</dt>
               <dd>{productionFa(record.quantity)} عدد</dd>
             </div>
             <div className="statistics-production-field statistics-production-employee">
-              <dt>نام کارمند</dt>
+              <dt className="statistics-production-label">نام کارمند</dt>
               <dd>{record.employeeName || '—'}</dd>
             </div>
           </dl>
