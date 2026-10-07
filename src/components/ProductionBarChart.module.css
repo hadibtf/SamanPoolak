@@ -18,5 +18,5 @@
 .chart-tooltip { position: absolute; z-index: 3; right: 0; bottom: min(calc(100% - 30px), calc(24px + var(--bar-height) + 6px)); width: max-content; padding: 6px 9px; border-radius: 8px; background: #1f2937; color: #fff; box-shadow: 0 7px 20px rgba(0,0,0,.18); font-size: 11px; line-height: 1.4; pointer-events: none; }
 .chart-bar:nth-last-child(-n+3) .chart-tooltip { right: auto; left: 0; }
 .chart-y-label,.chart-x-label { color: #6b7280; font-size: 12px; font-weight: 600; }
-.chart-y-label { position: absolute; right: 0; top: 0; }
+.chart-y-label { position: absolute; left: 0; top: 0; }
 .chart-x-label { text-align: center; margin-top: 7px; }
