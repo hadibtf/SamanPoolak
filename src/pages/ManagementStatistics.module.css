@@ -19,15 +19,36 @@
 :local(.root) :global(.statistics-employee-meter) { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
 :local(.root) :global(.statistics-employee-meter) span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#67b7ff,#007aff); }
 :local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-inline-start: 3px solid #78a9d4; border-radius: 11px; background: #f5f8fc; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .75fr) minmax(0, .95fr) minmax(0, 1fr); align-items: center; gap: 0; margin: 0; padding: 0; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div { display: grid; min-width: 0; gap: 4px; padding: 9px 10px; border-inline-end: 1px solid rgba(120, 145, 172, .17); border-radius: 0; background: transparent; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div:last-child { border-inline-end: 0; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) dt { color: #788393; font-size: 10px; line-height: 1.4; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-fields) dd { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-width: 0; margin: 0; color: #303844; font-size: 12px; font-weight: 700; line-height: 1.6; overflow-wrap: anywhere; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-product) dd { color: #202124; font-size: 13px; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) dd { color: #0875df; white-space: nowrap; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) dd small { color: #778394; font-size: 10px; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="gold"] dd { color: #a46c00; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="silver"] dd { color: #526d87; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="matte"] dd { color: #777f8b; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-quantity) dd { color: #007aff; white-space: nowrap; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-employee) dd { white-space: nowrap; }
 @media (max-width: 700px) {
   :local(.root) :global(.statistics-employee-row) { grid-template-columns: 1fr auto; }
   :local(.root) :global(.statistics-employee-meter) { grid-column: 1/-1; grid-row: 2; }
+  :local(.root) :global(.statistics-details) :global(.statistics-production-fields) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   :local(.root) > :local(.pageHeader) h1 { font-size: 22px; }
   :local(.viewTabs) { margin-bottom: 14px; }
   :local(.viewTab) { min-width: 92px; }
   :local(.monthTotal) { align-items: flex-start; flex-direction: column; gap: 10px; padding: 16px; }
+}
+@media (max-width: 460px) {
+  :local(.root) :global(.statistics-details) :global(.statistics-production-fields) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div { padding: 9px 8px; }
+  :local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div:nth-child(2n) { border-inline-end: 0; }
+  :local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div:last-child { border-inline-end: 0; }
 }
 [data-theme="dark"] :local(.root) > :local(.pageHeader) h1 { color: #f5f5f7; }
 [data-theme="dark"] :local(.viewTabs) { background: rgba(255,255,255,.08); }
@@ -37,3 +58,12 @@
 [data-theme="dark"] :local(.monthTotal) p { color: #a5a8b3; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-row) > span { color: #e5e5ea; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-meter) { background: rgba(255,255,255,.12); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-record) { border-color: rgba(255,255,255,.13); border-inline-start-color: #568ec5; background: rgba(255,255,255,.055); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-fields) > div { border-inline-end-color: rgba(255,255,255,.1); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-fields) dt { color: #a5a8b3; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-fields) dd,
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-product) dd { color: #e5e7eb; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) dd,
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-quantity) dd { color: #79b8ff; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="gold"] dd { color: #f2c15d; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="silver"] dd { color: #b8c5d2; }

@@ -917,7 +917,7 @@ function production_management_day_statistics($params, $body, $user)
     $filter = $employeeId === null ? '' : ' AND l.employee_user_id = :employee';
     $bind = [':productionDate' => $date];
     if ($employeeId !== null) $bind[':employee'] = $employeeId;
-    $stmt = db()->prepare("SELECT l.*, t.required_quantity, t.status AS task_status, o.order_number, o.items,
+    $stmt = db()->prepare("SELECT l.*, t.required_quantity, t.status AS task_status, o.order_number, o.customer_name, o.items,
         COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name
         FROM production_logs l JOIN production_tasks t ON t.id = l.task_id
         JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
@@ -929,7 +929,7 @@ function production_management_day_statistics($params, $body, $user)
     $managerFilter = $employeeId === null ? '' : ' AND l.employee_user_id = :managerEmployee';
     $managerBind = [':managerDate' => $date];
     if ($employeeId !== null) $managerBind[':managerEmployee'] = $employeeId;
-    $managerStmt = db()->prepare("SELECT l.*, NULL AS task_id, NULL AS required_quantity, NULL AS task_status, o.order_number, o.items,
+    $managerStmt = db()->prepare("SELECT l.*, NULL AS task_id, NULL AS required_quantity, NULL AS task_status, o.order_number, o.customer_name, o.items,
         COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
         1 AS is_manager_entry
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
@@ -953,6 +953,7 @@ function production_management_day_statistics($params, $body, $user)
             'employeeUserId' => (int) $row['employee_user_id'],
             'employeeName' => $row['employee_name'],
             'orderNumber' => $row['order_number'],
+            'customerName' => $row['customer_name'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
             'totalWeightGrams' => (float) $row['total_weight_grams'],
@@ -963,6 +964,7 @@ function production_management_day_statistics($params, $body, $user)
             'material' => $item['material'] ?? '',
             'thickness' => $item['thickness'] ?? null,
             'diameter' => $item['diameter'] ?? null,
+            'platingColor' => $item['platingColor'] ?? 'NONE',
         ];
     }
     json_response([
