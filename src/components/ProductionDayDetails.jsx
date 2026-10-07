@@ -29,9 +29,10 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
 
         return <article className="statistics-production-record" key={record.id} dir="rtl">
           <p className="statistics-production-sentence">
-            <strong className="statistics-production-product">{record.productName || '—'}</strong>
-            {' '}
-            <span>{record.customerName || '—'}</span>
+            <span className="statistics-production-item-title">
+              <strong className="statistics-production-product">{record.productName || '—'}</strong>
+              <small className="statistics-production-customer">{record.customerName || '—'}</small>
+            </span>
             {' '}
             <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
             {' '}

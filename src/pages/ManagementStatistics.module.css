@@ -21,7 +21,9 @@
 :local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 11px; background: #f5f8fc; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { margin: 0; padding: 11px 13px; color: #303844; font-size: 13px; font-weight: 600; line-height: 1.9; text-align: right; overflow-wrap: anywhere; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-item-title) { display: inline-flex; flex-direction: column; align-items: flex-start; margin-inline-end: 5px; vertical-align: middle; line-height: 1.4; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-product) { color: #202124; font-weight: 800; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-customer) { color: #7b8491; font-size: 10px; font-weight: 500; line-height: 1.35; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) { color: #0875df; white-space: nowrap; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="gold"] { color: #a46c00; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="silver"] { color: #526d87; }
@@ -49,6 +51,7 @@
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-record) { border-color: rgba(255,255,255,.13); background: rgba(255,255,255,.055); }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { color: #d6dae2; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-product) { color: #f5f5f7; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-customer) { color: #a5a8b3; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions),
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-quantity) { color: #79b8ff; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="gold"] { color: #f2c15d; }
