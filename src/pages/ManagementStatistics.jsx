@@ -112,7 +112,7 @@ export default function ManagementStatistics() {
   };
 
   return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
-    <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <button className={styles.monthReportButton} type="button" onClick={showMonthReport} aria-pressed={detailsView === 'month'}>گزارش این ماه</button>}</header>
+    <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <strong>{fa(stats.total)} <small>عدد</small></strong>}</header>
     <div className="statistics-mode" role="group" aria-label="نمایش آمار">
       <button type="button" className={mode === 'all' ? 'active' : ''} onClick={() => changeMode('all')}>همه کارکنان</button>
       <button type="button" className={mode === 'employee' ? 'active' : ''} onClick={() => changeMode('employee')}>یک کارمند</button>
@@ -125,7 +125,7 @@ export default function ManagementStatistics() {
     {!stats && !loading && !error && <div className="statistics-message"><i className="fa-solid fa-chart-column" /><p>{mode === 'employee' && !employeeId ? 'برای دیدن آمار، یک کارمند را انتخاب کنید.' : 'بازه گزارش را انتخاب کنید، سپس «نمایش آمار» را بزنید.'}</p></div>}
     {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}
     {stats && <>
-      <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{mode === 'employee' ? `${selectedEmployee?.name || 'کارمند'} · ` : ''}{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن خلاصه تولید روز، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
+      <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{mode === 'employee' ? `${selectedEmployee?.name || 'کارمند'} · ` : ''}{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن خلاصه تولید روز، یک ستون را لمس کنید.</p></div><button className={styles.monthReportButton} type="button" onClick={showMonthReport} aria-pressed={detailsView === 'month'}>گزارش این ماه</button></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
       {mode === 'all' && <section className="statistics-comparison glass-card"><div className="statistics-card-title"><div><h2>تولید هر کارمند</h2><p>جمع تولید ثبت‌شده در این ماه</p></div></div>{stats.byEmployee.length ? stats.byEmployee.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}><span>{row.employeeName}</span><div className="statistics-employee-meter"><span style={{ width: `${stats.total ? row.quantity / stats.total * 100 : 0}%` }} /></div><strong>{fa(row.quantity)} عدد</strong></div>) : <p className="statistics-no-production">در این ماه تولیدی ثبت نشده است.</p>}</section>}
       {detailsView === 'month' ? <section ref={detailsPanelRef} className={`statistics-month-details glass-card ${styles.monthDetails}`}>
         <div className="statistics-card-title"><div><h2>گزارش کامل {PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>جمع تولید ثبت‌شده در هر روز این ماه</p></div><b>{fa(stats.total)} عدد</b></div>
