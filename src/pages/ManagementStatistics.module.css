@@ -3,7 +3,17 @@
 :local(.root) :global(.statistics-mode) button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #505866; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 :local(.root) :global(.statistics-mode) button:global(.active) { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
 :local(.root) :global(.statistics-controls):has(:global(.statistics-employee-select)) { grid-template-columns: 1.5fr 1fr 1fr auto; }
-@media(max-width:700px){:local(.root) :global(.statistics-controls):has(:global(.statistics-employee-select)){grid-template-columns:1fr 1fr}:local(.root) :global(.statistics-employee-select){grid-column:1/-1}}
+:local(.root) :global(.statistics-comparison) { margin-top: 16px; padding: 20px; }
+:local(.root) :global(.statistics-employee-row) { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(100px, 2fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 13px; }
+:local(.root) :global(.statistics-employee-row):last-child { border-bottom: 0; }
+:local(.root) :global(.statistics-employee-row) > span { color: #32383f; font-weight: 600; }
+:local(.root) :global(.statistics-employee-row) > strong { color: #007aff; white-space: nowrap; }
+:local(.root) :global(.statistics-employee-meter) { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
+:local(.root) :global(.statistics-employee-meter) span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#67b7ff,#007aff); }
+:local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
+@media(max-width:700px){:local(.root) :global(.statistics-controls):has(:global(.statistics-employee-select)){grid-template-columns:1fr 1fr}:local(.root) :global(.statistics-employee-select){grid-column:1/-1}:local(.root) :global(.statistics-employee-row){grid-template-columns:1fr auto}:local(.root) :global(.statistics-employee-meter){grid-column:1/-1;grid-row:2}}
 [data-theme="dark"] :local(.root) :global(.statistics-mode) { background: rgba(255,255,255,.08); }
 [data-theme="dark"] :local(.root) :global(.statistics-mode) button { color: #bfc3ce; }
 [data-theme="dark"] :local(.root) :global(.statistics-mode) button:global(.active) { background: rgba(255,255,255,.15); color: #79b8ff; }
+[data-theme="dark"] :local(.root) :global(.statistics-employee-row) > span { color: #e5e5ea; }
+[data-theme="dark"] :local(.root) :global(.statistics-employee-meter) { background: rgba(255,255,255,.12); }

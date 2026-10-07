@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ProductionBarChart from '../components/ProductionBarChart';
 import ProductionMonthControls from '../components/ProductionMonthControls';
+import ProductionDayDetails from '../components/ProductionDayDetails';
 import { productionApi, ApiError } from '../api/client';
 import { PRODUCTION_MONTHS, currentProductionDate, currentProductionMonth, productionFa as fa, productionFaYear as faYear, productionMonthDays } from '../productionStatistics';
 import employeeStatisticsStyles from './EmployeeStatistics.module.css';
@@ -18,7 +19,12 @@ export default function ManagementStatistics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
-  const initialLoadStarted = useRef(false);
+  const [details, setDetails] = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState('');
+  const autoLoadRequested = useRef(true);
+  const monthRequestId = useRef(0);
+  const detailsRequestId = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -32,34 +38,61 @@ export default function ManagementStatistics() {
   const selectedEmployeeId = mode === 'employee' ? employeeId : null;
   const selectedEmployee = employees.find((employee) => String(employee.userId) === employeeId);
 
-  const clearResults = () => { setStats(null); setSelectedDate(''); setError(''); };
-  const changeMode = (value) => { setMode(value); clearResults(); };
-  const changeEmployee = (value) => { setEmployeeId(value); clearResults(); };
+  const clearResults = () => {
+    monthRequestId.current += 1;
+    detailsRequestId.current += 1;
+    setStats(null); setSelectedDate(''); setDetails(null); setDetailsLoading(false); setDetailsError(''); setError(''); setLoading(false);
+  };
+  const changeMode = (value) => { if (value === mode) return; autoLoadRequested.current = true; setMode(value); clearResults(); };
+  const changeEmployee = (value) => { if (value === employeeId) return; autoLoadRequested.current = true; setEmployeeId(value); clearResults(); };
   const changeYear = (value) => { setYear(value); clearResults(); };
   const changeMonth = (value) => { setMonth(value); clearResults(); };
 
+  const loadDayDetails = useCallback(async (date, employeeIdForRequest) => {
+    const requestId = ++detailsRequestId.current;
+    setDetails(null); setDetailsLoading(true); setDetailsError('');
+    try {
+      const result = await productionApi.managementDayStatistics(date, employeeIdForRequest);
+      if (requestId === detailsRequestId.current) setDetails(result);
+    } catch (err) {
+      if (requestId === detailsRequestId.current) setDetailsError(err instanceof ApiError ? err.message : 'دریافت جزئیات روز انجام نشد.');
+    } finally {
+      if (requestId === detailsRequestId.current) setDetailsLoading(false);
+    }
+  }, []);
+
   const loadMonth = useCallback(async () => {
     if (mode === 'employee' && !employeeId) { setError('ابتدا یک کارمند انتخاب کنید.'); return; }
+    const requestId = ++monthRequestId.current;
+    detailsRequestId.current += 1;
     const today = currentProductionDate();
     const todayIsInSelectedMonth = Number(today.slice(0, 4)) === Number(year) && Number(today.slice(4, 6)) === Number(month);
     const dateToSelect = todayIsInSelectedMonth ? today : '';
-    setLoading(true); setError(''); setSelectedDate(''); setStats(null);
+    setLoading(true); setError(''); setSelectedDate(''); setDetails(null); setDetailsLoading(false); setDetailsError(''); setStats(null);
     try {
       const monthStats = await productionApi.managementMonthStatistics(year, month, selectedEmployeeId);
+      if (requestId !== monthRequestId.current) return;
       setStats(monthStats);
-      if (dateToSelect) setSelectedDate(dateToSelect);
+      if (dateToSelect) {
+        setSelectedDate(dateToSelect);
+        await loadDayDetails(dateToSelect, selectedEmployeeId);
+      }
     }
-    catch (err) { setError(err instanceof ApiError ? err.message : 'دریافت آمار تولید انجام نشد.'); }
-    finally { setLoading(false); }
-  }, [employeeId, mode, month, selectedEmployeeId, year]);
+    catch (err) { if (requestId === monthRequestId.current) setError(err instanceof ApiError ? err.message : 'دریافت آمار تولید انجام نشد.'); }
+    finally { if (requestId === monthRequestId.current) setLoading(false); }
+  }, [employeeId, loadDayDetails, mode, month, selectedEmployeeId, year]);
 
   useEffect(() => {
-    if (initialLoadStarted.current) return;
-    initialLoadStarted.current = true;
+    if (!autoLoadRequested.current) return;
+    autoLoadRequested.current = false;
+    if (mode === 'employee' && !employeeId) return;
     loadMonth();
-  }, [loadMonth]);
+  }, [employeeId, loadMonth, mode]);
 
-  const selectDay = (day) => setSelectedDate(day.date);
+  const selectDay = (day) => {
+    setSelectedDate(day.date);
+    loadDayDetails(day.date, selectedEmployeeId);
+  };
 
   return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
     <header><div><span>گزارش تولید کارکنان</span><h1>آمار تولید</h1></div>{stats && <strong>{fa(stats.total)} <small>عدد</small></strong>}</header>
@@ -72,10 +105,12 @@ export default function ManagementStatistics() {
     </ProductionMonthControls>
     {employeesError && <div className="statistics-message error">{employeesError}</div>}
     {error && <div className="statistics-message error">{error}</div>}
-    {!stats && !loading && !error && <div className="statistics-message"><i className="fa-solid fa-chart-column" /><p>بازه و نوع گزارش را انتخاب کنید، سپس «نمایش آمار» را بزنید.</p></div>}
+    {!stats && !loading && !error && <div className="statistics-message"><i className="fa-solid fa-chart-column" /><p>{mode === 'employee' && !employeeId ? 'برای دیدن آمار، یک کارمند را انتخاب کنید.' : 'بازه گزارش را انتخاب کنید، سپس «نمایش آمار» را بزنید.'}</p></div>}
     {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}
     {stats && <>
-      <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{mode === 'employee' ? `${selectedEmployee?.name || 'کارمند'} · ` : ''}{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن مقدار تولید، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
+      <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{mode === 'employee' ? `${selectedEmployee?.name || 'کارمند'} · ` : ''}{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن خلاصه تولید روز، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
+      {mode === 'all' && <section className="statistics-comparison glass-card"><div className="statistics-card-title"><div><h2>تولید هر کارمند</h2><p>جمع تولید ثبت‌شده در این ماه</p></div></div>{stats.byEmployee.length ? stats.byEmployee.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}><span>{row.employeeName}</span><div className="statistics-employee-meter"><span style={{ width: `${stats.total ? row.quantity / stats.total * 100 : 0}%` }} /></div><strong>{fa(row.quantity)} عدد</strong></div>) : <p className="statistics-no-production">در این ماه تولیدی ثبت نشده است.</p>}</section>}
     </>}
+    <ProductionDayDetails date={selectedDate} details={details} loading={detailsLoading} error={detailsError} showEmployee={mode === 'all'} />
   </div>;
 }
