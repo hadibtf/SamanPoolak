@@ -28,32 +28,19 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
           .join(' × ');
 
         return <article className="statistics-production-record" key={record.id} dir="rtl">
-          <dl className="statistics-production-fields">
-            <div className="statistics-production-field statistics-production-product">
-              <dt className="statistics-production-label">نام محصول</dt>
-              <dd>{record.productName || '—'}</dd>
-            </div>
-            <div className="statistics-production-field">
-              <dt className="statistics-production-label">نام مشتری</dt>
-              <dd>{record.customerName || '—'}</dd>
-            </div>
-            <div className="statistics-production-field statistics-production-dimensions">
-              <dt className="statistics-production-label">اندازه و ابعاد</dt>
-              <dd><bdi dir="ltr">{dimension}</bdi><small>میلی‌متر</small></dd>
-            </div>
-            <div className="statistics-production-field statistics-production-color" data-tone={tone}>
-              <dt className="statistics-production-label">رنگ</dt>
-              <dd>{platingLabels[colorKey]}</dd>
-            </div>
-            <div className="statistics-production-field statistics-production-quantity">
-              <dt className="statistics-production-label">تعداد تولید شده</dt>
-              <dd>{productionFa(record.quantity)} عدد</dd>
-            </div>
-            <div className="statistics-production-field statistics-production-employee">
-              <dt className="statistics-production-label">نام کارمند</dt>
-              <dd>{record.employeeName || '—'}</dd>
-            </div>
-          </dl>
+          <p className="statistics-production-sentence">
+            <strong className="statistics-production-product">{record.productName || '—'}</strong>
+            <span className="statistics-production-separator">، </span>
+            <span>{record.customerName || '—'}</span>
+            <span className="statistics-production-separator">، </span>
+            <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi> میلی‌متر
+            <span className="statistics-production-separator">، </span>
+            <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
+            <span className="statistics-production-separator">، </span>
+            <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
+            <span className="statistics-production-separator">، </span>
+            <span className="statistics-production-employee">{record.employeeName || '—'}</span>
+          </p>
         </article>;
       }
 
