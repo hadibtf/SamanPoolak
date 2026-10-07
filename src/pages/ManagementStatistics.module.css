@@ -1,13 +1,4 @@
 :local(.root) { max-width: 900px; }
-:local(.monthReportButton) { min-height: 44px; padding: 0 16px; border: 1px solid rgba(0,122,255,.22); border-radius: 12px; background: #007aff; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .16s ease, box-shadow .16s ease; }
-:local(.monthReportButton):hover { background: #006be0; }
-:local(.monthReportButton):focus-visible { outline: 3px solid rgba(0,122,255,.3); outline-offset: 2px; }
-:local(.monthDetails) { margin-top: 16px; padding: 20px; scroll-margin-block: 20px; }
-:local(.monthDayList) { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 18px; margin: 12px 0 0; padding: 0; list-style: none; }
-:local(.monthDayList) li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 2px; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 13px; }
-:local(.monthDayList) li span { color: #5f6670; }
-:local(.monthDayList) li strong { color: #007aff; white-space: nowrap; }
-:local(.monthEmpty) { margin: 18px 0 4px; color: #777f8b; font-size: 13px; text-align: center; }
 :local(.root) :global(.statistics-mode) { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; max-width: 380px; padding: 4px; margin-bottom: 14px; border-radius: 13px; background: rgba(118,118,128,.13); }
 :local(.root) :global(.statistics-mode) button { min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: #505866; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 :local(.root) :global(.statistics-mode) button:global(.active) { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
@@ -24,6 +15,5 @@
 [data-theme="dark"] :local(.root) :global(.statistics-mode) { background: rgba(255,255,255,.08); }
 [data-theme="dark"] :local(.root) :global(.statistics-mode) button { color: #bfc3ce; }
 [data-theme="dark"] :local(.root) :global(.statistics-mode) button:global(.active) { background: rgba(255,255,255,.15); color: #79b8ff; }
-[data-theme="dark"] :local(.root) :local(.monthDayList) li span { color: #c3c6d0; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-row) > span { color: #e5e5ea; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-meter) { background: rgba(255,255,255,.12); }
