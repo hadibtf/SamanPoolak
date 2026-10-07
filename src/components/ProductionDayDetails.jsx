@@ -33,7 +33,7 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
             <span className="statistics-production-separator">، </span>
             <span>{record.customerName || '—'}</span>
             <span className="statistics-production-separator">، </span>
-            <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi> میلی‌متر
+            <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
             <span className="statistics-production-separator">، </span>
             <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
             <span className="statistics-production-separator">، </span>
