@@ -4,9 +4,51 @@ import { PRODUCTION_MONTHS, productionFa, productionStatusLabel } from '../produ
 
 const platingLabels = Object.fromEntries(PLATING_OPTIONS.map(({ value, label }) => [value, label]));
 
-export default function ProductionDayDetails({ date, details, loading, error, showEmployee = false }) {
+const groupRecordsByEmployee = (records = []) => {
+  const groups = new Map();
+  records.forEach((record) => {
+    const key = String(record.employeeUserId ?? `name:${record.employeeName || '—'}`);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        employeeUserId: key,
+        employeeName: record.employeeName || '—',
+        records: [],
+      });
+    }
+    groups.get(key).records.push(record);
+  });
+  return [...groups.values()];
+};
+
+function EmployeeProductionRecord({ record }) {
+  const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
+  const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
+  const dimension = [record.diameter, record.thickness]
+    .map((value) => value == null || value === '' ? '—' : productionFa(value))
+    .join(' × ');
+
+  return <article className="statistics-production-record" dir="rtl">
+    <p className="statistics-production-sentence">
+        <span className="statistics-production-item-title">
+          <span className="statistics-production-name-row">
+            <strong className="statistics-production-product">{record.productName || '—'}</strong>
+          </span>
+          <small className="statistics-production-customer">{record.customerName || '—'}</small>
+        </span>
+      <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
+      <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
+      <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
+      {record.productionComplete && <span className="statistics-production-complete" role="img" aria-label="تولید این قلم تکمیل شده" title="تولید تکمیل شده">
+        <i className="fa-solid fa-check" aria-hidden="true" />
+      </span>}
+    </p>
+  </article>;
+}
+
+export default function ProductionDayDetails({ date, details, loading, error, showEmployee = false, emptyMessage = 'در این روز تولیدی ثبت نشده است.' }) {
   if (!date) return null;
   const day = Number(date.slice(6, 8));
+  const employeeGroups = showEmployee ? groupRecordsByEmployee(details?.records) : [];
 
   return <section className="statistics-details glass-card">
     {!showEmployee && <div className="statistics-card-title">
@@ -18,29 +60,13 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
     </div>}
     {loading && <div className="detail-state">در حال دریافت جزئیات...</div>}
     {error && <div className="detail-state error">{error}</div>}
-    {details && details.records.length === 0 && <div className="detail-state">در این روز تولیدی ثبت نشده است.</div>}
-    {details?.records.map((record) => {
-      if (showEmployee) {
-        const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
-        const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
-        const dimension = [record.diameter, record.thickness]
-          .map((value) => value == null || value === '' ? '—' : productionFa(value))
-          .join(' × ');
-
-        return <article className="statistics-production-record" key={record.id} dir="rtl">
-          <p className="statistics-production-sentence">
-            <span className="statistics-production-item-title">
-              <strong className="statistics-production-product">{record.productName || '—'}</strong>
-              <small className="statistics-production-customer">{record.customerName || '—'}</small>
-            </span>
-            <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
-            <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
-            <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
-            <span className="statistics-production-employee">{record.employeeName || '—'}</span>
-          </p>
-        </article>;
-      }
-
+    {details && details.records.length === 0 && <div className="detail-state">{emptyMessage}</div>}
+    {showEmployee ? employeeGroups.map((group) => <section className="statistics-worker-group" key={group.employeeUserId} aria-label={`تولید ${group.employeeName}`}>
+      <h3 className="statistics-worker-name">{group.employeeName}</h3>
+      <div className="statistics-worker-products">
+        {group.records.map((record) => <EmployeeProductionRecord key={record.id} record={record} />)}
+      </div>
+    </section>) : details?.records.map((record) => {
       return <article key={record.id}>
         <div>
           <h3>{record.productName}</h3>

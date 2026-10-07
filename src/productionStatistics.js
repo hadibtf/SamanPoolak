@@ -4,6 +4,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 
 export const PRODUCTION_MONTHS = ['فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
 export const PRODUCTION_YEARS = Array.from({ length: 95 }, (_, index) => 1405 + index);
+export const PRODUCTION_CHART_YEARS = Array.from({ length: 21 }, (_, index) => 1405 + index);
 export const productionFa = (value) => Number(value || 0).toLocaleString('fa-IR');
 export const productionFaYear = (value) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
 export const productionStatusLabel = (status) => ({ ASSIGNED: 'تخصیص داده شده', IN_PROGRESS: 'در حال تولید', COMPLETED: 'تکمیل شده' }[status] || status);

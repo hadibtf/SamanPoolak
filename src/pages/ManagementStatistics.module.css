@@ -7,23 +7,32 @@
 :local(.viewTab):focus-visible { outline: 2px solid #007aff; outline-offset: 2px; }
 :local(.viewTab.active) { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
 :local(.monthTotal) { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; padding: 20px; }
-:local(.monthTotal) h2 { margin: 0; color: #1c1c1e; font-size: 19px; }
+:local(.root) :local(.monthTotal):global(.glass-card) { background: linear-gradient(105deg,rgba(255,59,48,.25) 0%,rgba(255,149,0,.24) 16.66%,rgba(255,214,10,.25) 33.33%,rgba(52,199,89,.22) 50%,rgba(0,122,255,.24) 66.66%,rgba(88,86,214,.24) 83.33%,rgba(175,82,222,.24) 100%); }
+:local(.monthTotal) h2 { margin: 0; color: #fff; font-size: 19px; text-shadow: 0 1px 2px rgba(0,0,0,.24); }
 :local(.monthTotal) p { margin: 5px 0 0; color: #777f8b; font-size: 13px; }
 :local(.monthTotal) strong { color: #007aff; font-size: 23px; white-space: nowrap; }
 :local(.monthTotal) small { font-size: 13px; }
 :local(.root) :global(.statistics-comparison) { margin-top: 16px; padding: 20px; }
-:local(.root) :global(.statistics-employee-row) { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(100px, 2fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 13px; }
+:local(.root) :global(.statistics-controls-year-only) { grid-template-columns: minmax(180px, 1fr) auto; }
+:local(.root) :global(.statistics-employee-row) { display: grid; grid-template-columns: minmax(100px, 1.3fr) minmax(100px, 2fr) auto; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(120,120,128,.13); font-size: 16px; }
 :local(.root) :global(.statistics-employee-row):last-child { border-bottom: 0; }
-:local(.root) :global(.statistics-employee-row) > span { color: #32383f; font-weight: 600; }
-:local(.root) :global(.statistics-employee-row) > strong { color: #007aff; white-space: nowrap; }
-:local(.root) :global(.statistics-employee-meter) { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
+:local(.root) :global(.statistics-employee-row) > span { color: #32383f; font-size: 16px; font-weight: 700; }
+:local(.root) :global(.statistics-employee-row) > strong { color: #007aff; font-size: 16px; font-weight: 800; white-space: nowrap; }
+:local(.root) :global(.statistics-employee-meter) { height: 20px; overflow: hidden; border-radius: 99px; background: rgba(118,118,128,.12); }
 :local(.root) :global(.statistics-employee-meter) span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#67b7ff,#007aff); }
 :local(.root) :global(.statistics-no-production) { padding: 22px 0 6px; color: #777f8b; text-align: center; }
 :local(.root) :global(.statistics-details) { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; width: 100%; min-width: 0; box-sizing: border-box; margin: 10px 0 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 11px; background: #f5f8fc; }
+:local(.root) :global(.statistics-details) :global(.statistics-worker-group) { min-width: 0; margin-top: 14px; padding: 0; overflow: hidden; border: 1px solid #a9c8ea; border-inline-start: 4px solid #1682ed; border-radius: 12px; background: #eaf3ff; direction: rtl; }
+:local(.root) :global(.statistics-details) :global(.statistics-worker-name) { margin: 0; padding: 12px 14px; border-bottom: 1px solid #c6dbf3; background: #dcecff; color: #244d78; font-size: 15px; font-weight: 800; line-height: 1.6; text-align: right; }
+:local(.root) :global(.statistics-details) :global(.statistics-worker-products) { display: grid; gap: 8px; margin: 0; padding: 10px 12px 12px; }
+:local(.root) :global(.statistics-details) :global(.statistics-worker-group):nth-of-type(even) { border-color: #f1c58f; border-inline-start-color: #ff8a00; background: #fff4e7; }
+:local(.root) :global(.statistics-details) :global(.statistics-worker-group):nth-of-type(even) :global(.statistics-worker-name) { border-bottom-color: #f3d6b3; background: #ffead0; color: #805100; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; width: 100%; min-width: 0; box-sizing: border-box; margin: 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 9px; background: #fff; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-record):last-child { border-bottom: 1px solid #c9d8e9; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; margin: 0; padding: 11px 13px; color: #303844; font-size: 13px; font-weight: 600; line-height: 1.9; text-align: right; overflow-wrap: anywhere; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-item-title) { display: inline-flex; min-width: 0; flex-direction: column; align-items: flex-start; line-height: 1.4; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-name-row) { display: inline-flex; min-width: 0; align-items: center; gap: 6px; }
+:local(.root) :global(.statistics-details) :global(.statistics-production-complete) { display: inline-flex; width: 18px; height: 18px; flex: 0 0 18px; align-self: center; align-items: center; justify-content: center; margin-inline-start: auto; border-radius: 50%; background: #168a49; color: #fff; font-size: 10px; line-height: 1; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-product) { color: #202124; font-weight: 800; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-customer) { color: #7b8491; font-size: 10px; font-weight: 500; line-height: 1.35; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-dimensions) { color: #0875df; white-space: nowrap; }
@@ -31,26 +40,32 @@
 :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="silver"] { color: #526d87; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="matte"] { color: #777f8b; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-quantity) { color: #007aff; white-space: nowrap; }
-:local(.root) :global(.statistics-details) :global(.statistics-production-employee) { color: #667180; }
 @media (max-width: 700px) {
   :local(.root) :global(.statistics-employee-row) { grid-template-columns: 1fr auto; }
   :local(.root) :global(.statistics-employee-meter) { grid-column: 1/-1; grid-row: 2; }
 }
 @media (max-width: 560px) {
   :local(.root) > :local(.pageHeader) h1 { font-size: 22px; }
-  :local(.viewTabs) { margin-bottom: 14px; }
-  :local(.viewTab) { min-width: 92px; }
+  :local(.root) :global(.statistics-controls-year-only) { grid-template-columns: 1fr; }
+  :local(.viewTabs) { width: min(100%, 340px); margin-bottom: 14px; }
+  :local(.viewTab) { min-width: 0; flex: 1; padding-inline: 12px; }
   :local(.monthTotal) { align-items: flex-start; flex-direction: column; gap: 10px; padding: 16px; }
 }
 [data-theme="dark"] :local(.root) > :local(.pageHeader) h1 { color: #f5f5f7; }
 [data-theme="dark"] :local(.viewTabs) { background: rgba(255,255,255,.08); }
 [data-theme="dark"] :local(.viewTab) { color: #bfc3ce; }
 [data-theme="dark"] :local(.viewTab.active) { background: rgba(255,255,255,.15); color: #79b8ff; }
+[data-theme="dark"] :local(.root) :local(.monthTotal):global(.glass-card) { background: linear-gradient(105deg,rgba(255,59,48,.18) 0%,rgba(255,149,0,.17) 16.66%,rgba(255,214,10,.18) 33.33%,rgba(52,199,89,.16) 50%,rgba(0,122,255,.18) 66.66%,rgba(88,86,214,.17) 83.33%,rgba(175,82,222,.17) 100%); }
 [data-theme="dark"] :local(.monthTotal) h2 { color: #f5f5f7; }
 [data-theme="dark"] :local(.monthTotal) p { color: #a5a8b3; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-row) > span { color: #e5e5ea; }
 [data-theme="dark"] :local(.root) :global(.statistics-employee-meter) { background: rgba(255,255,255,.12); }
-[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-record) { border-color: rgba(255,255,255,.13); background: rgba(255,255,255,.055); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-worker-group) { border-color: rgba(121,184,255,.34); border-inline-start-color: #79b8ff; background: rgba(80,142,210,.1); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-worker-name) { border-bottom-color: rgba(121,184,255,.22); background: rgba(80,142,210,.16); color: #d7e9ff; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-worker-group):nth-of-type(even) { border-color: rgba(255,179,64,.36); border-inline-start-color: #ffb340; background: rgba(255,138,0,.08); }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-worker-group):nth-of-type(even) :global(.statistics-worker-name) { border-bottom-color: rgba(255,179,64,.2); background: rgba(255,138,0,.14); color: #ffe2bd; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-complete) { background: #35a85f; }
+[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-record) { border-color: rgba(255,255,255,.13); background: rgba(255,255,255,.035); }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { color: #d6dae2; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-product) { color: #f5f5f7; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-customer) { color: #a5a8b3; }
@@ -58,4 +73,3 @@
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-quantity) { color: #79b8ff; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="gold"] { color: #f2c15d; }
 [data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-color)[data-tone="silver"] { color: #b8c5d2; }
-[data-theme="dark"] :local(.root) :global(.statistics-details) :global(.statistics-production-employee) { color: #adb5c2; }

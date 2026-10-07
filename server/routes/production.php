@@ -870,6 +870,46 @@ function production_management_month_statistics($params, $body, $user)
         'date' => $row['production_date'], 'quantity' => (float) $row['total_quantity'],
     ], $dailyStmt->fetchAll());
 
+    $yearStart = sprintf('%04d0101', $year);
+    $yearEnd = sprintf('%04d1231', $year);
+    $monthlyBind = [
+        ':taskYearStart' => $yearStart, ':taskYearEnd' => $yearEnd,
+        ':managerYearStart' => $yearStart, ':managerYearEnd' => $yearEnd,
+    ];
+    if ($employeeId !== null) { $monthlyBind[':taskEmployee'] = $employeeId; $monthlyBind[':managerEmployee'] = $employeeId; }
+    $monthlyStmt = db()->prepare('SELECT SUBSTRING(production_date, 5, 2) AS month_number,
+        SUM(quantity) AS total_quantity FROM (
+            SELECT production_date, quantity FROM production_logs
+            WHERE deleted_at IS NULL AND production_date >= :taskYearStart AND production_date <= :taskYearEnd' . $taskFilter . '
+            UNION ALL
+            SELECT production_date, quantity FROM manager_production_logs
+            WHERE deleted_at IS NULL AND production_date >= :managerYearStart AND production_date <= :managerYearEnd' . $managerFilter . '
+        ) all_production GROUP BY SUBSTRING(production_date, 5, 2) ORDER BY month_number ASC');
+    $monthlyStmt->execute($monthlyBind);
+    $monthly = array_map(fn ($row) => [
+        'month' => (int) $row['month_number'], 'quantity' => (float) $row['total_quantity'],
+    ], $monthlyStmt->fetchAll());
+
+    $chartYearStart = '14050101';
+    $chartYearEnd = '14251231';
+    $yearlyBind = [
+        ':taskChartStart' => $chartYearStart, ':taskChartEnd' => $chartYearEnd,
+        ':managerChartStart' => $chartYearStart, ':managerChartEnd' => $chartYearEnd,
+    ];
+    if ($employeeId !== null) { $yearlyBind[':taskEmployee'] = $employeeId; $yearlyBind[':managerEmployee'] = $employeeId; }
+    $yearlyStmt = db()->prepare('SELECT SUBSTRING(production_date, 1, 4) AS year_number,
+        SUM(quantity) AS total_quantity FROM (
+            SELECT production_date, quantity FROM production_logs
+            WHERE deleted_at IS NULL AND production_date >= :taskChartStart AND production_date <= :taskChartEnd' . $taskFilter . '
+            UNION ALL
+            SELECT production_date, quantity FROM manager_production_logs
+            WHERE deleted_at IS NULL AND production_date >= :managerChartStart AND production_date <= :managerChartEnd' . $managerFilter . '
+        ) all_production GROUP BY SUBSTRING(production_date, 1, 4) ORDER BY year_number ASC');
+    $yearlyStmt->execute($yearlyBind);
+    $yearly = array_map(fn ($row) => [
+        'year' => (int) $row['year_number'], 'quantity' => (float) $row['total_quantity'],
+    ], $yearlyStmt->fetchAll());
+
     $employeeUserFilter = $employeeId === null ? '' : ' AND u.id = :employee';
     $employeeBind = [
         ':taskStart' => $prefix . '01', ':taskEnd' => $prefix . '31',
@@ -899,10 +939,98 @@ function production_management_month_statistics($params, $body, $user)
         'quantity' => (float) $row['total_quantity'],
     ], $employeeStmt->fetchAll());
 
+    $yearEmployeeBind = [
+        ':taskStart' => $yearStart, ':taskEnd' => $yearEnd,
+        ':managerStart' => $yearStart, ':managerEnd' => $yearEnd,
+    ];
+    if ($employeeId !== null) $yearEmployeeBind[':employee'] = $employeeId;
+    $yearEmployeeStmt = db()->prepare("SELECT u.id AS employee_user_id,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
+        COALESCE(SUM(l.quantity), 0) AS total_quantity
+        FROM users u
+        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
+        LEFT JOIN people p ON p.id = ea.person_id
+        LEFT JOIN (
+            SELECT employee_user_id, quantity, production_date FROM production_logs
+            WHERE deleted_at IS NULL AND production_date >= :taskStart AND production_date <= :taskEnd
+            UNION ALL
+            SELECT employee_user_id, quantity, production_date FROM manager_production_logs
+            WHERE deleted_at IS NULL AND production_date >= :managerStart AND production_date <= :managerEnd
+        ) l ON l.employee_user_id = u.id
+        WHERE u.role = 'employee'" . $employeeUserFilter . "
+        GROUP BY u.id, p.first_name, p.last_name, u.display_name, u.username
+        ORDER BY total_quantity DESC, employee_name ASC");
+    $yearEmployeeStmt->execute($yearEmployeeBind);
+    $yearByEmployee = array_map(fn ($row) => [
+        'employeeUserId' => (int) $row['employee_user_id'],
+        'employeeName' => $row['employee_name'],
+        'quantity' => (float) $row['total_quantity'],
+    ], $yearEmployeeStmt->fetchAll());
+
+    $recordsStart = $prefix . '01';
+    $recordsEnd = $prefix . '31';
+    $taskRecordsBind = [':taskStart' => $recordsStart, ':taskEnd' => $recordsEnd];
+    $taskRecordsFilter = '';
+    if ($employeeId !== null) { $taskRecordsBind[':taskEmployee'] = $employeeId; $taskRecordsFilter = ' AND l.employee_user_id = :taskEmployee'; }
+    $taskRecordsStmt = db()->prepare("SELECT l.*, t.required_quantity, t.status AS task_status, o.order_number, o.customer_name, o.items,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
+        0 AS is_manager_entry
+        FROM production_logs l JOIN production_tasks t ON t.id = l.task_id
+        JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
+        LEFT JOIN employee_accounts ea ON ea.user_id = u.id LEFT JOIN people p ON p.id = ea.person_id
+        WHERE l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd" . $taskRecordsFilter . "
+        ORDER BY l.production_date ASC, l.created_at ASC, l.id ASC");
+    $taskRecordsStmt->execute($taskRecordsBind);
+
+    $managerRecordsBind = [':managerStart' => $recordsStart, ':managerEnd' => $recordsEnd];
+    $managerRecordsFilter = '';
+    if ($employeeId !== null) { $managerRecordsBind[':managerEmployee'] = $employeeId; $managerRecordsFilter = ' AND l.employee_user_id = :managerEmployee'; }
+    $managerRecordsStmt = db()->prepare("SELECT l.*, NULL AS task_id, NULL AS required_quantity, NULL AS task_status, o.order_number, o.customer_name, o.items,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
+        1 AS is_manager_entry
+        FROM manager_production_logs l JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
+        LEFT JOIN employee_accounts ea ON ea.user_id = u.id LEFT JOIN people p ON p.id = ea.person_id
+        WHERE l.deleted_at IS NULL AND l.production_date >= :managerStart AND l.production_date <= :managerEnd" . $managerRecordsFilter . "
+        ORDER BY l.production_date ASC, l.created_at ASC, l.id ASC");
+    $managerRecordsStmt->execute($managerRecordsBind);
+
+    $recordRows = array_merge($taskRecordsStmt->fetchAll(), $managerRecordsStmt->fetchAll());
+    usort($recordRows, static fn ($left, $right) => [$left['production_date'], $left['created_at'], (int) $left['id']] <=> [$right['production_date'], $right['created_at'], (int) $right['id']]);
+    $records = [];
+    foreach ($recordRows as $row) {
+        $item = null;
+        foreach (($row['items'] ? json_decode($row['items'], true) : []) as $candidate) {
+            if (($candidate['uid'] ?? '') === $row['order_item_uid']) { $item = $candidate; break; }
+        }
+        $itemState = $item['state'] ?? '';
+        $records[] = [
+            'id' => !empty($row['is_manager_entry']) ? 'manager-' . (int) $row['id'] : (int) $row['id'],
+            'taskId' => $row['task_id'] === null ? null : (int) $row['task_id'],
+            'isManagerEntry' => !empty($row['is_manager_entry']),
+            'employeeUserId' => (int) $row['employee_user_id'],
+            'employeeName' => $row['employee_name'],
+            'orderNumber' => $row['order_number'],
+            'productionComplete' => !empty($item['productionStopped']) || $itemState === 'PRODUCTION_COMPLETE' || production_state_is_after_completion($itemState),
+            'customerName' => $row['customer_name'],
+            'productName' => $item['productName'] ?? '—',
+            'quantity' => (float) $row['quantity'],
+            'totalWeightGrams' => (float) $row['total_weight_grams'],
+            'productionDate' => $row['production_date'],
+            'createdAt' => to_iso($row['created_at']),
+            'taskRequiredQuantity' => $row['required_quantity'] === null ? null : (float) $row['required_quantity'],
+            'taskStatus' => $row['task_status'],
+            'material' => $item['material'] ?? '',
+            'thickness' => $item['thickness'] ?? null,
+            'diameter' => $item['diameter'] ?? null,
+            'platingColor' => $item['platingColor'] ?? 'NONE',
+        ];
+    }
+
     json_response([
         'year' => $year, 'month' => $month, 'employeeUserId' => $employeeId,
         'total' => array_sum(array_column($daily, 'quantity')),
-        'daily' => $daily, 'byEmployee' => $byEmployee,
+        'daily' => $daily, 'monthly' => $monthly, 'yearly' => $yearly,
+        'byEmployee' => $byEmployee, 'yearByEmployee' => $yearByEmployee, 'records' => $records,
     ]);
 }
 
@@ -953,6 +1081,9 @@ function production_management_day_statistics($params, $body, $user)
             'employeeUserId' => (int) $row['employee_user_id'],
             'employeeName' => $row['employee_name'],
             'orderNumber' => $row['order_number'],
+            'productionComplete' => !empty($item['productionStopped'])
+                || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE'
+                || production_state_is_after_completion($item['state'] ?? ''),
             'customerName' => $row['customer_name'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
