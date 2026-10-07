@@ -15,7 +15,7 @@ export default function ProductionBarChart({ days, selectedDate, onSelect }) {
   }, [days, selectedDate]);
 
   return <div className={styles["production-chart"]} aria-label="نمودار تولید روزانه">
-    <div className={styles["chart-y-label"]}>تعداد تولید</div>
+    <div className={styles["chart-y-label"]}>تعداد</div>
     <div className={styles["chart-viewport"]}>
       <div className={styles["chart-scale"]} aria-hidden="true"><span>{fa(max)}</span><span>{fa(max / 2)}</span></div>
       <div className={styles["chart-scroll"]}>
