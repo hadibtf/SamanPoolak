@@ -157,9 +157,10 @@ schema declarations list keys/indexes, not every property on stored objects.
 
 ### Identity and separation
 
-Provision/reset/disable employee credentials in People add/edit, using the
-one-to-one `employee_accounts` mapping between an EMPLOYEE person and user.
-Passwords are write-only. Existing admin/general-user accounts stay separate.
+Provision or reset employee credentials in People add/edit, using the one-to-one
+`employee_accounts` mapping between an EMPLOYEE person and user. Employee login
+accounts are always active and have no active/inactive setting. Passwords are
+write-only. Existing admin/general-user account handling stays separate.
 Employee login uses the shared login presentation with title
 «سامانه آمار تولید کارکنان». Employee UI must reveal no management URL or link.
 Role checks, configured login origins, and task/log ownership enforce access.

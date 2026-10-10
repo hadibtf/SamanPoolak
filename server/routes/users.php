@@ -24,8 +24,8 @@ function users_create($params, $body, $user)
 
     $role = (($body['role'] ?? 'user') === 'admin') ? 'admin' : 'user';
     $ins = db()->prepare(
-        'INSERT INTO users (username, password_hash, display_name, role, disabled, created_at)
-         VALUES (:u, :p, :d, :r, 0, :c)'
+        'INSERT INTO users (username, password_hash, display_name, role, created_at)
+         VALUES (:u, :p, :d, :r, :c)'
     );
     $ins->execute([
         ':u' => $username,

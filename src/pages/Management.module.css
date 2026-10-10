@@ -61,6 +61,66 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-gold) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px solid rgba(144, 104, 28, 0.38);
+  background: linear-gradient(145deg, #fff0b5, #d6ad4b 52%, #f0d985);
+  color: #5a4213;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-gold):global(.active) {
+  border-color: #77550e;
+  background: linear-gradient(145deg, #f2d36e, #bd8b25 52%, #e5c55f);
+  color: #382807;
+  font-weight: 750;
+  box-shadow: 0 0 0 2px rgba(144, 104, 28, 0.28), inset 0 1px 2px rgba(255, 255, 255, 0.64);
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-silver) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px solid rgba(77, 107, 139, 0.38);
+  background: linear-gradient(145deg, #eff5fc, #afc2d8 52%, #dce7f1);
+  color: #304b68;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-silver):global(.active) {
+  border-color: #405c7a;
+  background: linear-gradient(145deg, #c4d5e7, #839cb7 52%, #b3c7db);
+  color: #172d45;
+  font-weight: 750;
+  box-shadow: 0 0 0 2px rgba(76, 108, 144, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-none) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px solid rgba(69, 68, 65, 0.3);
+  background: linear-gradient(145deg, #deddd8, #b5b4ae 52%, #d1d0ca);
+  color: #3d3c39;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-none):global(.active) {
+  border-color: #4d4c47;
+  background: linear-gradient(145deg, #999891, #696963 52%, #85847d);
+  color: #fff;
+  font-weight: 750;
+  box-shadow: 0 0 0 2px rgba(69, 68, 65, 0.28), inset 0 1px 2px rgba(255, 255, 255, 0.42);
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-gold):focus-visible,
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-silver):focus-visible,
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-none):focus-visible {
+  outline: 2px solid var(--active-color);
+  outline-offset: 2px;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.plating-checkmark) {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 :local(.root) :global(.orders-body) {
   margin-top: 22px;
 }
@@ -149,6 +209,134 @@
   position: relative;
 }
 
+:local(.root):global(.submit-order) :global(.order-item-card) { padding: 16px; }
+:local(.root):global(.submit-order) :global(.item-editor) :global(.form-grid) { gap: 10px 12px; }
+:local(.root):global(.submit-order) :global(.item-editor) :global(.form-group) { gap: 4px; }
+:local(.root):global(.submit-order) :global(.dimension-custom-fields) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  min-width: 0;
+}
+:local(.root):global(.submit-order) :global(.dimension-custom-fields) input { min-width: 0; }
+:local(.root):global(.submit-order) :global(.item-editor) input:not([type="checkbox"]),
+:local(.root):global(.submit-order) :global(.item-editor) textarea {
+  padding: 9px 11px !important;
+  font-size: 14px !important;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.segmented-control) { gap: 3px; padding: 3px; }
+:local(.root):global(.submit-order) :global(.item-editor) :global(.segmented-control) :global(.segment) {
+  padding: 6px 5px;
+  font-size: 12px;
+}
+:local(.root):global(.submit-order) :global(.item-editor) :global(.toggle-row) {
+  justify-content: flex-start;
+  gap: 8px;
+  width: max-content;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+  white-space: nowrap;
+}
+:local(.root):global(.submit-order) :global(.order-item-footer) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+:local(.root):global(.submit-order) :global(.order-hardening-field) {
+  width: min(100%, 360px);
+}
+:local(.root):global(.submit-order) :global(.item-editor-head) {
+  position: relative;
+  min-height: 58px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+:local(.root):global(.submit-order) :global(.item-editor-head) > :global(.link-btn) {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+@media (max-width: 420px) {
+  :local(.root):global(.submit-order) :global(.item-editor-head) {
+    flex-direction: column;
+    gap: 6px;
+  }
+  :local(.root):global(.submit-order) :global(.item-editor-head) > :global(.link-btn) {
+    position: static;
+    align-self: flex-end;
+    transform: none;
+  }
+}
+:local(.root):global(.submit-order) :global(.order-feature-switches) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  width: max-content;
+  max-width: 100%;
+}
+:local(.root):global(.submit-order) :global(.order-feature-switches) :global(.toggle-row) {
+  min-width: 0;
+  flex: 0 0 auto;
+}
+:local(.root):global(.submit-order) :global(.dimension-presets) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  overflow: visible;
+}
+:local(.root):global(.submit-order) :global(.dimension-preset) {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: min(var(--dimension-preset-size), calc(20vw - 16px));
+  min-width: min(var(--dimension-preset-size), calc(20vw - 16px));
+  height: min(var(--dimension-preset-size), calc(20vw - 16px));
+  min-height: min(var(--dimension-preset-size), calc(20vw - 16px));
+  padding: 0;
+  border: 1px solid rgba(82, 101, 126, 0.22);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 26%, #fff, #f0f3f7 68%, #dce2ea);
+  color: #3e4d60;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.92), 0 2px 5px rgba(39, 54, 73, 0.12);
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+:local(.root):global(.submit-order) :global(.dimension-preset-label) {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+  white-space: nowrap;
+}
+:local(.root):global(.submit-order) :global(.dimension-preset-custom) { border-style: dashed; }
+:local(.root):global(.submit-order) :global(.dimension-preset):global(.active) {
+  border-color: var(--active-color);
+  background: radial-gradient(circle at 34% 24%, color-mix(in srgb, var(--active-color) 76%, white), var(--active-color) 72%);
+  color: #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--active-color) 22%, transparent), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+}
+:local(.root):global(.submit-order) :global(.dimension-preset):hover { transform: translateY(-2px); }
+:local(.root):global(.submit-order) :global(.dimension-preset):global(.active):hover { transform: none; }
+:local(.root):global(.submit-order) :global(.dimension-preset):focus-visible {
+  outline: 2px solid var(--active-color);
+  outline-offset: 2px;
+}
+
 :local(.root):global(.submit-order) :global(.span-2) {
   grid-column: span 2;
 }
@@ -196,9 +384,111 @@
   width: 100% !important;
 }
 
+/* Keep the order header compact, with its editable date at the left edge. */
+:local(.root):global(.submit-order) :global(.order-header-card) {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 24px;
+}
+
+:local(.root):global(.submit-order) :global(.order-header-card) :global(.customer-field) {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:local(.root):global(.submit-order) :global(.order-date-inline) {
+  flex: 0 0 auto;
+}
+
+:local(.root):global(.submit-order) :global(.order-date-inline) :global(.rmdp-container) {
+  display: inline-flex !important;
+  width: auto !important;
+}
+
+:local(.root):global(.submit-order) :global(.order-date-inline-input) {
+  width: auto !important;
+  min-width: 112px !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 4px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--sp-primary) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  text-align: left;
+  direction: ltr;
+  cursor: pointer;
+}
+
+:local(.root):global(.submit-order) :global(.order-date-inline-input):focus {
+  box-shadow: none !important;
+  outline: 2px solid color-mix(in srgb, var(--sp-primary) 30%, transparent) !important;
+  outline-offset: 3px;
+}
+
 /* Predictive search dropdown */
 :local(.root) :global(.customer-field) {
   position: relative;
+}
+
+:local(.root):global(.submit-order) :global(.customer-search-row) {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+:local(.root):global(.submit-order) :global(.customer-search-row) input {
+  flex: 1;
+  min-width: 0;
+  width: auto !important;
+}
+
+:local(.root):global(.submit-order) :global(.customer-add-btn) {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px !important;
+  height: 36px !important;
+  max-height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--sp-primary) !important;
+  font-size: 27px !important;
+  font-weight: 500;
+  line-height: 1;
+  align-self: center;
+  cursor: pointer;
+}
+
+:local(.root):global(.submit-order) :global(.customer-add-btn):hover {
+  background: color-mix(in srgb, var(--sp-primary) 10%, transparent) !important;
+}
+
+:local(.root):global(.submit-order) :global(.customer-add-btn):focus-visible {
+  outline: 2px solid var(--sp-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  :local(.root):global(.submit-order) :global(.order-header-card) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  :local(.root):global(.submit-order) :global(.order-date-inline) {
+    order: -1;
+    align-self: flex-end;
+  }
 }
 
 :local(.root) :global(.search-dropdown) {
@@ -442,8 +732,12 @@
 
 /* LTR number inputs (thickness / diameter) */
 :local(.root):global(.submit-order) input:global(.ltr-num) {
-  direction: ltr;
+  direction: rtl;
   text-align: left;
+}
+:local(.root):global(.submit-order) input:global(.ltr-num)::placeholder {
+  direction: rtl;
+  text-align: right;
 }
 
 /* iOS square photo upload button */
@@ -505,6 +799,30 @@
   font-weight: 600;
   color: #1c1c1e;
 }
+
+:local(.root):global(.submit-order) :global(.marking-picker) {
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+:local(.root):global(.submit-order) :global(.marking-chip) {
+  width: 60px;
+  flex: 0 0 60px;
+  gap: 3px;
+  padding: 5px;
+}
+
+:local(.root):global(.submit-order) :global(.marking-chip) img,
+:local(.root):global(.submit-order) :global(.marking-chip) > i {
+  width: 36px;
+  height: 36px;
+}
+
+:local(.root):global(.submit-order) :global(.marking-chip) > i { font-size: 18px; }
+:local(.root):global(.submit-order) :global(.marking-chip) span { font-size: 9px; }
 
 :local(.root) :global(.ios-switch) {
   position: relative;
@@ -995,7 +1313,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 :local(.root) :global(.item-badge) {
@@ -1046,14 +1364,6 @@
   color: #1f8a3b;
 }
 
-:local(.root) :global(.item-panel-head) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 :local(.root):global(.order-view) :global(.item-panel.item-panel-tone-white) {
   background: #fff;
   border-color: var(--sp-border);
@@ -1070,8 +1380,6 @@
   background: color-mix(in srgb, var(--sp-surface) 92%, var(--sp-primary) 8%);
   border-color: color-mix(in srgb, var(--sp-border) 78%, var(--sp-primary) 22%);
 }
-
-:local(.root) :global(.item-panel-head) :global(.section-title) { margin: 0; }
 
 :local(.root) :global(.state-pill):global(.ready) {
   background: rgba(52, 199, 89, 0.15);
@@ -1102,6 +1410,22 @@
 :local(.root) :global(.production-summary-list) > b { display: block; margin-bottom: 5px; }
 :local(.root) :global(.production-summary-list) > div { padding: 7px 0; border-bottom: 1px dashed rgba(0,0,0,.12); }
 :local(.root) :global(.production-summary-list) small { display: block; color: #8e8e93; margin-top: 2px; }
+:local(.root):global(.order-view) :global(.production-record-list) { margin-top: 10px; }
+:local(.root):global(.order-view) :global(.production-record-table-wrap) { min-width: 0; overflow-x: auto; border: 1px solid var(--sp-border); border-radius: 12px; background: var(--sp-surface); }
+:local(.root):global(.order-view) :global(.production-record-table) { width: 100%; min-width: 580px; table-layout: fixed; border-collapse: collapse; color: var(--sp-text); }
+:local(.root):global(.order-view) :global(.production-record-table) th,
+:local(.root):global(.order-view) :global(.production-record-table) td { padding: 9px 8px; border-bottom: 1px solid var(--sp-border); text-align: center; vertical-align: middle; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th { background: var(--sp-surface-muted); color: var(--sp-text-muted); font-size: 11px; font-weight: 700; line-height: 1.5; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(1) { width: 7%; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(2) { width: 22%; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(3) { width: 19%; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(4) { width: 13%; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(5) { width: 17%; }
+:local(.root):global(.order-view) :global(.production-record-table) thead th:nth-child(6) { width: 22%; }
+:local(.root):global(.order-view) :global(.production-record-table) tbody td { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.production-record-table) tbody td:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.production-record-table) tbody tr:last-child td { border-bottom: 0; }
+:local(.root):global(.order-view) :global(.production-record-edit-row) td { padding: 9px 12px; }
 :local(.root) :global(.production-assignment-row) { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 :local(.root) :global(.production-assignment-row) button { border: 1px solid #cdd9ec; color: #0875df; background: #f6faff; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
 :local(.root) :global(.production-assignment-edit) { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -1191,10 +1515,11 @@
 :local(.root):global(.order-view) :global(.order-glance-table) thead th { background: var(--sp-surface-muted); color: var(--sp-text-muted); font-size: 11px; font-weight: 700; line-height: 1.5; }
 :local(.root):global(.order-view) :global(.order-glance-table) thead th:first-child { width: 6%; }
 :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(2),
-:local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 40%; text-align: start; }
-:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 15%; }
-:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 21%; }
-:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(5) { width: 18%; }
+:local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 34%; text-align: start; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 13%; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 15%; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(5) { width: 15%; }
+:local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(6) { width: 17%; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody th { font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
 :local(.root):global(.order-view) :global(.order-glance-row-number) { color: var(--sp-text-muted); font-weight: 700; white-space: nowrap; }
 :local(.root):global(.order-view) :global(.order-glance-table) tbody tr { cursor: pointer; transition: background-color .15s ease; }
@@ -1347,11 +1672,10 @@
 :local(.root):global(.order-view) :global(.order-production-subtitle) { margin: 14px 0 8px; padding-inline-start: 9px; border-inline-start: 2px solid var(--sp-success); color: var(--sp-text-muted); font-size: 12px; font-weight: 750; line-height: 1.5; }
 :local(.root):global(.order-view) :global(.manager-production-log-section) :global(.order-production-subtitle) { margin-top: 0; }
 
-:local(.root):global(.order-view) :global(.production-completion-panel) { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 13px; padding: 14px; border: 1px solid color-mix(in srgb, var(--sp-warning) 35%, var(--sp-border)); border-inline-start: 4px solid var(--sp-warning); border-radius: 14px; background: linear-gradient(110deg, color-mix(in srgb, var(--sp-warning) 11%, var(--sp-surface)), color-mix(in srgb, var(--sp-warning) 4%, var(--sp-surface))); box-shadow: 0 5px 18px rgba(105, 79, 24, .07); }
-:local(.root):global(.order-view) :global(.production-completion-icon) { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 13px; background: color-mix(in srgb, var(--sp-warning) 16%, var(--sp-surface)); color: var(--sp-warning); font-size: 19px; }
-:local(.root):global(.order-view) :global(.production-completion-copy) { display: grid; gap: 4px; min-width: 0; }
-:local(.root):global(.order-view) :global(.production-completion-copy) strong { color: var(--sp-text); font-size: 14px; line-height: 1.5; }
-:local(.root):global(.order-view) :global(.production-completion-copy) span { color: var(--sp-text-muted); font-size: 12px; line-height: 1.7; }
+:local(.root):global(.order-view) :global(.production-completion-panel) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin-top: 13px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--sp-warning) 35%, var(--sp-border)); border-inline-start: 4px solid var(--sp-warning); border-radius: 12px; background: linear-gradient(110deg, color-mix(in srgb, var(--sp-warning) 11%, var(--sp-surface)), color-mix(in srgb, var(--sp-warning) 4%, var(--sp-surface))); }
+:local(.root):global(.order-view) :global(.production-completion-summary) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 14px; min-width: 0; color: var(--sp-text-muted); font-size: 12px; }
+:local(.root):global(.order-view) :global(.production-completion-summary) strong { color: var(--sp-warning); font-size: 13px; font-weight: 800; }
+:local(.root):global(.order-view) :global(.production-completion-summary) span { font-size: 12px; }
 :local(.root):global(.order-view) :global(.production-completion-confirm) { min-height: 44px; padding: 9px 16px; border: 0; border-radius: 10px; background: var(--sp-warning); color: var(--sp-on-primary); font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; box-shadow: 0 4px 12px color-mix(in srgb, var(--sp-warning) 24%, transparent); transition: transform .15s ease, box-shadow .15s ease; }
 :local(.root):global(.order-view) :global(.production-completion-confirm):hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 15px color-mix(in srgb, var(--sp-warning) 32%, transparent); }
 :local(.root):global(.order-view) :global(.production-completion-confirm):focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 3px; }
@@ -1361,15 +1685,13 @@
 :local(.root):global(.order-view) :global(.production-completion-resume):focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 2px; }
 :local(.root):global(.order-view) :global(.production-completion-resume):disabled { opacity: .65; cursor: wait; }
 :local(.root):global(.order-view) :global(.production-completion-panel.is-confirmed) { border-color: color-mix(in srgb, var(--sp-success) 35%, var(--sp-border)); border-inline-start-color: var(--sp-success); background: linear-gradient(110deg, color-mix(in srgb, var(--sp-success) 11%, var(--sp-surface)), color-mix(in srgb, var(--sp-success) 4%, var(--sp-surface))); }
-:local(.root):global(.order-view) :global(.production-completion-panel.is-confirmed) :global(.production-completion-icon) { background: color-mix(in srgb, var(--sp-success) 16%, var(--sp-surface)); color: var(--sp-success); }
-:local(.root):global(.order-view) :global(.production-short-completion) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin-top: 10px; padding: 11px 13px; border: 1px solid color-mix(in srgb, var(--sp-warning) 27%, var(--sp-border)); border-inline-start: 3px solid var(--sp-warning); border-radius: 11px; background: color-mix(in srgb, var(--sp-warning) 5%, var(--sp-surface)); }
-:local(.root):global(.order-view) :global(.production-short-completion) > div { display: grid; gap: 3px; min-width: 0; }
-:local(.root):global(.order-view) :global(.production-short-completion) strong { color: var(--sp-text); font-size: 12px; }
-:local(.root):global(.order-view) :global(.production-short-completion) span { color: var(--sp-text-muted); font-size: 11px; line-height: 1.65; }
-:local(.root):global(.order-view) :global(.production-short-completion) button { min-height: 42px; padding: 8px 13px; border: 1px solid color-mix(in srgb, var(--sp-warning) 35%, var(--sp-border)); border-radius: 9px; background: var(--sp-surface); color: var(--sp-warning); font: inherit; font-size: 11px; font-weight: 750; white-space: nowrap; cursor: pointer; }
+:local(.root):global(.order-view) :global(.production-completion-panel.is-confirmed) :global(.production-completion-summary) strong { color: var(--sp-success); }
+:local(.root):global(.order-view) :global(.production-short-completion) { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: max-content; max-width: 100%; margin-top: 9px; }
+:local(.root):global(.order-view) :global(.production-short-completion) button { min-height: 36px; max-width: 100%; padding: 7px 12px; border: 1px solid color-mix(in srgb, var(--sp-warning) 35%, var(--sp-border)); border-radius: 9px; background: color-mix(in srgb, var(--sp-warning) 5%, var(--sp-surface)); color: var(--sp-warning); font: inherit; font-size: 12px; font-weight: 750; text-align: start; white-space: normal; cursor: pointer; }
 :local(.root):global(.order-view) :global(.production-short-completion) button:hover:not(:disabled) { background: color-mix(in srgb, var(--sp-warning) 9%, var(--sp-surface)); }
 :local(.root):global(.order-view) :global(.production-short-completion) button:focus-visible { outline: 2px solid var(--sp-focus); outline-offset: 2px; }
 :local(.root):global(.order-view) :global(.production-short-completion) button:disabled { opacity: .65; cursor: wait; }
+:local(.root):global(.order-view) :global(.production-short-completion) small { padding-inline: 4px; color: var(--sp-text-muted); font-size: 10px; line-height: 1.5; }
 :local(.root):global(.order-view) :global(.weight-edit-cancel) { min-height: 40px; padding: 7px 12px; border: 1px solid var(--sp-border); border-radius: 9px; background: var(--sp-surface); color: var(--sp-text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 :local(.root):global(.order-view) :global(.weight-edit-cancel):hover { border-color: var(--sp-primary); color: var(--sp-primary); }
 :local(.root):global(.order-view) :global(.weight-edit-cancel):focus-visible { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
@@ -1385,31 +1707,54 @@
 }
 :local(.root):global(.order-view) :global(.manager-production-log-form) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(130px, .8fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(130px, .8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: end;
   gap: 10px;
 }
-:local(.root):global(.order-view) :global(.manager-production-log-form) label { display: grid; gap: 5px; min-width: 0; color: var(--sp-text-muted); font-size: 11px; }
+:local(.root):global(.order-view) :global(.manager-production-log-form) > input,
+:local(.root):global(.order-view) :global(.manager-production-log-form) > select { min-width: 0; min-height: 44px; }
 :local(.root):global(.order-view) :global(.manager-production-log-form) button { min-height: 44px; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.manager-production-submit-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-self: end;
+  border: 1px solid #18884b;
+  border-radius: 10px;
+  background: #18884b;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 12px rgba(24, 136, 75, .18);
+  transition: background-color .15s ease, box-shadow .15s ease;
+}
+:local(.root):global(.order-view) :global(.manager-production-submit-btn):hover:not(:disabled) { background: #147541; box-shadow: 0 6px 14px rgba(24, 136, 75, .24); }
+:local(.root):global(.order-view) :global(.manager-production-submit-btn):focus-visible { outline: 2px solid #18884b; outline-offset: 2px; }
+:local(.root):global(.order-view) :global(.manager-production-submit-btn):disabled { opacity: .58; cursor: not-allowed; box-shadow: none; }
 :local(.root):global(.order-view) :global(.manager-production-log-form) > small { grid-column: 1 / -1; color: var(--sp-text-muted); }
 :local(.root):global(.order-view) :global(.manager-production-date) { min-width: 0; width: 100%; }
 :local(.root):global(.order-view) :global(.production-summary-error) { margin: 0; color: var(--sp-text-muted); font-size: 12px; line-height: 1.65; }
 :local(.root):global(.order-view) :global(.production-summary-error) { margin-top: 10px; color: #b54732; }
-:local(.root):global(.order-view) :global(.manager-log-badge) { display: inline-flex; margin-inline-start: 5px; padding: 2px 7px; border-radius: 999px; background: rgba(180, 125, 34, .12); color: #8a6319; font-size: 10px; font-style: normal; font-weight: 700; }
-:local(.root):global(.order-view) :global(.manager-production-log-row) { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3px 12px; }
-:local(.root):global(.order-view) :global(.manager-production-log-actions) { display: flex; grid-column: 2; grid-row: 1 / span 2; gap: 6px; }
-:local(.root):global(.order-view) :global(.manager-production-log-actions) button,
+:local(.root):global(.order-view) :global(.manager-production-log-actions) { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button { min-height: 38px; padding: 6px 11px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--sp-primary); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
 :local(.root):global(.order-view) :global(.manager-log-cancel) { min-height: 38px; padding: 6px 11px; border: 1px solid var(--sp-border); border-radius: 8px; background: var(--sp-surface); color: var(--sp-primary); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
-:local(.root):global(.order-view) :global(.manager-production-log-actions) button.danger { color: #c43e3e; }
-:local(.root):global(.order-view) :global(.manager-production-log-actions) button:hover:not(:disabled),
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:global(.danger) { border-color: transparent; background: transparent; color: #b42318; }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:hover:not(:disabled) { border-color: transparent; background: var(--sp-surface-muted); }
 :local(.root):global(.order-view) :global(.manager-log-cancel):hover:not(:disabled) { border-color: var(--sp-primary); background: var(--sp-surface-muted); }
-:local(.root):global(.order-view) :global(.manager-production-log-actions) button.danger:hover:not(:disabled) { border-color: #c43e3e; background: rgba(196, 62, 62, .06); }
+:local(.root):global(.order-view) :global(.manager-production-log-actions) button:global(.danger):hover:not(:disabled) { border-color: transparent; background: rgba(196, 62, 62, .06); }
 :local(.root):global(.order-view) :global(.manager-production-log-actions) button:focus-visible,
 :local(.root):global(.order-view) :global(.manager-log-cancel):focus-visible { outline: 2px solid var(--sp-primary); outline-offset: 2px; }
 :local(.root):global(.order-view) :global(.manager-production-log-actions) button:disabled,
 :local(.root):global(.order-view) :global(.manager-log-cancel):disabled { opacity: .55; cursor: not-allowed; }
 :local(.root):global(.order-view) :global(.manager-production-log-edit-form) { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 9px; padding: 4px 0 6px; }
-:local(.root):global(.order-view) :global(.manager-production-log-edit-form) label { display: grid; gap: 5px; min-width: 0; color: var(--sp-text-muted); font-size: 11px; }
+:local(.root):global(.order-view) :global(.manager-production-log-edit-form) > input,
+:local(.root):global(.order-view) :global(.manager-production-log-edit-form) > select { min-width: 0; min-height: 44px; }
 :local(.root):global(.order-view) :global(.manager-production-log-edit-actions) { display: flex; grid-column: 1 / -1; justify-content: flex-start; gap: 8px; }
 :local(.root):global(.order-view) :global(.manager-production-log-edit-actions) button { min-height: 42px; }
 
@@ -1620,11 +1965,10 @@
   :local(.root):global(.order-view) :global(.manager-production-log-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :local(.root):global(.order-view) :global(.manager-production-log-form) button { grid-column: 1 / -1; }
   :local(.root):global(.order-view) :global(.manager-production-log-edit-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  :local(.root):global(.order-view) :global(.production-completion-panel) { grid-template-columns: auto minmax(0, 1fr); }
-  :local(.root):global(.order-view) :global(.production-completion-confirm) { grid-column: 1 / -1; }
-  :local(.root):global(.order-view) :global(.production-completion-resume) { grid-column: 1 / -1; justify-self: start; }
-  :local(.root):global(.order-view) :global(.production-short-completion) { grid-template-columns: minmax(0, 1fr); }
-  :local(.root):global(.order-view) :global(.production-short-completion) button { width: 100%; }
+  :local(.root):global(.order-view) :global(.production-completion-panel) { flex-direction: column; align-items: flex-start; }
+  :local(.root):global(.order-view) :global(.production-completion-confirm),
+  :local(.root):global(.order-view) :global(.production-completion-resume) { align-self: flex-start; }
+  :local(.root):global(.order-view) :global(.production-short-completion) { width: max-content; max-width: 100%; }
 }
 
 @media (max-width: 480px) {
@@ -1651,10 +1995,11 @@
   :local(.root):global(.order-view) :global(.order-glance-table) thead th { font-size: 10px; }
   :local(.root):global(.order-view) :global(.order-glance-table) thead th:first-child { width: 6%; }
   :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(2),
-  :local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 40%; }
-  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 15%; }
-  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 21%; }
-  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(5) { width: 18%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) tbody th { width: 34%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(3) { width: 13%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(4) { width: 15%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(5) { width: 15%; }
+  :local(.root):global(.order-view) :global(.order-glance-table) thead th:nth-child(6) { width: 17%; }
   :local(.root):global(.order-view) :global(.order-glance-row-number) { padding-inline: 2px; }
   :local(.root):global(.order-view) :global(.order-glance-head-full),
   :local(.root):global(.order-view) :global(.order-glance-state-full) { display: none; }
@@ -1673,11 +2018,13 @@
   :local(.root):global(.order-view) :global(.order-weight-fact)[data-kind="produced"] strong { font-size: 20px; }
   :local(.root):global(.order-view) :global(.order-weight-fact)[data-kind="dimensions"] strong { font-size: 19px; }
   :local(.root):global(.order-view) :global(.production-completion-panel) { gap: 10px; padding: 11px; }
-  :local(.root):global(.order-view) :global(.production-completion-icon) { width: 38px; height: 38px; }
   :local(.root):global(.order-view) :global(.manager-production-log-form) { grid-template-columns: minmax(0, 1fr); }
   :local(.root):global(.order-view) :global(.manager-production-log-form) button { grid-column: 1; }
-  :local(.root):global(.order-view) :global(.manager-production-log-row) { grid-template-columns: minmax(0, 1fr); }
-  :local(.root):global(.order-view) :global(.manager-production-log-actions) { grid-column: 1; grid-row: auto; }
+  :local(.root):global(.order-view) :global(.production-record-table) { min-width: 560px; }
+  :local(.root):global(.order-view) :global(.production-record-table) th,
+  :local(.root):global(.order-view) :global(.production-record-table) td { padding: 8px 6px; }
+  :local(.root):global(.order-view) :global(.production-record-table) thead th { font-size: 10px; }
+  :local(.root):global(.order-view) :global(.manager-production-log-actions) button { min-height: 34px; padding: 5px 9px; }
   :local(.root):global(.order-view) :global(.manager-production-log-edit-form) { grid-template-columns: minmax(0, 1fr); }
   :local(.root):global(.order-view) :global(.manager-production-log-edit-actions) { grid-column: 1; }
 }
@@ -1693,8 +2040,11 @@
 [data-theme="dark"] :local(.root) :global(.production-assignment-row) button { background: #202a36; border-color: #3c526b; color: #9acaff; }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-summary-list) > div { border-bottom-color: rgba(255,255,255,.14); }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-summary-list) small { color: var(--sp-text-muted); }
+[data-theme="dark"] :local(.root):global(.order-view) :global(.production-record-table) th,
+[data-theme="dark"] :local(.root):global(.order-view) :global(.production-record-table) td { border-bottom-color: rgba(255,255,255,.14); }
+[data-theme="dark"] :local(.root):global(.order-view) :global(.manager-production-log-actions) button:global(.danger) { border-color: transparent; background: transparent; color: #ffaaaa; }
+[data-theme="dark"] :local(.root):global(.order-view) :global(.manager-production-log-actions) button:global(.danger):hover:not(:disabled) { border-color: transparent; background: rgba(196, 62, 62, .12); }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-summary-error) { color: #ff9b89; }
-[data-theme="dark"] :local(.root):global(.order-view) :global(.manager-log-badge) { background: rgba(239,190,80,.12); color: #f0ca75; }
 
 /* ===================== Invoice (PDF source) ===================== */
 :local(.root) :global(.invoice-offscreen) {
@@ -1791,3 +2141,247 @@
 }
 
 :local(.root) :global(.invoice-table) :global(.c-total-label) { text-align: left; }
+
+/* The three order-detail sections share their accent across their contents. */
+:local(.root):global(.order-view) :global(.order-section) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
+  border-inline-start-width: 6px;
+  border-inline-start-color: var(--order-section-accent);
+  background: color-mix(in srgb, var(--sp-surface) 91%, var(--order-section-accent) 9%);
+  box-shadow: 0 7px 20px color-mix(in srgb, var(--order-section-accent) 8%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-section-title) {
+  padding: 9px 12px;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
+  border-bottom: 2px solid color-mix(in srgb, var(--order-section-accent) 54%, var(--sp-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--sp-surface) 87%, var(--order-section-accent) 13%);
+  color: var(--order-section-accent);
+}
+
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-spec-ribbon) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--order-section-accent) 8%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-spec-ribbon)::before { height: 4px; background: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-spec-item) + :global(.order-spec-item) { border-inline-start-color: color-mix(in srgb, var(--order-section-accent) 22%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 90%, var(--order-section-accent) 10%);
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) input { border-color: color-mix(in srgb, var(--order-section-accent) 24%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-weight-facts) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
+  background: color-mix(in srgb, var(--order-section-accent) 24%, var(--sp-border));
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.marking-detail) {
+  border-top: 1px solid color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 94%, var(--order-section-accent) 6%);
+  border-radius: 0 0 9px 9px;
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.marking-detail) > span { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.item-desc) {
+  border-inline-start: 3px solid color-mix(in srgb, var(--order-section-accent) 60%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 91%, var(--order-section-accent) 9%);
+}
+
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-section) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 36%, var(--sp-border));
+  border-inline-start-width: 5px;
+  background: color-mix(in srgb, var(--sp-surface) 90%, var(--order-section-accent) 10%);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-table-wrap) { border-color: color-mix(in srgb, var(--order-section-accent) 36%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-table) thead th {
+  background: color-mix(in srgb, var(--sp-surface) 84%, var(--order-section-accent) 16%);
+  color: var(--order-section-accent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-table) tbody td { border-bottom-color: color-mix(in srgb, var(--order-section-accent) 18%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-table) tbody tr:hover { background: color-mix(in srgb, var(--sp-surface) 94%, var(--order-section-accent) 6%); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) input,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) select,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) input,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) select,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) :global(.rmdp-input),
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) :global(.rmdp-input) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-assignment-row) button {
+  border-color: color-mix(in srgb, var(--order-section-accent) 36%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 91%, var(--order-section-accent) 9%);
+  color: var(--order-section-accent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-completion-panel) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 38%, var(--sp-border));
+  border-inline-start-color: var(--order-section-accent);
+  background: linear-gradient(110deg, color-mix(in srgb, var(--order-section-accent) 12%, var(--sp-surface)), color-mix(in srgb, var(--order-section-accent) 5%, var(--sp-surface)));
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-completion-summary) strong { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-completion-confirm) {
+  background: var(--order-section-accent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--order-section-accent) 24%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-completion-resume) { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-short-completion) button {
+  border-color: color-mix(in srgb, var(--order-section-accent) 34%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 93%, var(--order-section-accent) 7%);
+  color: var(--order-section-accent);
+}
+
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) input,
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) select {
+  border-color: color-mix(in srgb, var(--order-section-accent) 32%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 96%, var(--order-section-accent) 4%);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) input:focus,
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) select:focus {
+  border-color: var(--order-section-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--order-section-accent) 16%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) :global(.primary-btn):global(.compact) {
+  background: var(--order-section-accent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--order-section-accent) 22%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline) {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--sp-surface) 95%, var(--order-section-accent) 5%);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-head) {
+  padding-bottom: 9px;
+  border-bottom: 1px solid color-mix(in srgb, var(--order-section-accent) 24%, var(--sp-border));
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-head) h4,
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-body) strong,
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-weight),
+:local(.root):global(.order-view) :global(.order-state-section) :global(.link-btn) { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-item):not(:last-child)::before { background: color-mix(in srgb, var(--order-section-accent) 30%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-dot) { background: color-mix(in srgb, var(--order-section-accent) 35%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-item):global(.current) :global(.timeline-dot),
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-item):global(.resumed) :global(.timeline-dot) {
+  background: var(--order-section-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--order-section-accent) 15%, transparent);
+}
+
+/* Keep the section color visible through nested surfaces and controls too. */
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-spec-ribbon) {
+  background: color-mix(in srgb, var(--sp-surface) 97%, var(--order-section-accent) 3%);
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-spec-item) small {
+  color: color-mix(in srgb, var(--order-section-accent) 72%, var(--sp-text-muted));
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) label { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) input:focus {
+  border-color: var(--order-section-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--order-section-accent) 14%, transparent);
+  outline: 0;
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) :global(.primary-btn):global(.compact) {
+  background: var(--order-section-accent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--order-section-accent) 22%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-sample-weight-form) :global(.weight-edit-cancel) { border-color: color-mix(in srgb, var(--order-section-accent) 30%, var(--sp-border)); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-weight-fact) {
+  border-inline-start: 3px solid color-mix(in srgb, var(--order-section-accent) 58%, var(--sp-border));
+  background: color-mix(in srgb, var(--sp-surface) 92%, var(--order-section-accent) 8%);
+}
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-weight-fact) small { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-weight-fact) strong { color: color-mix(in srgb, var(--order-section-accent) 82%, var(--sp-text)); }
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-weight-fact) span { color: var(--order-section-accent); }
+
+:local(.root):global(.order-view) :global(.order-production-section) :global(.order-production-subtitle) { border-inline-start-color: var(--order-section-accent); color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-summary-list) {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--order-section-accent) 25%, var(--sp-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--sp-surface) 96%, var(--order-section-accent) 4%);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-summary-list) > b {
+  display: block;
+  margin: 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--sp-surface) 87%, var(--order-section-accent) 13%);
+  color: var(--order-section-accent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-summary-list) > div { margin-inline: 10px; }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-table-wrap) {
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--order-section-accent) 7%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.production-record-edit-row) td {
+  background: color-mix(in srgb, var(--sp-surface) 92%, var(--order-section-accent) 8%);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) input:focus,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) select:focus,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) input:focus,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) select:focus,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) :global(.rmdp-input):focus,
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) :global(.rmdp-input):focus {
+  border-color: var(--order-section-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--order-section-accent) 14%, transparent);
+  outline: 0;
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-actions) :global(.primary-btn) {
+  background: var(--order-section-accent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--order-section-accent) 22%, transparent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-actions) :global(.manager-log-cancel) {
+  border-color: color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
+  color: var(--order-section-accent);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-actions) :global(.manager-log-edit-btn) { color: var(--order-section-accent); }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-actions) :global(.manager-log-edit-btn):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sp-surface) 87%, var(--order-section-accent) 13%);
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-actions) :global(.danger) { color: #c43e3e; }
+:local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-actions) :global(.danger):hover:not(:disabled) { background: rgba(196, 62, 62, .08); }
+
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-item) {
+  border-radius: 8px;
+  transition: background-color .15s ease;
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-item):hover {
+  background: color-mix(in srgb, var(--sp-surface) 89%, var(--order-section-accent) 11%);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-date),
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-note) { color: color-mix(in srgb, var(--order-section-accent) 66%, var(--sp-text-muted)); }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.link-btn):hover:not(:disabled) {
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--sp-surface) 88%, var(--order-section-accent) 12%);
+}
+
+/* The part name leads its details without an extra card around them. */
+:local(.root):global(.order-view) :global(.order-item-details) :global(.order-section-title) {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--order-section-accent);
+  font-size: 17px;
+  font-weight: 800;
+}
+:local(.root):global(.order-view) :global(.order-production-section) :global(.order-section-title) {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--order-section-accent);
+  font-size: 17px;
+  font-weight: 800;
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.order-section-title) {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--order-section-accent);
+  font-size: 17px;
+  font-weight: 800;
+}
+@media (max-width: 480px) {
+  :local(.root):global(.order-view) :global(.order-item-details) :global(.order-section-title),
+  :local(.root):global(.order-view) :global(.order-production-section) :global(.order-section-title),
+  :local(.root):global(.order-view) :global(.order-state-section) :global(.order-section-title) { font-size: 16px; }
+}

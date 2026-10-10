@@ -114,6 +114,34 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+:local(.root) .employeeSearchRow {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+:local(.root) .employeeSearchRow .searchInput {
+    flex: 1 1 auto;
+    width: auto;
+}
+
+:local(.root) .employeeAddButton {
+    flex: 0 0 auto;
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+@media(max-width: 480px) {
+    :local(.root) .employeeSearchRow {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    :local(.root) .employeeAddButton {
+        align-self: flex-start;
+    }
+}
+
 :local(.root) .searchInput:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -646,3 +674,20 @@
     box-sizing: border-box !important;
     flex: 1 !important;
 }
+
+:local(.root) :global(.toast) {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 13px 22px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    z-index: 3000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+:local(.root) :global(.toast):global(.success) { background: rgba(52, 199, 89, 0.95); }
+:local(.root) :global(.toast):global(.error) { background: rgba(255, 59, 48, 0.95); }

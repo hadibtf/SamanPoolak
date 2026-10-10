@@ -35,7 +35,6 @@
  * @property {string} username
  * @property {string} displayName
  * @property {string} role
- * @property {boolean} disabled
  * Password hashes and write-only credentials are deliberately excluded.
  *
  * @typedef {Object} StateHistory

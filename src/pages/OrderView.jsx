@@ -29,8 +29,9 @@ const faDigits = (value) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳
 // Raw Rial formatting — the invoice is always in Rial, never converted.
 const faRial = (n) => Math.round(Number(n) || 0).toLocaleString('fa-IR');
 const formatDimension = (value) => {
+  if (value == null || value === '') return '—';
   const number = Number(value);
-  return (Number.isFinite(number) ? number : 0).toLocaleString('fa-IR');
+  return Number.isFinite(number) ? number.toLocaleString('en-US') : '—';
 };
 
 const formatWeight = (grams) => {
@@ -69,7 +70,7 @@ const invoiceDescription = (item) => {
   if (plating) parts.push(plating);
   let desc = parts.join(' - ');
   if (item.thickness != null || item.diameter != null) {
-    desc += ` ${item.thickness ?? '—'}*${item.diameter ?? '—'} mm`;
+    desc += ` ${formatDimension(item.diameter)} × ${formatDimension(item.thickness)} mm`;
   }
   if (item.description) desc += ` - ${item.description}`;
   return desc;
@@ -111,7 +112,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     if (!canViewProduction) return;
     return productionApi.itemSummary(orderId, item.uid)
       .then((summary) => { setProductionSummary(summary); onProductionSummaryChange(item.uid, summary); setSummaryError(''); return summary; })
-      .catch(() => { setProductionSummary(null); onProductionSummaryChange(item.uid, null); setSummaryError('سوابق تولید دریافت نشد.'); });
+      .catch(() => { setProductionSummary(null); onProductionSummaryChange(item.uid, null); setSummaryError('اطلاعات رکورد دریافت نشد.'); });
   };
 
   useEffect(() => {
@@ -317,7 +318,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     onToast('آخرین وضعیت حذف شد.');
   };
 
-  const isReady = item.state === 'READY';
   const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
     ? item.platingColor
     : 'NONE';
@@ -325,20 +325,11 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
   return (
     <div hidden={hidden} className={`glass-card item-panel ${index % 2 === 0 ? 'item-panel-tone-white' : 'item-panel-tone-blue'}`}>
-      <div className="item-panel-head">
-        <h3 className="section-title">
-          {(index + 1).toLocaleString('fa-IR')}. {item.productName || '—'}
-        </h3>
-        <span className={`state-pill ${isReady ? 'ready' : ''}`}>
-          {ORDER_STATE_LABELS[item.state] || item.state}
-        </span>
-      </div>
-
-      <section className="order-section order-item-details" aria-label="جزئیات سفارش">
-        <h4 className="order-section-title">جزئیات سفارش</h4>
+      <section className="order-section order-item-details" aria-label={`مشخصات ${item.productName || 'قطعه'}`}>
+        <h4 className="order-section-title">{item.productName || '—'}</h4>
         <div className="order-spec-ribbon" aria-label="مشخصات سفارش">
           <div className="order-spec-item" data-kind="quantity">
-            <small>تعداد سفارش</small>
+            <small>تعداد</small>
             <strong>{fa(item.quantity)}</strong>
           </div>
           <div className="order-spec-item" data-kind="plating" data-plating={platingColor}>
@@ -402,13 +393,13 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
             <MetallicText as="span" tone="gold">{remainingQuantity == null ? '— عدد' : `${fa(remainingQuantity)} عدد`}</MetallicText>
           </div>
           <div className="order-weight-fact" data-kind="produced">
-            <MetallicText as="small" tone="green">تولید شده</MetallicText>
+            <MetallicText as="small" tone="green">تولید</MetallicText>
             <strong><MetallicText tone="green">{productionSummary ? `${fa(totalProducedQuantity)} عدد` : '—'}</MetallicText></strong>
             <MetallicText as="span" tone="green">{compactProducedWeightLabel}</MetallicText>
           </div>
           <div className="order-weight-fact" data-kind="dimensions">
             <MetallicText as="small" tone="silver">ابعاد</MetallicText>
-            <MetallicText as="strong" tone="silver" dir="ltr">{fa(item.thickness)} × {fa(item.diameter)} mm</MetallicText>
+            <MetallicText as="strong" tone="silver" dir="ltr">{formatDimension(item.diameter)} × {formatDimension(item.thickness)} mm</MetallicText>
           </div>
         </div>
         {(markImg || item.markingName) && (
@@ -423,111 +414,113 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
         {item.description && <p className="item-desc">{item.description}</p>}
       </section>
 
-      <section className="order-section order-production-section" aria-label="تولید">
-        <h4 className="order-section-title">تولید</h4>
+      <section className="order-section order-production-section" aria-label="رکورد">
+        <h4 className="order-section-title">رکورد</h4>
         {canAssign && !productionStopped && measuredWeightOf10 > 0 && (
           <section className="manager-production-log-section" aria-label="ثبت دستی تولید توسط مدیر">
-            <h5 className="order-production-subtitle">گزارش تولید</h5>
             <form className="manager-production-log-form" onSubmit={saveManualProduction}>
-              <label>تاریخ تولید
-                <JalaliDatePicker
-                  value={manualPickerDate}
-                  onChange={(date) => setManualDate(productionDateKey(date))}
-                  calendar={persian}
-                  locale={persian_fa}
-                  weekDays={weekDays}
-                  placeholder="انتخاب تاریخ"
-                  calendarPosition="bottom-right"
-                  minDate={managerDateBounds.min}
-                  maxDate={managerDateBounds.max}
-                  inputClass="rmdp-input"
-                  containerClassName="manager-production-date"
-                />
-              </label>
-              <label>وزن تولید (کیلوگرم)
-                <input type="number" min="0.001" step="0.001" inputMode="decimal" dir="ltr" value={manualWeightKg} onChange={(event) => setManualWeightKg(event.target.value)} placeholder="۰٫۰۰۰" required />
-              </label>
-              <label>کارمند
-                <select value={manualEmployeeId} onChange={(event) => setManualEmployeeId(event.target.value)} required>
-                  <option value="">انتخاب کارمند...</option>
-                  {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
-                </select>
-              </label>
-              <button type="submit" className="primary-btn compact" disabled={savingManualLog || employees.length === 0}>
-                {savingManualLog ? 'در حال ثبت...' : 'ثبت تولید'}
+              <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={manualWeightKg} onChange={(event) => setManualWeightKg(event.target.value)} placeholder="وزن" required />
+              <select aria-label="انتخاب کارمند" value={manualEmployeeId} onChange={(event) => setManualEmployeeId(event.target.value)} required>
+                <option value="">انتخاب کارمند...</option>
+                {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+              </select>
+              <JalaliDatePicker
+                aria-label="تاریخ تولید"
+                value={manualPickerDate}
+                onChange={(date) => setManualDate(productionDateKey(date))}
+                calendar={persian}
+                locale={persian_fa}
+                weekDays={weekDays}
+                format="YYYY/MM/DD"
+                placeholder="تاریخ تولید"
+                calendarPosition="bottom-left"
+                minDate={managerDateBounds.min}
+                maxDate={managerDateBounds.max}
+                inputClass="rmdp-input"
+                containerClassName="manager-production-date"
+                portal
+              />
+              <button type="submit" className="manager-production-submit-btn" aria-label={savingManualLog ? 'در حال ثبت...' : 'ثبت'} disabled={savingManualLog || employees.length === 0}>
+                <i className="fa-solid fa-arrow-left" aria-hidden="true" />
               </button>
               {employees.length === 0 && <small>فهرست کارمندان در دسترس نیست.</small>}
             </form>
           </section>
         )}
 
-      {canAssign && productionSummary && (
+        {canAssign && productionSummary && (
         <div className="production-summary">
-          <h5 className="order-production-subtitle">سوابق تولید</h5>
           {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
-          {productionSummary.byEmployee.length > 0 && <div className="production-summary-list"><b>تولید هر کارمند</b>{productionSummary.byEmployee.map((row) => <div key={row.employeeUserId}>{row.employeeName}: <strong>{fa(row.quantity)} عدد</strong></div>)}</div>}
-          {productionSummary.logs.length > 0 && <div className="production-summary-list"><b>ریز ثبت تولید</b>{productionSummary.logs.map((log) => {
-            const isEditing = editingManagerLogId === log.id;
-            return <div key={log.id} className={log.isManagerEntry ? 'manager-production-log-row' : undefined}>
-              {isEditing ? (
-                <form className="manager-production-log-edit-form" onSubmit={(event) => saveManagerLogEdit(event, log)}>
-                  <label>تاریخ تولید
-                    <JalaliDatePicker
-                      value={managerLogEditPickerDate}
-                      onChange={(date) => setManagerLogEditDate(productionDateKey(date))}
-                      calendar={persian}
-                      locale={persian_fa}
-                      weekDays={weekDays}
-                      placeholder="انتخاب تاریخ"
-                      calendarPosition="bottom-right"
-                      minDate={managerDateBounds.min}
-                      maxDate={managerDateBounds.max}
-                      inputClass="rmdp-input"
-                      containerClassName="manager-production-date"
-                    />
-                  </label>
-                  <label>وزن (کیلوگرم)
-                    <input type="number" min="0.001" step="0.001" inputMode="decimal" dir="ltr" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} required />
-                  </label>
-                  <label>کارمند
-                    <select value={managerLogEditEmployeeId} onChange={(event) => setManagerLogEditEmployeeId(event.target.value)} required>
-                      <option value="">انتخاب کارمند...</option>
-                      {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
-                    </select>
-                  </label>
-                  <div className="manager-production-log-edit-actions">
-                    <button type="submit" className="primary-btn compact" disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال ذخیره...' : 'ذخیره'}</button>
-                    <button type="button" className="manager-log-cancel" onClick={cancelManagerLogEdit} disabled={mutatingManagerLogId === log.id}>انصراف</button>
-                  </div>
-                </form>
-              ) : <>
-                <span>{log.employeeName} — {fa(log.quantity)} عدد — {log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم — ` : ''}{formatJalali(log.productionDate)} {log.isManagerEntry && <em className="manager-log-badge">ثبت مدیر</em>}</span>
-                <small>{log.updatedAt ? `${new Date(log.updatedAt).toLocaleString('fa-IR')} · ویرایش‌شده` : (log.createdAt ? new Date(log.createdAt).toLocaleString('fa-IR') : '')}</small>
-                {log.isManagerEntry && <div className="manager-production-log-actions">
-                  <button type="button" onClick={() => beginManagerLogEdit(log)} disabled={mutatingManagerLogId === log.id}>ویرایش</button>
-                  <button type="button" className="danger" onClick={() => deleteManagerLog(log)} disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال انجام...' : 'حذف'}</button>
-                </div>}
-              </>}
-            </div>;
-          })}</div>}
+          {productionSummary.logs.length > 0 && <div className="production-record-list">
+            <div className="production-record-table-wrap">
+              <table className="production-record-table">
+                <thead>
+                  <tr>
+                    <th scope="col">ردیف</th>
+                    <th scope="col">اپراتور</th>
+                    <th scope="col">وزن</th>
+                    <th scope="col">تعداد</th>
+                    <th scope="col">تاریخ</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody>{productionSummary.logs.map((log, index) => {
+                  const isEditing = editingManagerLogId === log.id;
+                  return isEditing ? (
+                    <tr key={log.id} className="production-record-edit-row">
+                      <td colSpan={6}>
+                        <form className="manager-production-log-edit-form" onSubmit={(event) => saveManagerLogEdit(event, log)}>
+                          <JalaliDatePicker
+                            aria-label="تاریخ تولید"
+                            value={managerLogEditPickerDate}
+                            onChange={(date) => setManagerLogEditDate(productionDateKey(date))}
+                            calendar={persian}
+                            locale={persian_fa}
+                            weekDays={weekDays}
+                            placeholder="تاریخ تولید"
+                            calendarPosition="bottom-right"
+                            minDate={managerDateBounds.min}
+                            maxDate={managerDateBounds.max}
+                            inputClass="rmdp-input"
+                            containerClassName="manager-production-date"
+                          />
+                          <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} placeholder="وزن" required />
+                          <select aria-label="انتخاب کارمند" value={managerLogEditEmployeeId} onChange={(event) => setManagerLogEditEmployeeId(event.target.value)} required>
+                            <option value="">انتخاب کارمند...</option>
+                            {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+                          </select>
+                          <div className="manager-production-log-edit-actions">
+                            <button type="submit" className="primary-btn compact" disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال ذخیره...' : 'ذخیره'}</button>
+                            <button type="button" className="manager-log-cancel" onClick={cancelManagerLogEdit} disabled={mutatingManagerLogId === log.id}>انصراف</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={log.id}>
+                      <td>{fa(productionSummary.logs.length - index)}</td>
+                      <td>{log.employeeName || '—'}</td>
+                      <td>{log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم` : '—'}</td>
+                      <td>{fa(log.quantity)}</td>
+                      <td>{formatJalali(log.productionDate)}</td>
+                      <td>{log.isManagerEntry && <div className="manager-production-log-actions">
+                        <button type="button" className="manager-log-edit-btn" onClick={() => beginManagerLogEdit(log)} disabled={mutatingManagerLogId === log.id}>ویرایش</button>
+                        <button type="button" className="danger" onClick={() => deleteManagerLog(log)} disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال انجام...' : 'حذف'}</button>
+                      </div>}</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
+          </div>}
         </div>
       )}
         {canAssign && (productionStopped || (productionSummary && productionReachedTarget)) && (
           <section className={`production-completion-panel${productionStopped ? ' is-confirmed' : ''}`} aria-live="polite">
-            <span className="production-completion-icon" aria-hidden="true">
-              <i className={`fa-solid ${productionStopped ? 'fa-circle-check' : 'fa-boxes-stacked'}`} />
-            </span>
-            <div className="production-completion-copy">
-              <strong>{productionStopped ? 'پایان تولید تأیید شد' : 'به نظر می‌رسد تولید این قلم کامل شده است'}</strong>
-              <span>{productionStopped
-                ? !productionSummary
-                  ? 'پایان تولید تأیید شده است؛ ثبت تولید و تخصیص این قلم بسته شده است.'
-                  : totalProducedQuantity < orderQuantity
-                    ? `پایان تولید با ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش تأیید شده است. ثبت تولید و تخصیص این قلم بسته شد.`
-                    : 'تعداد تولید به مقدار سفارش رسیده است؛ ثبت تولید و تخصیص این قلم بسته شد و برای مرحله بعد آماده است.'
-                : totalProducedQuantity === orderQuantity
-                  ? `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) به مقدار سفارش (${fa(orderQuantity)}) رسیده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`
-                  : `تعداد تولید ثبت‌شده (${fa(totalProducedQuantity)}) از مقدار سفارش (${fa(orderQuantity)}) بیشتر شده است. با تأیید، تولید این قلم نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد.`}</span>
+            <div className="production-completion-summary">
+              <strong>تکمیل</strong>
+              <span>تعداد: {productionSummary ? fa(totalProducedQuantity) : '—'}</span>
+              <span>وزن: {compactProducedWeightLabel}</span>
             </div>
             {productionStopped ? (
               <button type="button" className="production-completion-resume" disabled={resumingProduction} onClick={resumeProduction}>
@@ -543,13 +536,10 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
         )}
         {canAssign && productionSummary && !productionReachedTarget && !productionStopped && !workflowAdvancedPastProduction && (
           <section className="production-short-completion" aria-label="پایان دستی تولید با کسری">
-            <div>
-              <strong>پایان تولید پیش از تکمیل مقدار سفارش</strong>
-              <span>{fa(totalProducedQuantity)} از {fa(orderQuantity)} عدد تولید شده؛ در صورت نهایی بودن همین مقدار، می‌توانید پایان تولید را دستی ثبت کنید.</span>
-            </div>
             <button type="button" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
-              {confirmingProductionStop ? 'در حال ذخیره...' : 'تأیید پایان با کسری'}
+              {confirmingProductionStop ? 'در حال ذخیره...' : `تأیید اتمام تولید با ${fa(remainingQuantity)} کسری`}
             </button>
+            <small>تولید شده {fa(totalProducedQuantity)}</small>
           </section>
         )}
 
@@ -557,9 +547,8 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       </section>
 
       {/* State control + timeline */}
-      <section className="order-section order-state-section" aria-label="ثبت وضعیت سفارش">
-      <h4 className="order-section-title">وضعیت سفارش</h4>
-      <h5 className="sub-title">تغییر وضعیت</h5>
+      <section className="order-section order-state-section" aria-label="وضعیت">
+      <h4 className="order-section-title">وضعیت</h4>
       <div className="state-form">
         <select value={nextState} onChange={(e) => setNextState(e.target.value)}>
           <option value="">انتخاب وضعیت جدید...</option>
@@ -789,11 +778,21 @@ const OrderView = () => {
 
         <div className="order-glance-table-wrap">
           <table className="order-glance-table">
-            <thead><tr><th scope="col" className="order-glance-row-number">ردیف</th><th scope="col">نام محصول</th><th scope="col"><span className="order-glance-head-full">تعداد سفارش</span><span className="order-glance-head-short">تعداد</span></th><th scope="col"><span className="order-glance-head-full">تعداد تولیدشده</span><span className="order-glance-head-short">تولید</span></th><th scope="col"><span className="order-glance-head-full">وضعیت</span><span className="order-glance-head-short">انجام</span></th></tr></thead>
+            <thead>
+              <tr>
+                <th scope="col" className="order-glance-row-number">ردیف</th>
+                <th scope="col">نام محصول</th>
+                <th scope="col"><span className="order-glance-head-full">سفارش</span><span className="order-glance-head-short">سفارش</span></th>
+                <th scope="col"><span className="order-glance-head-full">تولید</span><span className="order-glance-head-short">تولید</span></th>
+                <th scope="col">مانده</th>
+                <th scope="col"><span className="order-glance-head-full">وضعیت</span><span className="order-glance-head-short">انجام</span></th>
+              </tr>
+            </thead>
             <tbody>
               {items.map((item, index) => {
                 const produced = productionQuantities[item.uid];
                 const quantity = Number(item.quantity) || 0;
+                const remaining = produced == null ? null : Math.max(quantity - Number(produced), 0);
                 const diameter = formatDimension(item.diameter);
                 const thickness = formatDimension(item.thickness);
                 const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
@@ -829,6 +828,7 @@ const OrderView = () => {
                     </th>
                     <td>{fa(quantity)}</td>
                     <td>{produced == null ? '—' : fa(produced)}</td>
+                    <td>{remaining == null ? '—' : fa(remaining)}</td>
                     <td><span className={`order-glance-state${isDone ? ' is-done' : ''}`}><i className={`fa-solid ${isDone ? 'fa-circle-check' : 'fa-clock'}`} aria-hidden="true" /><span className="order-glance-state-full">{isDone ? 'تکمیل شده' : 'در حال انجام'}</span><span className="order-glance-state-short">{isDone ? 'کامل' : 'مانده'}</span></span></td>
                   </tr>
                 );
@@ -879,7 +879,7 @@ const OrderView = () => {
               <tr>
                 <th className="c-num">ردیف</th>
                 <th>شرح کالا</th>
-                <th className="c-qty">تعداد</th>
+                <th className="c-qty">سفارش</th>
                 <th className="c-price">قیمت واحد</th>
                 <th className="c-price">جمع</th>
               </tr>

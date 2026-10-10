@@ -61,35 +61,34 @@ function people_from_wire($body)
     return $cols;
 }
 
-// Admin-only employee login provisioning. Passwords are accepted only for a
-// write and are never included in a person response.
+// Admin-only employee login provisioning. Employee logins are always active.
+// Passwords are accepted only for a write and are never included in a response.
 function save_employee_account($personId, $category, $account, $user, $now)
 {
     if ($account === null) return;
     require_admin($user);
     if ($category !== 'EMPLOYEE') json_error('Only employees can have an employee login', 422);
-    $enabled = !empty($account['enabled']);
     $username = trim((string) ($account['username'] ?? ''));
     $password = (string) ($account['password'] ?? '');
     $find = db()->prepare('SELECT ea.user_id, u.username FROM employee_accounts ea JOIN users u ON u.id = ea.user_id WHERE ea.person_id = :personId LIMIT 1');
     $find->execute([':personId' => $personId]); $existing = $find->fetch();
-    if (!$enabled && !$existing) return;
-    if ($username === '' && !($existing && !$enabled)) json_error('Employee username is required', 422);
+    if (!$existing && $username === '' && $password === '') return;
+    if ($username === '' && $existing) $username = $existing['username'];
+    if ($username === '') json_error('Employee username is required', 422);
     if (!$existing && $password === '') json_error('Employee password is required', 422);
     $nameStmt = db()->prepare('SELECT first_name, last_name FROM people WHERE id = :id LIMIT 1');
     $nameStmt->execute([':id' => $personId]); $person = $nameStmt->fetch();
     $displayName = trim(($person['first_name'] ?? '') . ' ' . ($person['last_name'] ?? '')) ?: $username;
     if ($existing) {
-        if ($username === '') $username = $existing['username'];
-        $sets = ['username = :username', 'display_name = :displayName', "role = 'employee'", 'disabled = :disabled'];
-        $bind = [':username' => $username, ':displayName' => $displayName, ':disabled' => $enabled ? 0 : 1, ':id' => $existing['user_id']];
+        $sets = ['username = :username', 'display_name = :displayName', "role = 'employee'"];
+        $bind = [':username' => $username, ':displayName' => $displayName, ':id' => $existing['user_id']];
         if ($password !== '') { $sets[] = 'password_hash = :passwordHash'; $bind[':passwordHash'] = password_hash($password, PASSWORD_DEFAULT); }
         $update = db()->prepare('UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id'); $update->execute($bind);
         $map = db()->prepare('UPDATE employee_accounts SET updated_at = :updatedAt WHERE person_id = :personId');
         $map->execute([':updatedAt' => $now, ':personId' => $personId]);
         return;
     }
-    $create = db()->prepare('INSERT INTO users (username, password_hash, display_name, role, disabled, created_at) VALUES (:username, :passwordHash, :displayName, :role, 0, :createdAt)');
+    $create = db()->prepare('INSERT INTO users (username, password_hash, display_name, role, created_at) VALUES (:username, :passwordHash, :displayName, :role, :createdAt)');
     $create->execute([':username' => $username, ':passwordHash' => password_hash($password, PASSWORD_DEFAULT), ':displayName' => $displayName, ':role' => 'employee', ':createdAt' => $now]);
     $map = db()->prepare('INSERT INTO employee_accounts (person_id, user_id, created_at, updated_at) VALUES (:personId, :userId, :createdAt, :updatedAt)');
     $map->execute([':personId' => $personId, ':userId' => (int) db()->lastInsertId(), ':createdAt' => $now, ':updatedAt' => $now]);
@@ -98,9 +97,9 @@ function save_employee_account($personId, $category, $account, $user, $now)
 function people_employee_account_get($params, $body, $user)
 {
     require_admin($user);
-    $stmt = db()->prepare('SELECT u.username, u.disabled FROM employee_accounts ea JOIN users u ON u.id = ea.user_id JOIN people p ON p.id = ea.person_id WHERE ea.person_id = :id AND p.category = :category AND p.deleted_at IS NULL LIMIT 1');
+    $stmt = db()->prepare('SELECT u.username FROM employee_accounts ea JOIN users u ON u.id = ea.user_id JOIN people p ON p.id = ea.person_id WHERE ea.person_id = :id AND p.category = :category AND p.deleted_at IS NULL LIMIT 1');
     $stmt->execute([':id' => $params['id'], ':category' => 'EMPLOYEE']); $row = $stmt->fetch();
-    json_response(['employeeAccount' => $row ? ['enabled' => !(bool) $row['disabled'], 'username' => $row['username']] : null]);
+    json_response(['employeeAccount' => $row ? ['username' => $row['username']] : null]);
 }
 
 // GET /people?updatedAfter=<iso>
@@ -198,7 +197,7 @@ function people_update($params, $body, $user)
         if ($existing['category'] === 'EMPLOYEE' && $body['category'] !== 'EMPLOYEE') {
             $account = db()->prepare('SELECT 1 FROM employee_accounts WHERE person_id = :id LIMIT 1');
             $account->execute([':id' => $id]);
-            if ($account->fetch()) json_error('Disable the employee login before changing this category', 422);
+            if ($account->fetch()) json_error('An employee with a login must remain in the employee category', 422);
         }
         $cols['category'] = $body['category'];
     }

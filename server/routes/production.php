@@ -77,7 +77,7 @@ function production_employees($params, $body, $user)
     $stmt = db()->query("SELECT ea.user_id, p.id AS person_id, p.first_name, p.last_name, u.username
         FROM employee_accounts ea JOIN users u ON u.id = ea.user_id
         JOIN people p ON p.id = ea.person_id
-        WHERE p.deleted_at IS NULL AND u.disabled = 0 AND u.role = 'employee'
+        WHERE p.deleted_at IS NULL AND u.role = 'employee'
         ORDER BY p.first_name, p.last_name, u.id");
     $employees = array_map(fn ($r) => [
         'userId' => (int) $r['user_id'], 'personId' => $r['person_id'],
@@ -130,9 +130,9 @@ function production_tasks_create($params, $body, $user)
     db()->beginTransaction();
     try {
         $employee = db()->prepare("SELECT ea.user_id FROM employee_accounts ea JOIN users u ON u.id = ea.user_id
-            WHERE ea.user_id = :id AND u.role = 'employee' AND u.disabled = 0 LIMIT 1");
+            WHERE ea.user_id = :id AND u.role = 'employee' LIMIT 1");
         $employee->execute([':id' => $employeeId]);
-        if (!$employee->fetch()) json_error('Employee not found or disabled', 422);
+        if (!$employee->fetch()) json_error('Employee not found', 422);
         // Serialize assignments for this order before checking its remaining quantity.
         $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
         $orderStmt->execute([':id' => $orderId]); $order = $orderStmt->fetch();
@@ -337,9 +337,9 @@ function production_manager_log_create($params, $body, $user)
         $productionStopped = !empty($item['productionStopped']) || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE';
 
         $employee = db()->prepare("SELECT ea.user_id FROM employee_accounts ea JOIN users u ON u.id = ea.user_id
-            WHERE ea.user_id = :id AND u.role = 'employee' AND u.disabled = 0 LIMIT 1");
+            WHERE ea.user_id = :id AND u.role = 'employee' LIMIT 1");
         $employee->execute([':id' => $employeeId]);
-        if (!$employee->fetch()) { db()->rollBack(); json_error('Employee not found or disabled', 422); }
+        if (!$employee->fetch()) { db()->rollBack(); json_error('Employee not found', 422); }
 
         $existing = db()->prepare('SELECT id, employee_user_id, order_id, order_item_uid, total_weight_grams, production_date, deleted_at
             FROM manager_production_logs WHERE submission_key = :key LIMIT 1');
@@ -423,9 +423,9 @@ function production_manager_log_update($params, $body, $user)
         if (!$item || $weightOf10 <= 0) { db()->rollBack(); json_error('Record the order item 10-piece weight before editing production', 422); }
 
         $employee = db()->prepare("SELECT ea.user_id FROM employee_accounts ea JOIN users u ON u.id = ea.user_id
-            WHERE ea.user_id = :id AND u.role = 'employee' AND u.disabled = 0 LIMIT 1");
+            WHERE ea.user_id = :id AND u.role = 'employee' LIMIT 1");
         $employee->execute([':id' => $employeeId]);
-        if (!$employee->fetch()) { db()->rollBack(); json_error('Employee not found or disabled', 422); }
+        if (!$employee->fetch()) { db()->rollBack(); json_error('Employee not found', 422); }
 
         $existing = db()->prepare('SELECT id FROM manager_production_logs
             WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL FOR UPDATE');
@@ -833,15 +833,13 @@ function production_management_statistics_employee_filter()
 function production_management_statistics_employees($params, $body, $user)
 {
     require_admin($user);
-    // Include disabled accounts so historical production remains inspectable.
-    $stmt = db()->query("SELECT u.id, u.username, u.disabled,
+    $stmt = db()->query("SELECT u.id, u.username,
         COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name
         FROM users u LEFT JOIN employee_accounts ea ON ea.user_id = u.id
         LEFT JOIN people p ON p.id = ea.person_id
         WHERE u.role = 'employee' ORDER BY employee_name, u.id");
     $employees = array_map(fn ($row) => [
         'userId' => (int) $row['id'], 'name' => $row['employee_name'],
-        'disabled' => (bool) $row['disabled'],
     ], $stmt->fetchAll());
     json_response(['employees' => $employees]);
 }

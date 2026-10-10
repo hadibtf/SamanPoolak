@@ -10,7 +10,8 @@ function auth_login($params, $body, $user)
     $stmt->execute([':u' => trim($body['username'])]);
     $row = $stmt->fetch();
 
-    if (!$row || (int) $row['disabled'] === 1 || !password_verify($body['password'], $row['password_hash'])) {
+    if (!$row || !password_verify($body['password'], $row['password_hash'])
+        || (($row['role'] ?? '') !== 'employee' && (int) $row['disabled'] === 1)) {
         json_error('Invalid username or password', 401);
     }
     $surface = $body['surface'] ?? 'management';
@@ -69,8 +70,8 @@ function seed_admin($params, $body, $user)
     }
 
     $ins = db()->prepare(
-        'INSERT INTO users (username, password_hash, display_name, role, disabled, created_at)
-         VALUES (:u, :p, :d, :r, 0, :c)'
+        'INSERT INTO users (username, password_hash, display_name, role, created_at)
+         VALUES (:u, :p, :d, :r, :c)'
     );
     $ins->execute([
         ':u' => trim($body['username']),

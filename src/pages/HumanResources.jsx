@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import JalaliDatePicker from "../components/JalaliDatePicker";
+import PersonFormSheet from '../components/PersonFormSheet';
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import jsPDF from "jspdf";
@@ -107,6 +108,8 @@ const HumanResources = () => {
   const [searchFullName, setSearchFullName] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isEmployeeSheetOpen, setIsEmployeeSheetOpen] = useState(false);
+  const [toast, setToast] = useState(null);
 
   const matchedEmployees = useLiveQuery(
     () => {
@@ -133,6 +136,11 @@ const HumanResources = () => {
   const handleClearSelection = () => {
     setSelectedEmployee(null);
     setSearchFullName('');
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
   };
 
   const handleCalculate = useCallback(() => {
@@ -342,14 +350,23 @@ const HumanResources = () => {
             <>
               <div className="form-group" style={{ maxWidth: '100%', margin: 0 }}>
                 <label>جستجوی نام و نام خانوادگی</label>
-                <input
-                  value={searchFullName}
-                  onChange={(e) => { setSearchFullName(e.target.value); setShowDropdown(true); }}
-                  placeholder="نام یا نام خانوادگی را وارد کنید..."
-                  className={styles.searchInput}
-                  type="search"
-                  dir="rtl"
-                />
+                <div className={styles.employeeSearchRow}>
+                  <input
+                    value={searchFullName}
+                    onChange={(e) => { setSearchFullName(e.target.value); setShowDropdown(true); }}
+                    placeholder="نام یا نام خانوادگی را وارد کنید..."
+                    className={styles.searchInput}
+                    type="search"
+                    dir="rtl"
+                  />
+                  <button
+                    type="button"
+                    className={`add-btn ${styles.employeeAddButton}`}
+                    onClick={() => setIsEmployeeSheetOpen(true)}
+                  >
+                    افزودن کارمند جدید +
+                  </button>
+                </div>
               </div>
 
               {showDropdown && matchedEmployees?.length > 0 && (
@@ -609,6 +626,24 @@ const HumanResources = () => {
       )}
       </>
       )}
+
+      {isEmployeeSheetOpen && (
+        <PersonFormSheet
+          initialCategory="EMPLOYEE"
+          showCategorySelector={false}
+          onClose={() => setIsEmployeeSheetOpen(false)}
+          onSaved={(employee) => {
+            handleSelectEmployee(employee);
+            showToast('کارمند ثبت شد.');
+          }}
+          onError={(error, message) => {
+            if (error) console.error('Employee creation failed:', error);
+            showToast(message, 'error');
+          }}
+        />
+      )}
+
+      {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
     </div>
   );
 };

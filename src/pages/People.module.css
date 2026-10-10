@@ -7,11 +7,12 @@
 .root :global(.header-section h1) { font-size: 24px; font-weight: 700; margin: 0; color: #1c1c1e; }
 .root :global(.people-list) { display: flex; flex-direction: column; gap: 12px; }
 .root :global(.person-card) { background: var(--glass-surface, rgba(255,255,255,.72)); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border, rgba(255,255,255,.6)); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 28px -10px rgba(0,0,0,.14); }
-.root :global(.person-info h3) { margin: 0 0 4px; font-size: 16px; color: #1c1c1e; }
+.root :global(.person-info) { min-width: 0; }
+.personHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; margin-bottom: 4px; }
+.personIdentifier { font-size: 13px; color: #8e8e93; overflow-wrap: anywhere; }
+.root :global(.person-info h3) { margin: 0; font-size: 16px; color: #1c1c1e; }
 .root :global(.person-info p) { margin: 0; font-size: 13px; color: #8e8e93; }
 .root :global(.person-actions) { display: flex; gap: 12px; }
-.root :global(.modal-overlay) { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; justify-content: center; align-items: flex-end; z-index: 2000; }
-.root :global(.modal-content) { background: rgba(248,248,250,.92); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border-top: 1px solid rgba(255,255,255,.6); width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; padding: 24px; overflow-y: auto; animation: slideUp .3s ease-out; }
 .root :global(.form-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .root :global(.form-grid) { grid-template-columns: 1fr; } }
 .root :global(.form-group) { display: flex; flex-direction: column; gap: 6px; }
@@ -25,7 +26,6 @@
 .root :global(.sync-badge) { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 8px; }
 .root :global(.sync-badge.synced) { background: #34c759; color: white; }
 .root :global(.sync-badge.pending) { background: #ff9500; color: white; }
-.root :global(.category-tag) { font-size: 11px; background: #e5e5ea; padding: 2px 8px; border-radius: 10px; color: #3a3a3c; }
 .root :global(.muted) { color: #8e8e93; }
 .root :global(.hint-text) { font-size: 13px; color: #8e8e93; margin: 8px 0; }
 .root :global(.inline-error) { color: #ff3b30; font-size: 13px; margin: 10px 0; }
@@ -43,4 +43,3 @@
 .root :global(.marking-tile-info strong) { font-size: 12px; color: #1c1c1e; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .root :global(.marking-tile-info span) { font-size: 11px; }
 .root :global(.marking-tile-del) { position: absolute; top: 6px; left: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; font-size: 12px; }
-@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }

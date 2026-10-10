@@ -58,7 +58,7 @@ function current_user()
         $del->execute([':t' => $token]);
         return null;
     }
-    if ((int) $row['disabled'] === 1) {
+    if (($row['role'] ?? '') !== 'employee' && (int) $row['disabled'] === 1) {
         return null;
     }
     // Sliding expiry: extend on use.

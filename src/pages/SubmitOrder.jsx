@@ -5,10 +5,11 @@ import JalaliDatePicker from '../components/JalaliDatePicker';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { db, jalaliDateKey, yymmPrefix, getCustomerMarkings, newUid } from '../db';
+import { db, jalaliDateKey, getCustomerMarkings, newUid } from '../db';
 import { ordersApi, ApiError } from '../api/client';
+import PersonFormSheet from '../components/PersonFormSheet';
 import { useSettings } from '../context/SettingsContext';
-import { MATERIAL_OPTIONS, PLATING_OPTIONS, ORDER_STATES } from '../constants';
+import { MATERIAL_LABELS, PLATING_OPTIONS, ORDER_STATES } from '../constants';
 import styles from './Management.module.css';
 
 const managementRootClass = styles.root;
@@ -36,14 +37,68 @@ const blankItem = () => ({
   productionStopped: false,
 });
 
+const getCustomerDisplayName = (customer) => (
+  `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.companyName || ''
+);
+
+const todayJalaliDate = () => new DateObject({ calendar: persian, locale: persian_fa });
+
+const PLATING_UI_LABELS = {
+  GOLD: 'طلایی',
+  SILVER: 'نقره‌ای',
+  NONE: 'بدون آبکاری',
+};
+
+const COMMON_DIMENSION_PRESETS = [
+  { diameter: '32', thickness: '2', label: '۳۲ × ۲' },
+  { diameter: '31.5', thickness: '2', label: '۳۱٫۵ × ۲' },
+  { diameter: '28', thickness: '2', label: '۲۸ × ۲' },
+  { diameter: '27.8', thickness: '2', label: '۲۷٫۸ × ۲' },
+];
+
 // One editable product block.
 const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) => {
   const { currencyLabel } = useSettings();
   const set = (patch) => onChange(index, patch);
+  const hasSelectedPreset = COMMON_DIMENSION_PRESETS.some((preset) => (
+    Number(item.diameter) === Number(preset.diameter)
+      && Number(item.thickness) === Number(preset.thickness)
+  ));
   return (
     <div className="item-editor">
       <div className="item-editor-head">
-        <span className="item-badge">محصول {(index + 1).toLocaleString('fa-IR')}</span>
+        <div className="dimension-presets" role="group" aria-label="انتخاب اندازه">
+          {COMMON_DIMENSION_PRESETS.map((preset) => {
+            const isSelected = Number(item.diameter) === Number(preset.diameter)
+              && Number(item.thickness) === Number(preset.thickness);
+            const circleSize = 48 + (Number(preset.diameter) - 27.8) * 2.8;
+            return (
+              <button
+                type="button"
+                key={`${preset.diameter}-${preset.thickness}`}
+                className={`dimension-preset ${isSelected ? 'active' : ''}`}
+                style={{ '--dimension-preset-size': `${circleSize.toFixed(1)}px` }}
+                aria-label={`قطر ${preset.diameter} و ضخامت ${preset.thickness} میلی‌متر`}
+                aria-pressed={isSelected}
+                onClick={() => set({ diameter: preset.diameter, thickness: preset.thickness })}
+              >
+                <bdi dir="ltr" className="dimension-preset-label">{preset.label}</bdi>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className={`dimension-preset dimension-preset-custom ${hasSelectedPreset ? '' : 'active'}`}
+            style={{ '--dimension-preset-size': '42px' }}
+            aria-label="ابعاد دلخواه"
+            aria-pressed={!hasSelectedPreset}
+            onClick={() => {
+              if (hasSelectedPreset) set({ diameter: '', thickness: '' });
+            }}
+          >
+            <span className="dimension-preset-label">دلخواه</span>
+          </button>
+        </div>
         {canRemove && (
           <button type="button" className="link-btn danger" onClick={() => onRemove(index)}>
             <i className="fa-solid fa-trash"></i> حذف
@@ -52,59 +107,91 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
       </div>
 
       <div className="form-grid">
-        <div className="form-group">
-          <label>نام محصول</label>
+        <div className="form-group span-2">
           <input
+            aria-label="نوع پولک"
             value={item.productName}
             onChange={(e) => set({ productName: e.target.value })}
-            placeholder="نام کالا یا خدمت"
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label>تعداد</label>
-          <input
-            type="number"
-            min="0"
-            value={item.quantity}
-            onChange={(e) => set({ quantity: e.target.value })}
-            placeholder="۰"
+            placeholder="نوع پولک"
             required
           />
         </div>
 
-        <div className="form-group span-2">
-          <label>جنس</label>
-          <div className="segmented-control inline">
-            {MATERIAL_OPTIONS.map((opt) => (
+        {!hasSelectedPreset && (
+          <div className="dimension-custom-fields span-2">
+            <input
+              aria-label="قطر (میلی‌متر)"
+              type="number" step="0.1" dir="ltr" className="ltr-num"
+              value={item.diameter}
+              onChange={(e) => set({ diameter: e.target.value })}
+              placeholder="قطر (میلی‌متر)"
+            />
+            <input
+              aria-label="ضخامت (میلی‌متر)"
+              type="number" step="0.1" dir="ltr" className="ltr-num"
+              value={item.thickness}
+              onChange={(e) => set({ thickness: e.target.value })}
+              placeholder="ضخامت (میلی‌متر)"
+            />
+          </div>
+        )}
+
+        <div className="form-group">
+          <input
+            aria-label="تعداد"
+            type="number"
+            min="0"
+            value={item.quantity}
+            onChange={(e) => set({ quantity: e.target.value })}
+            placeholder="تعداد"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <div className="segmented-control inline" role="group" aria-label="رنگ آبکاری">
+            {PLATING_OPTIONS.map((opt) => (
               <button
                 type="button"
                 key={opt.value}
-                className={`segment ${item.material === opt.value ? 'active' : ''}`}
-                onClick={() => set({ material: opt.value })}
+                className={`segment plating-${opt.value.toLowerCase()} ${item.platingColor === opt.value ? 'active' : ''}`}
+                aria-pressed={item.platingColor === opt.value}
+                onClick={() => set({ platingColor: opt.value })}
               >
-                {opt.label}
+                {PLATING_UI_LABELS[opt.value] || opt.label}
+                {item.platingColor === opt.value && <span className="plating-checkmark" aria-hidden="true">✓</span>}
               </button>
             ))}
           </div>
         </div>
 
         <div className="form-group">
-          <label>ضخامت (میلی‌متر)</label>
           <input
-            type="number" step="0.1" dir="ltr" className="ltr-num"
-            value={item.thickness}
-            onChange={(e) => set({ thickness: e.target.value })}
-            placeholder="0.0"
+            aria-label="قیمت فروش هر عدد"
+            type="number" min="0" dir="ltr" className="ltr-num"
+            value={item.salePrice}
+            onChange={(e) => set({ salePrice: e.target.value })}
+            placeholder={`قیمت فروش هر عدد (${currencyLabel})`}
           />
         </div>
+
         <div className="form-group">
-          <label>قطر (میلی‌متر)</label>
           <input
-            type="number" step="0.1" dir="ltr" className="ltr-num"
-            value={item.diameter}
-            onChange={(e) => set({ diameter: e.target.value })}
-            placeholder="0.0"
+            aria-label="بهای تمام‌شده هر عدد"
+            type="number" min="0" dir="ltr" className="ltr-num"
+            value={item.unitCost}
+            onChange={(e) => set({ unitCost: e.target.value })}
+            placeholder={`بهای تمام‌شده هر عدد (اختیاری) (${currencyLabel})`}
+          />
+        </div>
+
+        <div className="form-group span-2">
+          <textarea
+            aria-label="توضیحات"
+            value={item.description}
+            onChange={(e) => set({ description: e.target.value })}
+            rows="2"
+            placeholder="توضیحات اختیاری (در فاکتور نمایش داده می‌شود)"
           />
         </div>
 
@@ -131,29 +218,16 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
             <p className="hint-text">این مشتری مارکی ندارد. از صفحه «افراد» مارک اضافه کنید.</p>
           )}
         </div>
+      </div>
 
-        <div className="form-group span-2">
-          <label>رنگ آبکاری</label>
-          <div className="segmented-control inline">
-            {PLATING_OPTIONS.map((opt) => (
-              <button
-                type="button"
-                key={opt.value}
-                className={`segment ${item.platingColor === opt.value ? 'active' : ''}`}
-                onClick={() => set({ platingColor: opt.value })}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="form-group span-2">
+      <div className="order-item-footer">
+        <div className="order-feature-switches">
           <div className="toggle-row">
             <span>سخت‌کاری</span>
             <button
               type="button"
               role="switch"
+              aria-label="سخت‌کاری"
               aria-checked={item.isHardened}
               className={`ios-switch ${item.isHardened ? 'on' : ''}`}
               onClick={() => set({ isHardened: !item.isHardened })}
@@ -161,47 +235,30 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
               <span className="knob" />
             </button>
           </div>
+          <div className="toggle-row">
+            <span>{MATERIAL_LABELS.STEEL}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-label={MATERIAL_LABELS.STEEL}
+              aria-checked={item.material === 'STEEL'}
+              className={`ios-switch ${item.material === 'STEEL' ? 'on' : ''}`}
+              onClick={() => set({ material: item.material === 'STEEL' ? 'IRON' : 'STEEL' })}
+            >
+              <span className="knob" />
+            </button>
+          </div>
         </div>
-
         {item.isHardened && (
-          <div className="form-group span-2">
-            <label>میزان سختی</label>
+          <div className="form-group order-hardening-field">
             <input
+              aria-label="میزان سختی"
               value={item.hardeningIntensity}
               onChange={(e) => set({ hardeningIntensity: e.target.value })}
-              placeholder="مثال: ۴۵ راکول"
+              placeholder="میزان سختی؛ مثال: ۴۵ راکول"
             />
           </div>
         )}
-
-        <div className="form-group">
-          <label>قیمت فروش هر عدد ({currencyLabel})</label>
-          <input
-            type="number" min="0" dir="ltr" className="ltr-num"
-            value={item.salePrice}
-            onChange={(e) => set({ salePrice: e.target.value })}
-            placeholder="0"
-          />
-        </div>
-        <div className="form-group">
-          <label>بهای تمام‌شده هر عدد ({currencyLabel} - اختیاری)</label>
-          <input
-            type="number" min="0" dir="ltr" className="ltr-num"
-            value={item.unitCost}
-            onChange={(e) => set({ unitCost: e.target.value })}
-            placeholder="0"
-          />
-        </div>
-
-        <div className="form-group span-2">
-          <label>توضیحات</label>
-          <textarea
-            value={item.description}
-            onChange={(e) => set({ description: e.target.value })}
-            rows="2"
-            placeholder="توضیحات اختیاری (در فاکتور نمایش داده می‌شود)"
-          />
-        </div>
       </div>
     </div>
   );
@@ -220,10 +277,11 @@ const SubmitOrder = () => {
     [editId]
   );
 
-  const [orderDate, setOrderDate] = useState(null);
+  const [orderDate, setOrderDate] = useState(todayJalaliDate);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isCustomerSheetOpen, setIsCustomerSheetOpen] = useState(false);
   const [items, setItems] = useState([blankItem()]);
 
   const [prefilled, setPrefilled] = useState(false);
@@ -241,7 +299,7 @@ const SubmitOrder = () => {
           uid: it.uid || newUid(),
           productName: it.productName || '',
           quantity: it.quantity ?? '',
-          material: it.material || 'IRON',
+          material: it.material === 'STEEL' ? 'STEEL' : 'IRON',
           thickness: it.thickness ?? '',
           diameter: it.diameter ?? '',
           markingId: it.markingId ?? null,
@@ -273,7 +331,7 @@ const SubmitOrder = () => {
       const person = await db.people.get(o.customerId);
       if (!cancelled && person) {
         setSelectedCustomer(person);
-        setCustomerSearch(`${person.firstName} ${person.lastName}`);
+        setCustomerSearch(getCustomerDisplayName(person));
       }
       if (!cancelled) setPrefilled(true);
     })();
@@ -309,7 +367,7 @@ const SubmitOrder = () => {
 
   const handleSelectCustomer = (customer) => {
     setSelectedCustomer(customer);
-    setCustomerSearch(`${customer.firstName} ${customer.lastName}`);
+    setCustomerSearch(getCustomerDisplayName(customer));
     setShowDropdown(false);
     // marks are customer-specific — clear any selected mark on every item
     setItems((prev) => prev.map((it) => ({ ...it, markingId: null })));
@@ -357,7 +415,7 @@ const SubmitOrder = () => {
         uid: it.uid || newUid(),
         productName: it.productName.trim(),
         quantity: Number(it.quantity) || 0,
-        material: it.material,
+        material: it.material === 'STEEL' ? 'STEEL' : 'IRON',
         thickness: num(it.thickness),
         diameter: num(it.diameter),
         markingId: it.markingId ?? null,
@@ -382,7 +440,7 @@ const SubmitOrder = () => {
       date: finalDateKey,
       dateText: finalDateText,
       customerId: selectedCustomer.id,
-      customerName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+      customerName: getCustomerDisplayName(selectedCustomer),
       items: storedItems,
     };
 
@@ -408,9 +466,6 @@ const SubmitOrder = () => {
   };
 
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
-  const previewNumber = isEdit
-    ? existingOrder?.orderNumber || '—'
-    : dateKey ? `${yymmPrefix(dateKey)}…` : 'پس از انتخاب تاریخ';
 
   return (
     <div className={`${managementRootClass} submit-order`}>
@@ -425,68 +480,73 @@ const SubmitOrder = () => {
 
       <form onSubmit={handleSubmit}>
         {/* Order header */}
-        <div className="glass-card">
-          <div className="form-grid">
-            <div className="form-group span-2 customer-field">
-              <label>مشتری</label>
-              {selectedCustomer ? (
-                <div className="selected-badge">
-                  <span>
-                    👤 <strong>{selectedCustomer.firstName} {selectedCustomer.lastName}</strong>
-                    <span className="muted"> ({selectedCustomer.id})</span>
-                  </span>
-                  <button type="button" className="clear-btn" onClick={handleClearCustomer}>تغییر</button>
-                </div>
-              ) : (
-                <>
+        <div className="glass-card order-header-card">
+          <div className="customer-field">
+            {selectedCustomer ? (
+              <div className="selected-badge">
+                <span>
+                  👤 <strong>{getCustomerDisplayName(selectedCustomer)}</strong>
+                  <span className="muted"> ({selectedCustomer.id})</span>
+                </span>
+                <button type="button" className="clear-btn" onClick={handleClearCustomer}>تغییر</button>
+              </div>
+            ) : (
+              <>
+                <div className="customer-search-row">
                   <input
                     value={customerSearch}
                     onChange={(e) => { setCustomerSearch(e.target.value); setShowDropdown(true); }}
-                    placeholder="جستجوی نام مشتری..."
+                    placeholder="مشتری"
+                    aria-label="جستجوی نام مشتری"
                     autoComplete="off"
                   />
-                  {showDropdown && matchedCustomers?.length > 0 && (
-                    <div className="search-dropdown">
-                      {matchedCustomers.map((c) => (
-                        <div key={c.id} className="dropdown-item" onClick={() => handleSelectCustomer(c)}>
-                          {c.firstName} {c.lastName}
-                          {c.companyName && <span className="muted"> — {c.companyName}</span>}
-                          <span className="muted"> ({c.id})</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {showDropdown && customerSearch.trim() && matchedCustomers?.length === 0 && (
-                    <div className="search-dropdown empty">مشتری‌ای یافت نشد</div>
-                  )}
-                </>
-              )}
-            </div>
+                  <button
+                    type="button"
+                    className="add-btn customer-add-btn"
+                    onClick={() => setIsCustomerSheetOpen(true)}
+                    aria-label="افزودن مشتری جدید"
+                    title="افزودن مشتری جدید"
+                  >
+                    +
+                  </button>
+                </div>
+                {showDropdown && matchedCustomers?.length > 0 && (
+                  <div className="search-dropdown">
+                    {matchedCustomers.map((c) => (
+                      <div key={c.id} className="dropdown-item" onClick={() => handleSelectCustomer(c)}>
+                        {c.firstName} {c.lastName}
+                        {c.companyName && <span className="muted"> — {c.companyName}</span>}
+                        <span className="muted"> ({c.id})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {showDropdown && customerSearch.trim() && matchedCustomers?.length === 0 && (
+                  <div className="search-dropdown empty">مشتری‌ای یافت نشد</div>
+                )}
+              </>
+            )}
+          </div>
 
-            <div className="form-group">
-              <label>تاریخ سفارش</label>
-              <JalaliDatePicker
-                value={orderDate}
-                onChange={setOrderDate}
-                calendar={persian}
-                locale={persian_fa}
-                weekDays={weekDays}
-                placeholder="انتخاب تاریخ"
-                calendarPosition="bottom-right"
-                inputClass="rmdp-input"
-                portal
-              />
-            </div>
-            <div className="form-group">
-              <label>شماره سفارش</label>
-              <input className="readonly-field" value={previewNumber} readOnly tabIndex={-1} />
-            </div>
+          <div className="order-date-inline">
+            <JalaliDatePicker
+              value={orderDate}
+              onChange={setOrderDate}
+              calendar={persian}
+              locale={persian_fa}
+              weekDays={weekDays}
+              format="YYYY/MM/DD"
+              aria-label="تاریخ سفارش"
+              calendarPosition="bottom-left"
+              inputClass="rmdp-input order-date-inline-input"
+              portal
+            />
           </div>
         </div>
 
         {/* Items */}
         {items.map((item, index) => (
-          <div className="glass-card" key={item.uid}>
+          <div className="glass-card order-item-card" key={item.uid}>
             <ItemEditor
               item={item}
               index={index}
@@ -506,6 +566,22 @@ const SubmitOrder = () => {
           {isEdit ? 'ذخیره تغییرات' : 'ثبت سفارش'}
         </button>
       </form>
+
+      {isCustomerSheetOpen && (
+        <PersonFormSheet
+          initialCategory="CUSTOMER"
+          showCategorySelector={false}
+          onClose={() => setIsCustomerSheetOpen(false)}
+          onSaved={(customer) => {
+            handleSelectCustomer(customer);
+            showToast('مشتری ثبت شد.');
+          }}
+          onError={(error, message) => {
+            if (error) console.error('Customer creation failed:', error);
+            showToast(message, 'error');
+          }}
+        />
+      )}
 
       {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
     </div>
