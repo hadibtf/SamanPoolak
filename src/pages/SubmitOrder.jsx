@@ -5,7 +5,7 @@ import JalaliDatePicker from '../components/JalaliDatePicker';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { db, jalaliDateKey, getCustomerMarkings, newUid } from '../db';
+import { db, jalaliDateKey, newUid } from '../db';
 import { ordersApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
 import { useSettings } from '../context/SettingsContext';
@@ -43,22 +43,38 @@ const getCustomerDisplayName = (customer) => (
 
 const todayJalaliDate = () => new DateObject({ calendar: persian, locale: persian_fa });
 
-const PLATING_UI_LABELS = {
-  GOLD: 'طلایی',
-  SILVER: 'نقره‌ای',
-  NONE: 'بدون آبکاری',
-};
-
 const COMMON_DIMENSION_PRESETS = [
-  { diameter: '32', thickness: '2', label: '۳۲ × ۲' },
-  { diameter: '31.5', thickness: '2', label: '۳۱٫۵ × ۲' },
-  { diameter: '28', thickness: '2', label: '۲۸ × ۲' },
-  { diameter: '27.8', thickness: '2', label: '۲۷٫۸ × ۲' },
+  { diameter: '32', thickness: '2', label: '32 × 2' },
+  { diameter: '31.5', thickness: '2', label: '31.5 × 2' },
+  { diameter: '28.5', thickness: '2', label: '28.5 × 2' },
+  { diameter: '28', thickness: '2', label: '28 × 2' },
+  { diameter: '27.8', thickness: '2', label: '27.8 × 2' },
 ];
 
+const DimensionInput = ({ label, value, onChange }) => (
+  <input
+    aria-label={`${label} (میلی‌متر)`}
+    type="number"
+    step="0.1"
+    dir="ltr"
+    className="ltr-num"
+    value={value}
+    onChange={(event) => onChange(event.target.value)}
+    placeholder={label}
+  />
+);
+
 // One editable product block.
-const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) => {
+const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
   const { currencyLabel } = useSettings();
+  const [isAdditionalOpen, setIsAdditionalOpen] = useState(() => Boolean(
+    (item.salePrice !== '' && item.salePrice != null)
+    || (item.unitCost !== '' && item.unitCost != null)
+    || item.description
+    || item.isHardened
+    || item.material === 'STEEL'
+  ));
+  const additionalId = `item-additional-${item.uid}`;
   const set = (patch) => onChange(index, patch);
   const hasSelectedPreset = COMMON_DIMENSION_PRESETS.some((preset) => (
     Number(item.diameter) === Number(preset.diameter)
@@ -67,37 +83,36 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
   return (
     <div className="item-editor">
       <div className="item-editor-head">
-        <div className="dimension-presets" role="group" aria-label="انتخاب اندازه">
-          {COMMON_DIMENSION_PRESETS.map((preset) => {
-            const isSelected = Number(item.diameter) === Number(preset.diameter)
-              && Number(item.thickness) === Number(preset.thickness);
-            const circleSize = 48 + (Number(preset.diameter) - 27.8) * 2.8;
-            return (
-              <button
-                type="button"
-                key={`${preset.diameter}-${preset.thickness}`}
-                className={`dimension-preset ${isSelected ? 'active' : ''}`}
-                style={{ '--dimension-preset-size': `${circleSize.toFixed(1)}px` }}
-                aria-label={`قطر ${preset.diameter} و ضخامت ${preset.thickness} میلی‌متر`}
-                aria-pressed={isSelected}
-                onClick={() => set({ diameter: preset.diameter, thickness: preset.thickness })}
-              >
-                <bdi dir="ltr" className="dimension-preset-label">{preset.label}</bdi>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className={`dimension-preset dimension-preset-custom ${hasSelectedPreset ? '' : 'active'}`}
-            style={{ '--dimension-preset-size': '42px' }}
-            aria-label="ابعاد دلخواه"
-            aria-pressed={!hasSelectedPreset}
-            onClick={() => {
-              if (hasSelectedPreset) set({ diameter: '', thickness: '' });
-            }}
-          >
-            <span className="dimension-preset-label">دلخواه</span>
-          </button>
+        <div className="dimension-presets-wrap">
+          <div className="dimension-presets" role="group" aria-label="انتخاب اندازه">
+            {COMMON_DIMENSION_PRESETS.map((preset) => {
+              const isSelected = Number(item.diameter) === Number(preset.diameter)
+                && Number(item.thickness) === Number(preset.thickness);
+              return (
+                <button
+                  type="button"
+                  key={`${preset.diameter}-${preset.thickness}`}
+                  className={`dimension-preset ${isSelected ? 'active' : ''}`}
+                  aria-label={`قطر ${preset.diameter} و ضخامت ${preset.thickness} میلی‌متر`}
+                  aria-pressed={isSelected}
+                  onClick={() => set({ diameter: preset.diameter, thickness: preset.thickness })}
+                >
+                  <bdi dir="ltr" className="dimension-preset-label">{preset.label}</bdi>
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              className={`dimension-preset dimension-preset-custom ${hasSelectedPreset ? '' : 'active'}`}
+              aria-label="ابعاد دلخواه"
+              aria-pressed={!hasSelectedPreset}
+              onClick={() => {
+                if (hasSelectedPreset) set({ diameter: '', thickness: '' });
+              }}
+            >
+              <span className="dimension-preset-label">دلخواه</span>
+            </button>
+          </div>
         </div>
         {canRemove && (
           <button type="button" className="link-btn danger" onClick={() => onRemove(index)}>
@@ -106,32 +121,28 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
         )}
       </div>
 
-      <div className="form-grid">
+      <div className="form-grid item-primary-grid">
         <div className="form-group span-2">
           <input
-            aria-label="نوع پولک"
+            aria-label="نام محصول"
             value={item.productName}
             onChange={(e) => set({ productName: e.target.value })}
-            placeholder="نوع پولک"
+            placeholder="نام محصول"
             required
           />
         </div>
 
         {!hasSelectedPreset && (
           <div className="dimension-custom-fields span-2">
-            <input
-              aria-label="قطر (میلی‌متر)"
-              type="number" step="0.1" dir="ltr" className="ltr-num"
+            <DimensionInput
+              label="قطر"
               value={item.diameter}
-              onChange={(e) => set({ diameter: e.target.value })}
-              placeholder="قطر (میلی‌متر)"
+              onChange={(value) => set({ diameter: value })}
             />
-            <input
-              aria-label="ضخامت (میلی‌متر)"
-              type="number" step="0.1" dir="ltr" className="ltr-num"
+            <DimensionInput
+              label="ضخامت"
               value={item.thickness}
-              onChange={(e) => set({ thickness: e.target.value })}
-              placeholder="ضخامت (میلی‌متر)"
+              onChange={(value) => set({ thickness: value })}
             />
           </div>
         )}
@@ -141,6 +152,8 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
             aria-label="تعداد"
             type="number"
             min="0"
+            dir="ltr"
+            className="ltr-num"
             value={item.quantity}
             onChange={(e) => set({ quantity: e.target.value })}
             placeholder="تعداد"
@@ -158,107 +171,105 @@ const ItemEditor = ({ item, index, canRemove, markings, onChange, onRemove }) =>
                 aria-pressed={item.platingColor === opt.value}
                 onClick={() => set({ platingColor: opt.value })}
               >
-                {PLATING_UI_LABELS[opt.value] || opt.label}
+                {opt.label}
                 {item.platingColor === opt.value && <span className="plating-checkmark" aria-hidden="true">✓</span>}
               </button>
             ))}
           </div>
         </div>
-
-        <div className="form-group">
-          <input
-            aria-label="قیمت فروش هر عدد"
-            type="number" min="0" dir="ltr" className="ltr-num"
-            value={item.salePrice}
-            onChange={(e) => set({ salePrice: e.target.value })}
-            placeholder={`قیمت فروش هر عدد (${currencyLabel})`}
-          />
-        </div>
-
-        <div className="form-group">
-          <input
-            aria-label="بهای تمام‌شده هر عدد"
-            type="number" min="0" dir="ltr" className="ltr-num"
-            value={item.unitCost}
-            onChange={(e) => set({ unitCost: e.target.value })}
-            placeholder={`بهای تمام‌شده هر عدد (اختیاری) (${currencyLabel})`}
-          />
-        </div>
-
-        <div className="form-group span-2">
-          <textarea
-            aria-label="توضیحات"
-            value={item.description}
-            onChange={(e) => set({ description: e.target.value })}
-            rows="2"
-            placeholder="توضیحات اختیاری (در فاکتور نمایش داده می‌شود)"
-          />
-        </div>
-
-        <div className="form-group span-2">
-          <label>مارک / حکاکی</label>
-          {markings === null ? (
-            <p className="hint-text">ابتدا مشتری را انتخاب کنید.</p>
-          ) : markings?.length ? (
-            <div className="marking-picker">
-              {markings.map((m) => (
-                <button
-                  type="button"
-                  key={m.id}
-                  className={`marking-chip ${item.markingId === m.id ? 'active' : ''}`}
-                  onClick={() => set({ markingId: item.markingId === m.id ? null : m.id })}
-                  title={m.name}
-                >
-                  {m.src ? <img src={m.src} alt={m.name} /> : <i className="fa-solid fa-stamp"></i>}
-                  <span>{m.name}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="hint-text">این مشتری مارکی ندارد. از صفحه «افراد» مارک اضافه کنید.</p>
-          )}
-        </div>
       </div>
 
-      <div className="order-item-footer">
-        <div className="order-feature-switches">
-          <div className="toggle-row">
-            <span>سخت‌کاری</span>
-            <button
-              type="button"
-              role="switch"
-              aria-label="سخت‌کاری"
-              aria-checked={item.isHardened}
-              className={`ios-switch ${item.isHardened ? 'on' : ''}`}
-              onClick={() => set({ isHardened: !item.isHardened })}
-            >
-              <span className="knob" />
-            </button>
+      <button
+        type="button"
+        className="order-additional-toggle"
+        aria-expanded={isAdditionalOpen}
+        aria-controls={additionalId}
+        onClick={() => setIsAdditionalOpen((open) => !open)}
+      >
+        <span>اطلاعات تکمیلی</span>
+        <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+      </button>
+
+      <div
+        id={additionalId}
+        className={`order-additional-panel ${isAdditionalOpen ? 'open' : ''}`}
+        aria-hidden={!isAdditionalOpen}
+      >
+        <div className="order-additional-inner" inert={!isAdditionalOpen}>
+          <div className="form-grid">
+            <div className="form-group">
+              <input
+                aria-label="قیمت فروش هر عدد"
+                type="number" min="0" dir="ltr" className="ltr-num"
+                value={item.salePrice}
+                onChange={(e) => set({ salePrice: e.target.value })}
+                placeholder="قیمت"
+              />
+            </div>
+
+            <div className="form-group">
+              <input
+                aria-label="بهای تمام‌شده هر عدد"
+                type="number" min="0" dir="ltr" className="ltr-num"
+                value={item.unitCost}
+                onChange={(e) => set({ unitCost: e.target.value })}
+                placeholder="بهای تمام شده"
+              />
+            </div>
+
+            <div className="form-group span-2">
+              <textarea
+                aria-label="توضیحات"
+                value={item.description}
+                onChange={(e) => set({ description: e.target.value })}
+                rows="2"
+                placeholder="توضیحات"
+              />
+            </div>
+
           </div>
-          <div className="toggle-row">
-            <span>{MATERIAL_LABELS.STEEL}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-label={MATERIAL_LABELS.STEEL}
-              aria-checked={item.material === 'STEEL'}
-              className={`ios-switch ${item.material === 'STEEL' ? 'on' : ''}`}
-              onClick={() => set({ material: item.material === 'STEEL' ? 'IRON' : 'STEEL' })}
-            >
-              <span className="knob" />
-            </button>
+
+          <div className="order-item-footer">
+            <div className="order-feature-switches">
+              <div className="toggle-row">
+                <span>سخت‌کاری</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="سخت‌کاری"
+                  aria-checked={item.isHardened}
+                  className={`ios-switch ${item.isHardened ? 'on' : ''}`}
+                  onClick={() => set({ isHardened: !item.isHardened })}
+                >
+                  <span className="knob" />
+                </button>
+              </div>
+              <div className="toggle-row">
+                <span>{MATERIAL_LABELS.STEEL}</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label={MATERIAL_LABELS.STEEL}
+                  aria-checked={item.material === 'STEEL'}
+                  className={`ios-switch ${item.material === 'STEEL' ? 'on' : ''}`}
+                  onClick={() => set({ material: item.material === 'STEEL' ? 'IRON' : 'STEEL' })}
+                >
+                  <span className="knob" />
+                </button>
+              </div>
+            </div>
+            {item.isHardened && (
+              <div className="form-group order-hardening-field">
+                <input
+                  aria-label="میزان سختی"
+                  value={item.hardeningIntensity}
+                  onChange={(e) => set({ hardeningIntensity: e.target.value })}
+                  placeholder="میزان سختی؛ مثال: ۴۵ راکول"
+                />
+              </div>
+            )}
           </div>
         </div>
-        {item.isHardened && (
-          <div className="form-group order-hardening-field">
-            <input
-              aria-label="میزان سختی"
-              value={item.hardeningIntensity}
-              onChange={(e) => set({ hardeningIntensity: e.target.value })}
-              placeholder="میزان سختی؛ مثال: ۴۵ راکول"
-            />
-          </div>
-        )}
       </div>
     </div>
   );
@@ -280,6 +291,7 @@ const SubmitOrder = () => {
   const [orderDate, setOrderDate] = useState(todayJalaliDate);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isCustomerSheetOpen, setIsCustomerSheetOpen] = useState(false);
   const [items, setItems] = useState([blankItem()]);
@@ -356,27 +368,27 @@ const SubmitOrder = () => {
     [customerSearch]
   );
 
-  // The selected customer's marking directory (shared by all items).
-  const customerMarkings = useLiveQuery(
-    () => (selectedCustomer ? getCustomerMarkings(selectedCustomer.id) : []),
-    [selectedCustomer?.id]
-  );
-  const markingsForItems = selectedCustomer ? (customerMarkings || []) : null;
-
   const dateKey = useMemo(() => jalaliDateKey(orderDate), [orderDate]);
 
   const handleSelectCustomer = (customer) => {
     setSelectedCustomer(customer);
     setCustomerSearch(getCustomerDisplayName(customer));
+    setIsEditingCustomer(false);
     setShowDropdown(false);
-    // marks are customer-specific — clear any selected mark on every item
-    setItems((prev) => prev.map((it) => ({ ...it, markingId: null })));
   };
 
-  const handleClearCustomer = () => {
-    setSelectedCustomer(null);
-    setCustomerSearch('');
-    setItems((prev) => prev.map((it) => ({ ...it, markingId: null })));
+  const handleEditCustomer = () => {
+    setCustomerSearch(getCustomerDisplayName(selectedCustomer));
+    setIsEditingCustomer(true);
+    setShowDropdown(false);
+  };
+
+  const handleCustomerSearchKeyDown = (event) => {
+    if (event.key === 'Escape' && selectedCustomer) {
+      setCustomerSearch(getCustomerDisplayName(selectedCustomer));
+      setIsEditingCustomer(false);
+      setShowDropdown(false);
+    }
   };
 
   const updateItem = (index, patch) => {
@@ -398,14 +410,11 @@ const SubmitOrder = () => {
     const finalDateText = hasDateObj ? orderDate.toString() : isEdit ? existingOrder?.dateText : '';
 
     if (!finalDateKey) { showToast('لطفاً تاریخ سفارش را انتخاب کنید.', 'error'); return; }
-    if (!selectedCustomer) { showToast('لطفاً مشتری را انتخاب کنید.', 'error'); return; }
+    if (!selectedCustomer || isEditingCustomer) { showToast('لطفاً مشتری را انتخاب کنید.', 'error'); return; }
     if (!items.length) { showToast('حداقل یک محصول لازم است.', 'error'); return; }
     if (items.some((it) => !it.productName.trim())) {
       showToast('نام همهٔ محصولات را وارد کنید.', 'error'); return;
     }
-
-    const marksById = {};
-    (customerMarkings || []).forEach((m) => { marksById[m.id] = m; });
 
     const storedItems = items.map((it) => {
       const isNew = !it.state;
@@ -418,8 +427,6 @@ const SubmitOrder = () => {
         material: it.material === 'STEEL' ? 'STEEL' : 'IRON',
         thickness: num(it.thickness),
         diameter: num(it.diameter),
-        markingId: it.markingId ?? null,
-        markingName: it.markingId != null ? (marksById[it.markingId]?.name || '') : '',
         platingColor: it.platingColor,
         isHardened: it.isHardened,
         hardeningIntensity: it.isHardened ? it.hardeningIntensity.trim() : '',
@@ -479,79 +486,83 @@ const SubmitOrder = () => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Order header */}
-        <div className="glass-card order-header-card">
-          <div className="customer-field">
-            {selectedCustomer ? (
-              <div className="selected-badge">
-                <span>
-                  👤 <strong>{getCustomerDisplayName(selectedCustomer)}</strong>
-                  <span className="muted"> ({selectedCustomer.id})</span>
-                </span>
-                <button type="button" className="clear-btn" onClick={handleClearCustomer}>تغییر</button>
-              </div>
-            ) : (
-              <>
-                <div className="customer-search-row">
-                  <input
-                    value={customerSearch}
-                    onChange={(e) => { setCustomerSearch(e.target.value); setShowDropdown(true); }}
-                    placeholder="مشتری"
-                    aria-label="جستجوی نام مشتری"
-                    autoComplete="off"
-                  />
-                  <button
-                    type="button"
-                    className="add-btn customer-add-btn"
-                    onClick={() => setIsCustomerSheetOpen(true)}
-                    aria-label="افزودن مشتری جدید"
-                    title="افزودن مشتری جدید"
-                  >
-                    +
-                  </button>
-                </div>
-                {showDropdown && matchedCustomers?.length > 0 && (
-                  <div className="search-dropdown">
-                    {matchedCustomers.map((c) => (
-                      <div key={c.id} className="dropdown-item" onClick={() => handleSelectCustomer(c)}>
-                        {c.firstName} {c.lastName}
-                        {c.companyName && <span className="muted"> — {c.companyName}</span>}
-                        <span className="muted"> ({c.id})</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {showDropdown && customerSearch.trim() && matchedCustomers?.length === 0 && (
-                  <div className="search-dropdown empty">مشتری‌ای یافت نشد</div>
-                )}
-              </>
-            )}
-          </div>
-
-          <div className="order-date-inline">
-            <JalaliDatePicker
-              value={orderDate}
-              onChange={setOrderDate}
-              calendar={persian}
-              locale={persian_fa}
-              weekDays={weekDays}
-              format="YYYY/MM/DD"
-              aria-label="تاریخ سفارش"
-              calendarPosition="bottom-left"
-              inputClass="rmdp-input order-date-inline-input"
-              portal
-            />
-          </div>
-        </div>
-
         {/* Items */}
         {items.map((item, index) => (
           <div className="glass-card order-item-card" key={item.uid}>
+            {index === 0 && (
+              <header className="order-meta-header">
+                <div className="customer-field">
+                  {selectedCustomer && !isEditingCustomer ? (
+                    <button
+                      type="button"
+                      className="customer-name-button"
+                      onClick={handleEditCustomer}
+                      aria-label={`تغییر مشتری: ${getCustomerDisplayName(selectedCustomer)}`}
+                    >
+                      <strong>{getCustomerDisplayName(selectedCustomer)}</strong>
+                      <span className="muted"> ({selectedCustomer.id})</span>
+                    </button>
+                  ) : (
+                    <>
+                      <div className="customer-search-row">
+                        <input
+                          value={customerSearch}
+                          onChange={(e) => { setCustomerSearch(e.target.value); setShowDropdown(true); }}
+                          onKeyDown={handleCustomerSearchKeyDown}
+                          onFocus={(event) => { if (isEditingCustomer) event.target.select(); }}
+                          autoFocus={isEditingCustomer}
+                          placeholder="مشتری"
+                          aria-label="جستجوی نام مشتری"
+                          autoComplete="off"
+                        />
+                        <button
+                          type="button"
+                          className="add-btn customer-add-btn"
+                          onClick={() => setIsCustomerSheetOpen(true)}
+                          aria-label="افزودن مشتری جدید"
+                          title="افزودن مشتری جدید"
+                        >
+                          +
+                        </button>
+                      </div>
+                      {showDropdown && matchedCustomers?.length > 0 && (
+                        <div className="search-dropdown">
+                          {matchedCustomers.map((c) => (
+                            <div key={c.id} className="dropdown-item" onClick={() => handleSelectCustomer(c)}>
+                              {c.firstName} {c.lastName}
+                              {c.companyName && <span className="muted"> — {c.companyName}</span>}
+                              <span className="muted"> ({c.id})</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showDropdown && customerSearch.trim() && matchedCustomers?.length === 0 && (
+                        <div className="search-dropdown empty">مشتری‌ای یافت نشد</div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="order-date-inline">
+                  <JalaliDatePicker
+                    value={orderDate}
+                    onChange={setOrderDate}
+                    calendar={persian}
+                    locale={persian_fa}
+                    weekDays={weekDays}
+                    format="YYYY/MM/DD"
+                    aria-label="تاریخ سفارش"
+                    calendarPosition="bottom-left"
+                    inputClass="rmdp-input order-date-inline-input"
+                    portal
+                  />
+                </div>
+              </header>
+            )}
             <ItemEditor
               item={item}
               index={index}
               canRemove={items.length > 1}
-              markings={markingsForItems}
               onChange={updateItem}
               onRemove={removeItem}
             />
