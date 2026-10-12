@@ -1850,7 +1850,7 @@
 }
 :local(.root):global(.order-view) :global(.order-header-card) {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 185px), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 8px;
   padding: 9px;
@@ -1863,31 +1863,20 @@
 :local(.root):global(.order-view) :global(.order-header-date) {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 6px;
   min-width: 0;
   min-height: 54px;
   padding: 8px 10px;
   border-radius: 9px;
   background: var(--sp-surface-muted);
 }
-:local(.root):global(.order-view) :global(.order-header-company) { border-inline-start: 2px solid #8b72c5; }
-:local(.root):global(.order-view) :global(.order-header-customer) > div,
-:local(.root):global(.order-view) :global(.order-header-company),
-:local(.root):global(.order-view) :global(.order-header-date) > div { display: grid; align-content: center; gap: 3px; }
-:local(.root):global(.order-view) :global(.order-header-icon) {
-  display: grid;
-  flex: 0 0 32px;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--sp-primary) 11%, var(--sp-surface));
-  color: var(--sp-primary);
-  font-size: 13px;
-}
+:local(.root):global(.order-view) :global(.order-header-company) { border-inline-start: 0; }
 :local(.root):global(.order-view) :global(.order-header-company) { color: var(--sp-text); }
-:local(.root):global(.order-view) :global(.order-header-card) small { color: var(--sp-text-muted); font-size: 10px; line-height: 1.4; }
-:local(.root):global(.order-view) :global(.order-header-card) strong { min-width: 0; color: var(--sp-text); font-size: 13px; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+:local(.root):global(.order-view) :global(.order-header-card) small { flex: 0 0 auto; color: var(--sp-text-muted); font-size: 10px; line-height: 1.4; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.order-header-card) strong { min-width: 0; color: var(--sp-text); font-size: 16px; font-weight: 700; line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.order-header-date) { justify-content: center; }
+:local(.root):global(.order-view) :global(.order-header-company)[aria-hidden="true"] { border-inline-start: 0; background: transparent; }
 :local(.root):global(.order-view) :global(.order-glance-table-wrap) { min-width: 0; overflow-x: auto; border: 1px solid var(--sp-border); border-radius: 12px; background: var(--sp-surface); }
 :local(.root):global(.order-view) :global(.order-glance-table) { width: 100%; table-layout: fixed; border-collapse: collapse; color: var(--sp-text); }
 :local(.root):global(.order-view) :global(.order-glance-table) th,
@@ -2338,12 +2327,12 @@
   :local(.root):global(.order-view) { padding-inline: 12px; }
   :local(.root):global(.order-view) :global(.order-section) { padding: 11px; }
   :local(.root):global(.order-view) :global(.order-section-title) { margin-bottom: 10px; font-size: 13px; }
-  :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 7px; }
+  :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; }
   :local(.root):global(.order-view) :global(.order-header-customer),
-  :local(.root):global(.order-view) :global(.order-header-date) { gap: 7px; padding: 7px; }
-  :local(.root):global(.order-view) :global(.order-header-company) { grid-column: 1 / -1; min-height: 40px; }
-  :local(.root):global(.order-view) :global(.order-header-icon) { flex-basis: 28px; width: 28px; height: 28px; }
-  :local(.root):global(.order-view) :global(.order-header-card) strong { font-size: 12px; }
+  :local(.root):global(.order-view) :global(.order-header-company),
+  :local(.root):global(.order-view) :global(.order-header-date) { min-height: 40px; gap: 4px; padding: 6px 5px; }
+  :local(.root):global(.order-view) :global(.order-header-card) small { font-size: 9px; }
+  :local(.root):global(.order-view) :global(.order-header-card) strong { font-size: 14px; }
   :local(.root):global(.order-view) :global(.order-spec-item) { min-height: 54px; padding: 8px 6px 7px; }
   :local(.root):global(.order-view) :global(.order-spec-item) small { font-size: 9px; }
   :local(.root):global(.order-view) :global(.order-spec-item) strong { font-size: 10px; }

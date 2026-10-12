@@ -762,17 +762,13 @@ const OrderView = () => {
       <section className="order-glance-section" aria-label="خلاصه سریع سفارش">
         <div className="order-header-card">
           <div className="order-header-customer">
-            <span className="order-header-icon" aria-hidden="true"><i className="fa-solid fa-user" /></span>
-            <div><small>مشتری</small><strong>{order.customerName || '—'}</strong></div>
+            <strong>{order.customerName || '—'}</strong>
           </div>
-          {customer?.companyName?.trim() && (
-            <div className="order-header-company">
-              <small>شرکت</small><strong>{customer.companyName.trim()}</strong>
-            </div>
-          )}
+          <div className="order-header-company" aria-hidden={!customer?.companyName?.trim()}>
+            {customer?.companyName?.trim() && <strong>{customer.companyName.trim()}</strong>}
+          </div>
           <div className="order-header-date">
-            <span className="order-header-icon" aria-hidden="true"><i className="fa-solid fa-calendar-days" /></span>
-            <div><small>تاریخ ثبت سفارش</small><strong dir="ltr">{formatJalali(order.date)}</strong></div>
+            <strong dir="ltr">{formatJalali(order.date)}</strong>
           </div>
         </div>
 
