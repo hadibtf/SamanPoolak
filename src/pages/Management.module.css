@@ -1335,12 +1335,41 @@
   margin-bottom: 16px;
 }
 
+:local(.root):global(.order-view) :global(.page-back) {
+  justify-content: space-between;
+}
+
+:local(.root):global(.order-view) :global(.page-actions) {
+  order: 0;
+  margin-inline-end: auto;
+}
+
+:local(.root):global(.order-view) :global(.back-btn) {
+  order: 1;
+  flex-direction: row;
+  direction: ltr;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+:local(.root):global(.order-view) :global(.back-btn) i {
+  transform: none;
+}
+
 :local(.root) :global(.page-back) h2 {
   font-size: 20px;
   font-weight: 700;
   color: #1c1c1e;
   margin: 0;
   flex: 1;
+}
+
+:local(.root):global(.order-view) :global(.order-header-number) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 :local(.root) :global(.back-btn) {
@@ -1362,6 +1391,16 @@
 
 :local(.root):global(.submit-order) :global(.page-back) h2 {
   min-width: 0;
+}
+
+:local(.root):global(.submit-order) :global(.page-back) {
+  justify-content: flex-end;
+}
+
+:local(.root):global(.submit-order) :global(.page-back) :global(.back-btn) {
+  flex-direction: row;
+  direction: ltr;
+  justify-content: flex-start;
 }
 
 @media (max-width: 420px) {
@@ -1850,7 +1889,7 @@
 }
 :local(.root):global(.order-view) :global(.order-header-card) {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
   gap: 8px;
   padding: 9px;
@@ -1860,6 +1899,7 @@
 }
 :local(.root):global(.order-view) :global(.order-header-customer),
 :local(.root):global(.order-view) :global(.order-header-company),
+:local(.root):global(.order-view) :global(.order-header-number),
 :local(.root):global(.order-view) :global(.order-header-date) {
   display: flex;
   align-items: center;
@@ -2158,10 +2198,11 @@
   list-style: none;
 }
 :local(.root):global(.order-list) :global(.order-item) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 3px 9px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  align-items: center;
+  gap: 12px;
+  direction: rtl;
   min-width: 0;
   padding: 9px 11px;
   border: 1px solid color-mix(in srgb, var(--sp-primary) 12%, var(--sp-border));
@@ -2169,6 +2210,17 @@
   border-radius: 10px;
   background: color-mix(in srgb, var(--sp-primary) 4%, var(--sp-surface));
   color: var(--sp-text);
+}
+:local(.root):global(.order-list) :global(.order-item-content) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 9px;
+  min-width: 0;
+}
+:local(.root):global(.order-list) :global(.order-list-numeric) {
+  font-family: 'Bpmf Huninn', 'Vazirmatn', sans-serif;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 :local(.root):global(.order-list) :global(.order-item-title) {
   min-width: 0;
@@ -2197,6 +2249,7 @@
   font-weight: inherit;
   unicode-bidi: isolate;
 }
+:local(.root):global(.order-list) :global(.order-item-dimension-multiply) { display: inline-block; margin-inline: 4px; }
 :local(.root):global(.order-list) :global(.order-item-quantity) {
   padding: 0;
   color: var(--sp-text-muted);
@@ -2204,15 +2257,70 @@
   font-weight: inherit;
 }
 :local(.root):global(.order-list) :global(.order-item-specs) :global(.metallic-text) { font-size: inherit; font-weight: inherit; }
-:local(.root):global(.order-list) :global(.order-item.is-done) {
+:local(.root):global(.order-list) :global(.order-item-metric) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: 36px;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.5;
+  direction: ltr;
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+:local(.root):global(.order-list) :global(.order-item-progress-count) {
+  direction: rtl;
+  justify-content: flex-end;
+  gap: 4px;
+  text-align: left;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  font-weight: 500;
+}
+:local(.root):global(.order-list) :global(.order-item-progress-produced),
+:local(.root):global(.order-list) :global(.order-item-progress-target) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+:local(.root):global(.order-list) :global(.order-item-progress-produced) {
+  flex-wrap: nowrap;
+}
+:local(.root):global(.order-list) :global(.order-item-progress-overage) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+:local(.root):global(.order-list) :global(.order-item-ordered-count) {
+  font-weight: 1000;
+  -webkit-text-stroke: 0.65px currentColor;
+  text-shadow: 0 0 0.45px currentColor;
+}
+:local(.root):global(.order-list) :global(.order-item.is-ready) {
   border-color: color-mix(in srgb, var(--sp-success) 22%, var(--sp-border));
   border-inline-start-color: var(--sp-success);
   background: color-mix(in srgb, var(--sp-success) 6%, var(--sp-surface));
   color: var(--sp-success);
 }
-:local(.root):global(.order-list) :global(.order-item.is-done) :global(.order-item-specs) { color: inherit; }
-:local(.root):global(.order-list) :global(.order-item.is-done) :global(.order-item-dimensions),
-:local(.root):global(.order-list) :global(.order-item.is-done) :global(.order-item-quantity) { color: var(--sp-success); }
+:local(.root):global(.order-list) :global(.order-item.is-ready) :global(.order-item-specs) { color: inherit; }
+:local(.root):global(.order-list) :global(.order-item.is-ready) :global(.order-item-dimensions),
+:local(.root):global(.order-list) :global(.order-item.is-ready) :global(.order-item-quantity) { color: var(--sp-success); }
+:local(.root):global(.order-list) :global(.order-item.is-semi-ready) {
+  border-color: color-mix(in srgb, var(--sp-warning) 28%, var(--sp-border));
+  border-inline-start-color: var(--sp-warning);
+  background: color-mix(in srgb, var(--sp-warning) 8%, var(--sp-surface));
+  color: var(--sp-warning);
+}
+:local(.root):global(.order-list) :global(.order-item.is-semi-ready) :global(.order-item-specs) { color: inherit; }
+:local(.root):global(.order-list) :global(.order-item.is-semi-ready) :global(.order-item-dimensions),
+:local(.root):global(.order-list) :global(.order-item.is-semi-ready) :global(.order-item-quantity) { color: var(--sp-warning); }
 :local(.root):global(.order-list) :global(.order-item-empty) { color: var(--sp-text-muted); }
 :local(.root):global(.order-list) :global(.order-card-body) { min-width: 0; }
 :local(.root):global(.order-list) :global(.order-card-main) { width: 100%; }
@@ -2268,6 +2376,12 @@
 @media (max-width: 420px) {
   :local(.root):global(.order-list) :global(.order-card-summary) { gap: 4px 6px; }
   :local(.root):global(.order-list) :global(.order-summary-parties) { gap: 4px; }
+  :local(.root):global(.order-list) :global(.order-item) { gap: 6px; padding: 8px; }
+  :local(.root):global(.order-list) :global(.order-item-content) { gap: 2px 6px; }
+  :local(.root):global(.order-list) :global(.order-item-title),
+  :local(.root):global(.order-list) :global(.order-item-specs) { font-size: 12px; }
+  :local(.root):global(.order-list) :global(.order-item) { grid-template-columns: minmax(0, 1fr) 150px; gap: 6px; }
+  :local(.root):global(.order-list) :global(.order-item-metric) { min-height: 32px; font-size: 12px; }
   :local(.root):global(.order-list) :global(.order-summary-customer) {
     font-size: 18px;
     font-weight: 800;
@@ -2327,9 +2441,10 @@
   :local(.root):global(.order-view) { padding-inline: 12px; }
   :local(.root):global(.order-view) :global(.order-section) { padding: 11px; }
   :local(.root):global(.order-view) :global(.order-section-title) { margin-bottom: 10px; font-size: 13px; }
-  :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; }
+  :local(.root):global(.order-view) :global(.order-header-card) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 6px; }
   :local(.root):global(.order-view) :global(.order-header-customer),
   :local(.root):global(.order-view) :global(.order-header-company),
+  :local(.root):global(.order-view) :global(.order-header-number),
   :local(.root):global(.order-view) :global(.order-header-date) { min-height: 40px; gap: 4px; padding: 6px 5px; }
   :local(.root):global(.order-view) :global(.order-header-card) small { font-size: 9px; }
   :local(.root):global(.order-view) :global(.order-header-card) strong { font-size: 14px; }

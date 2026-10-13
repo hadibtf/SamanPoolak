@@ -32,18 +32,18 @@ export const INVOICE_PLATING_LABELS = {
 
 // The order workflow states, in their natural progression order.
 export const ORDER_STATES = [
-  { value: 'REGISTERED', label: 'ثبت شده' },
-  { value: 'MINTING', label: 'درحال ضرب' },
-  { value: 'PRODUCTION_COMPLETE', label: 'تولید تکمیل شد' },
-  { value: 'SENT_HARDENING', label: 'ارسال به سختکاری' },
-  { value: 'RETURN_HARDENING', label: 'بازگشت از سختکاری' },
-  { value: 'SENT_PLATING', label: 'ارسال به آبکاری' },
-  { value: 'RETURN_PLATING', label: 'بازگشت از آبکاری' },
+  { value: 'DELIVERED_WORKSHOP', label: 'تحویل شده' },
+  { value: 'SENT_FREIGHT', label: 'تحویل به باربری' },
+  { value: 'DELIVERED_PLATING', label: 'تحویل به مشتری از آبکاری' },
   { value: 'READY', label: 'آماده تحویل' },
   { value: 'PACKAGED', label: 'بسته‌بندی شده' },
-  { value: 'SENT_FREIGHT', label: 'تحویل به باربری' },
-  { value: 'DELIVERED_WORKSHOP', label: 'تحویل به مشتری از کارگاه' },
-  { value: 'DELIVERED_PLATING', label: 'تحویل به مشتری از آبکاری' },
+  { value: 'MINTING', label: 'درحال ضرب' },
+  { value: 'RETURN_PLATING', label: 'بازگشت از آبکاری' },
+  { value: 'RETURN_HARDENING', label: 'بازگشت از سختکاری' },
+  { value: 'SENT_HARDENING', label: 'ارسال به سختکاری' },
+  { value: 'SENT_PLATING', label: 'ارسال به آبکاری' },
+  { value: 'PRODUCTION_COMPLETE', label: 'تولید تکمیل شد' },
+  { value: 'REGISTERED', label: 'ثبت شده' },
 ];
 
 export const ORDER_STATE_LABELS = ORDER_STATES.reduce((acc, s) => {

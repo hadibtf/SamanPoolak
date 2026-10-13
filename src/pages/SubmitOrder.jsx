@@ -479,9 +479,8 @@ const SubmitOrder = () => {
       {isEdit && (
         <div className="page-back">
           <button type="button" className="back-btn" onClick={() => navigate(-1)}>
-            <i className="fa-solid fa-chevron-right"></i> بازگشت
+            <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
           </button>
-          <h2>ویرایش سفارش</h2>
         </div>
       )}
 

@@ -552,7 +552,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       <div className="state-form">
         <select value={nextState} onChange={(e) => setNextState(e.target.value)}>
           <option value="">انتخاب وضعیت جدید...</option>
-          <option value="PRODUCTION_RESUMED">ادامه تولید</option>
           {ORDER_STATES.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
@@ -635,7 +634,7 @@ const OrderView = () => {
       <div className={`${managementRootClass} order-view`}>
         <div className="page-back">
           <button className="back-btn" onClick={() => navigate('/orders/list')}>
-            <i className="fa-solid fa-chevron-right"></i> بازگشت
+            <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
           </button>
         </div>
         <p className="hint-text">سفارش یافت نشد.</p>
@@ -743,9 +742,8 @@ const OrderView = () => {
     <div className={`${managementRootClass} order-view`}>
       <div className="page-back">
         <button className="back-btn" onClick={() => navigate('/orders/list')}>
-          <i className="fa-solid fa-chevron-right"></i> بازگشت
+          <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
         </button>
-        <h2>سفارش #{order.orderNumber}</h2>
         <div className="page-actions">
           <button className="icon-btn" onClick={handleExportInvoice} title="صدور فاکتور">
             <i className="fa-solid fa-file-invoice"></i>
@@ -766,6 +764,9 @@ const OrderView = () => {
           </div>
           <div className="order-header-company" aria-hidden={!customer?.companyName?.trim()}>
             {customer?.companyName?.trim() && <strong>{customer.companyName.trim()}</strong>}
+          </div>
+          <div className="order-header-number" dir="ltr">
+            <strong>{order.orderNumber}</strong>
           </div>
           <div className="order-header-date">
             <strong dir="ltr">{formatJalali(order.date)}</strong>

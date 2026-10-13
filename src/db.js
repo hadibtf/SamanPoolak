@@ -1,7 +1,6 @@
 import Dexie from 'dexie';
 import { attendanceApi, ApiError } from './api/client';
 import { requestSync } from './syncBus';
-import { ORDER_STATES } from './constants';
 
 export const db = new Dexie('BusinessPlatformDB');
 
@@ -268,24 +267,29 @@ export const getCustomerMarkings = (customerId) =>
  */
 /* ===================== Order items ===================== */
 
-const READY_STATE = 'READY';
-const READY_STATE_INDEX = ORDER_STATES.findIndex((state) => state.value === READY_STATE);
+const COMPLETED_ORDER_STATES = new Set([
+  'DELIVERED_WORKSHOP',
+  'SENT_FREIGHT',
+  'DELIVERED_PLATING',
+]);
 
 let uidCounter = 0;
 // Stable-enough unique id for an item within an order (app runtime only).
 export const newUid = () => `it-${Date.now().toString(36)}-${(uidCounter++).toString(36)}`;
 
 /**
- * Derives the order-level status from its items: an order is "done" once every
- * item has reached the READY (آماده تحویل) state or a later state.
+ * An order is "done" only when the latest status recorded for every item is a
+ * delivered state. A production-resumed event is not a delivered status.
  */
 export const deriveOrderStatus = (order) => {
   const items = order?.items || [];
-  const ready = items.filter((it) => {
-    const stateIndex = ORDER_STATES.findIndex((state) => state.value === it.state);
-    return stateIndex >= READY_STATE_INDEX;
+  const completed = items.filter((item) => {
+    const history = item.stateHistory || [];
+    const lastEntry = history[history.length - 1];
+    const latestStatus = lastEntry?.event || lastEntry?.state || item.state;
+    return COMPLETED_ORDER_STATES.has(latestStatus);
   }).length;
-  return { done: items.length > 0 && ready === items.length, ready, total: items.length };
+  return { done: items.length > 0 && completed === items.length, completed, total: items.length };
 };
 
 export const computeWeights = ({ weightOf10, orderQuantity, producedTotalWeight }) => {

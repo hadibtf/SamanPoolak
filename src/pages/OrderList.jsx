@@ -1,26 +1,81 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { db, jalaliDateKey, deriveOrderStatus } from '../db';
-import { ordersApi, ApiError } from '../api/client';
-import { ORDER_STATES, PLATING_LABELS } from '../constants';
+import { ordersApi, productionApi, ApiError } from '../api/client';
+import { PLATING_LABELS } from '../constants';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
 
-const READY_STATE_INDEX = ORDER_STATES.findIndex((state) => state.value === 'READY');
+const READY_OR_LATER_ITEM_STATES = new Set([
+  'READY',
+  'PACKAGED',
+  'SENT_FREIGHT',
+  'DELIVERED_WORKSHOP',
+  'DELIVERED_PLATING',
+]);
+const SEMI_READY_ITEM_STATES = new Set([
+  'MINTING',
+  'RETURN_PLATING',
+  'RETURN_HARDENING',
+  'SENT_HARDENING',
+  'SENT_PLATING',
+  'PRODUCTION_COMPLETE',
+]);
+const PRODUCTION_TOTAL_ITEM_STATES = new Set([
+  ...SEMI_READY_ITEM_STATES,
+  ...READY_OR_LATER_ITEM_STATES,
+]);
+const latestOrderItemStatus = (item) => {
+  const history = item?.stateHistory || [];
+  const latest = history[history.length - 1];
+  return latest?.event || latest?.state || item?.state;
+};
 
-const isOrderItemDone = (item) => {
-  const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
-  return stateIndex >= READY_STATE_INDEX;
+const orderItemStageClass = (item) => {
+  const status = latestOrderItemStatus(item);
+  if (READY_OR_LATER_ITEM_STATES.has(status)) return 'is-ready';
+  if (SEMI_READY_ITEM_STATES.has(status)) return 'is-semi-ready';
+  return '';
+};
+
+const summarizeProduction = (summary) => {
+  return {
+    totalProduced: Number(summary?.totalProduced) || 0,
+  };
+};
+
+const toEnglishDigits = (value) => String(value ?? '')
+  .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+  .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
+
+const renderTextWithEnglishDigits = (value) => toEnglishDigits(value)
+  .split(/(\d+(?:[.,]\d+)*)/g)
+  .map((part, index) => /^\d/.test(part)
+    ? <bdi className="order-list-numeric" dir="ltr" key={`${index}-${part}`}>{part}</bdi>
+    : part);
+
+const formatNumericValue = (value) => {
+  const normalized = toEnglishDigits(value);
+  if (!normalized.trim()) return '';
+  const number = Number(normalized);
+  return Number.isFinite(number)
+    ? number.toLocaleString('en-US', { maximumFractionDigits: 3, useGrouping: false })
+    : normalized;
+};
+
+const formatCountValue = (value) => {
+  const number = Number(toEnglishDigits(value));
+  const count = Number.isFinite(number) ? number : 0;
+  return count.toLocaleString('fa-IR', { maximumFractionDigits: 3, useGrouping: true });
 };
 
 const formatItemNumber = (value) => {
   if (value === null || value === undefined || String(value).trim() === '') return '';
-  const number = Number(value);
-  return Number.isFinite(number) ? number.toLocaleString('fa-IR') : value;
+  return formatNumericValue(value);
 };
 
 const DIGIT_MAP = {
@@ -88,6 +143,7 @@ const OrderList = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [fAdvancedOrderNumber, setFAdvancedOrderNumber] = useState('');
   const [statusTab, setStatusTab] = useState('in-progress');
+  const [productionTotalsByItem, setProductionTotalsByItem] = useState({});
 
   const orders = useLiveQuery(() => db.orders.orderBy('id').reverse().toArray(), []);
   const people = useLiveQuery(() => db.people.toArray(), []);
@@ -173,6 +229,43 @@ const OrderList = () => {
   const completedOrders = useMemo(() => filtered.filter((order) => deriveOrderStatus(order).done), [filtered]);
   const inProgressOrders = useMemo(() => filtered.filter((order) => !deriveOrderStatus(order).done), [filtered]);
   const visibleOrders = statusTab === 'completed' ? completedOrders : inProgressOrders;
+  const productionSummaryItems = useMemo(() => visibleOrders.flatMap((order) =>
+    (order.items || [])
+      .filter((item) => item.uid && PRODUCTION_TOTAL_ITEM_STATES.has(latestOrderItemStatus(item)))
+      .map((item) => ({ orderId: order.id, itemUid: item.uid, key: `${order.id}:${item.uid}` }))
+  ), [visibleOrders]);
+
+  useEffect(() => {
+    if (!productionSummaryItems.length) return undefined;
+
+    let active = true;
+    let loading = false;
+    const refreshProductionTotals = async () => {
+      if (loading) return;
+      loading = true;
+      const results = await Promise.allSettled(productionSummaryItems.map(async ({ orderId, itemUid, key }) => {
+        const summary = await productionApi.itemSummary(orderId, itemUid);
+        return { key, totals: summarizeProduction(summary) };
+      }));
+      if (active) {
+        setProductionTotalsByItem((previous) => {
+          const next = { ...previous };
+          results.forEach((result) => {
+            if (result.status === 'fulfilled') next[result.value.key] = result.value.totals;
+          });
+          return next;
+        });
+      }
+      loading = false;
+    };
+
+    refreshProductionTotals();
+    const intervalId = window.setInterval(refreshProductionTotals, 15000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [productionSummaryItems]);
 
   const hasFilters = Boolean(
     searchQuery.trim() || fAdvancedOrderNumber.trim() || fDate || fFrom || fTo
@@ -214,7 +307,7 @@ const OrderList = () => {
 
   const handleDelete = async (e, o) => {
     e.stopPropagation();
-    if (!window.confirm(`حذف سفارش #${o.orderNumber}؟`)) return;
+    if (!window.confirm(`حذف سفارش #${toEnglishDigits(o.orderNumber)}؟`)) return;
     try {
       await ordersApi.remove(o.id);
       await db.orders.delete(o.id);
@@ -259,7 +352,7 @@ const OrderList = () => {
           >
             <i className="fa-solid fa-sliders" aria-hidden="true"></i>
             <span>جستجوی پیشرفته</span>
-            {activeAdvancedCount > 0 && <small>{activeAdvancedCount.toLocaleString('fa-IR')}</small>}
+            {activeAdvancedCount > 0 && <small className="order-list-numeric">{formatCountValue(activeAdvancedCount)}</small>}
             <i className={`fa-solid fa-chevron-down ${styles.advancedChevron} ${advancedOpen ? styles.advancedChevronOpen : ''}`} aria-hidden="true"></i>
           </button>
         </div>
@@ -388,7 +481,7 @@ const OrderList = () => {
           aria-pressed={statusTab === 'in-progress'}
           onClick={() => setStatusTab('in-progress')}
         >
-          <span>در حال انجام</span><small>{inProgressOrders.length.toLocaleString('fa-IR')}</small>
+          <span>در حال انجام</span><small>{formatCountValue(inProgressOrders.length)}</small>
         </button>
         <button
           type="button"
@@ -396,7 +489,7 @@ const OrderList = () => {
           aria-pressed={statusTab === 'completed'}
           onClick={() => setStatusTab('completed')}
         >
-          <span>تکمیل شده</span><small>{completedOrders.length.toLocaleString('fa-IR')}</small>
+          <span>تکمیل شده</span><small>{formatCountValue(completedOrders.length)}</small>
         </button>
       </div>
 
@@ -431,13 +524,13 @@ const OrderList = () => {
               >
                 <header className="order-card-summary">
                   <div className="order-summary-parties" dir="rtl">
-                    <span className="order-summary-customer" title={customerParts.label}>
+                    <span className="order-summary-customer" title={toEnglishDigits(customerParts.label)}>
                       {customerParts.companyName ? (
                         <bdi dir="rtl" className={styles.customerNamePair}>
-                          <span className={styles.customerCompanyName}>{customerParts.companyName}</span>
-                          <span className={styles.customerOwnerName}>{customerParts.customerName}</span>
+                          <span className={styles.customerCompanyName}>{renderTextWithEnglishDigits(customerParts.companyName)}</span>
+                          <span className={styles.customerOwnerName}>{renderTextWithEnglishDigits(customerParts.customerName)}</span>
                         </bdi>
-                      ) : <bdi dir="auto">{customerParts.customerName}</bdi>}
+                      ) : <bdi dir="auto">{renderTextWithEnglishDigits(customerParts.customerName)}</bdi>}
                     </span>
                   </div>
                   <span className="order-summary-date" dir="ltr">{formatDate(o.date)}</span>
@@ -447,21 +540,52 @@ const OrderList = () => {
                   <div className="order-card-main">
                     <ul className="order-items" aria-label="اقلام سفارش">
                       {orderItems.length ? orderItems.map((item, index) => {
-                        const done = isOrderItemDone(item);
-                        const diameter = formatItemNumber(item.diameter) || '۰';
-                        const thickness = formatItemNumber(item.thickness) || '۰';
-                        const quantity = formatItemNumber(item.quantity);
+                        const itemStatus = latestOrderItemStatus(item);
+                        const stageClass = orderItemStageClass(item);
+                        const productionTotals = productionTotalsByItem[`${o.id}:${item.uid}`];
+                        const itemProductionTotals = productionTotals || { totalProduced: 0 };
+                        const parsedProducedCount = Number(toEnglishDigits(itemProductionTotals.totalProduced));
+                        const itemProducedCount = Number.isFinite(parsedProducedCount) ? parsedProducedCount : 0;
+                        const parsedOrderedCount = Number(toEnglishDigits(item.quantity));
+                        const itemOrderedCount = Number.isFinite(parsedOrderedCount) ? parsedOrderedCount : 0;
+                        const hasOverproduction = itemProducedCount > itemOrderedCount;
+                        const diameter = formatItemNumber(item.diameter) || '0';
+                        const thickness = formatItemNumber(item.thickness) || '0';
                         const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
                           ? item.platingColor
                           : 'NONE';
                         const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
                         return (
-                          <li className={`order-item ${done ? 'is-done' : ''}`} key={item.uid || index}>
-                            <span className="order-item-title">{item.productName || 'بدون نام'}</span>
-                            <span className="order-item-specs">
-                              <bdi className="order-item-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
-                              {quantity && <span className="order-item-quantity">{quantity}</span>}
-                              <MetallicText tone={platingTone}>{PLATING_LABELS[platingColor]}</MetallicText>
+                          <li className={`order-item ${stageClass}`} key={item.uid || index}>
+                            <div className="order-item-content">
+                              <span className="order-item-title">{renderTextWithEnglishDigits(item.productName || 'بدون نام')}</span>
+                              <span className="order-item-specs">
+                                <bdi className="order-item-dimensions" dir="ltr">
+                                  <span className="order-list-numeric">{diameter}</span>
+                                  <span className="order-item-dimension-multiply">×</span>
+                                  <span className="order-list-numeric">{thickness}</span>
+                                </bdi>
+                                <MetallicText tone={platingTone}>{PLATING_LABELS[platingColor]}</MetallicText>
+                              </span>
+                            </div>
+                            <span className="order-item-metric order-item-progress-count" dir="rtl" aria-label="تعداد تولیدشده از تعداد سفارش">
+                              <span className="order-item-progress-produced">
+                                {hasOverproduction ? (
+                                  <>
+                                    <span className="order-item-progress-overage">
+                                      <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemProducedCount - itemOrderedCount)}</bdi>
+                                      <span>+</span>
+                                    </span>
+                                    <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
+                                  </>
+                                ) : (
+                                  <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemProducedCount)}</bdi>
+                                )}
+                              </span>
+                              <span className="order-item-progress-target">
+                                <span>از</span>
+                                <bdi className="order-list-numeric order-item-ordered-count" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
+                              </span>
                             </span>
                           </li>
                         );
