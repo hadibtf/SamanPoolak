@@ -2298,7 +2298,7 @@
   gap: 4px;
   white-space: nowrap;
 }
-:local(.root):global(.order-list) :global(.order-item-ordered-count) {
+:local(.root):global(.order-list) :global(.order-item-progress-count) :global(.order-list-numeric) {
   font-weight: 1000;
   -webkit-text-stroke: 0.65px currentColor;
   text-shadow: 0 0 0.45px currentColor;
