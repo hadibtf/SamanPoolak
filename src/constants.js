@@ -31,18 +31,21 @@ export const INVOICE_PLATING_LABELS = {
 };
 
 // The order workflow states, in their natural progression order.
+// New orders enter this state automatically; it is not selectable manually.
+export const INITIAL_ORDER_STATE = 'REGISTERED';
+
 export const ORDER_STATES = [
-  { value: 'DELIVERED_WORKSHOP', label: 'تحویل شده' },
-  { value: 'SENT_FREIGHT', label: 'تحویل به باربری' },
-  { value: 'DELIVERED_PLATING', label: 'تحویل به مشتری از آبکاری' },
-  { value: 'READY', label: 'آماده تحویل' },
-  { value: 'PACKAGED', label: 'بسته‌بندی شده' },
+  { value: 'DELIVERED_WORKSHOP', label: 'تحویل مشتری' },
+  { value: 'SENT_FREIGHT', label: 'تحویل باربری' },
+  { value: 'DELIVERED_PLATING', label: 'تحویل از آبکاری' },
+  { value: 'READY', label: 'آماده در گونی برنج' },
+  { value: 'PACKAGED', label: 'بسته بندی شده' },
   { value: 'MINTING', label: 'درحال ضرب' },
   { value: 'RETURN_PLATING', label: 'بازگشت از آبکاری' },
   { value: 'RETURN_HARDENING', label: 'بازگشت از سختکاری' },
   { value: 'SENT_HARDENING', label: 'ارسال به سختکاری' },
   { value: 'SENT_PLATING', label: 'ارسال به آبکاری' },
-  { value: 'PRODUCTION_COMPLETE', label: 'تولید تکمیل شد' },
+  { value: 'PRODUCTION_COMPLETE', label: 'اتمام ضرب' },
   { value: 'REGISTERED', label: 'ثبت شده' },
 ];
 
@@ -50,6 +53,26 @@ export const ORDER_STATE_LABELS = ORDER_STATES.reduce((acc, s) => {
   acc[s.value] = s.label;
   return acc;
 }, {});
+
+// Registered, resumed-production, and minting states stay in history but are
+// not selectable from the manual state list. Separators are visual only.
+export const ORDER_STATE_CHOICES = [
+  { value: 'DELIVERED_WORKSHOP' },
+  { separator: true },
+  { value: 'DELIVERED_PLATING' },
+  { value: 'SENT_FREIGHT' },
+  { separator: true },
+  { value: 'PACKAGED' },
+  { value: 'READY' },
+  { separator: true },
+  { value: 'PRODUCTION_COMPLETE' },
+  { separator: true },
+  { value: 'SENT_PLATING' },
+  { value: 'RETURN_PLATING' },
+  { separator: true },
+  { value: 'SENT_HARDENING' },
+  { value: 'RETURN_HARDENING' },
+];
 
 // ===================== Payroll rates (single source) =====================
 // Change a value here and it applies everywhere (the salary calculator AND the

@@ -161,6 +161,29 @@
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
 }
 
+:local(.root) :global(.user-password-input) {
+  position: relative;
+  width: 100%;
+}
+:local(.root) :global(.user-password-input) input { padding-inline-end: 44px; }
+:local(.root) :global(.user-password-visibility) {
+  position: absolute;
+  inset-inline-end: 8px;
+  top: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--sp-text-muted);
+  cursor: pointer;
+}
+:local(.root) :global(.user-password-visibility):hover:not(:disabled) { background: rgba(0, 122, 255, 0.08); color: var(--active-color); }
+:local(.root) :global(.user-password-visibility):disabled { opacity: .55; cursor: wait; }
+
 :local(.root) :global(.user-form) :global(.primary-btn) {
   margin-top: 14px;
 }
@@ -179,6 +202,12 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+:local(.root) :global(.user-entry) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 :local(.root) :global(.user-row) {
@@ -200,6 +229,71 @@
   font-size: 15px;
   color: #1c1c1e;
 }
+
+:local(.root) :global(.user-row-actions) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:local(.root) :global(.user-password-reset-form) {
+  display: grid;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--sp-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--sp-surface) 94%, var(--sp-primary) 6%);
+}
+:local(.root) :global(.user-password-reset-hint) {
+  margin: 0;
+  color: var(--sp-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+:local(.root) :global(.user-password-reset-form) label {
+  color: var(--sp-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+:local(.root) :global(.user-password-reset-form) input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 44px 10px 12px;
+  border: 1px solid var(--sp-border);
+  border-radius: 10px;
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font: inherit;
+  direction: ltr;
+}
+:local(.root) :global(.user-password-reset-form) input:focus {
+  border-color: var(--active-color);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+  outline: 0;
+}
+:local(.root) :global(.user-password-reset-actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+:local(.root) :global(.user-password-reset-actions) :global(.primary-btn) {
+  width: auto;
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 13px;
+}
+:local(.root) :global(.user-password-cancel) {
+  border: 1px solid var(--sp-border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  background: transparent;
+  color: var(--sp-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+:local(.root) :global(.user-password-cancel):disabled { opacity: .55; cursor: wait; }
 
 /* Appearance rows (theme / currency) */
 :local(.root) :global(.setting-row) {

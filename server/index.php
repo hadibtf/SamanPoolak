@@ -37,6 +37,7 @@ $routes = [
     ['GET',    '/auth/me',          'auth_me',       true],
     ['GET',    '/users',            'users_list',    true],
     ['POST',   '/users',            'users_create',  true],
+    ['PUT',    '/users/{id}',       'users_update',  true],
     ['DELETE', '/users/{id}',       'users_delete',  true],
     ['GET',    '/people',           'people_list',   true],
     ['POST',   '/people',           'people_create', true],

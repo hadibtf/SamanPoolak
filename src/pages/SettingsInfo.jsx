@@ -21,6 +21,12 @@ const SettingsInfo = () => {
 
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ firstName: '', lastName: '', username: '', password: '' });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [resettingUserId, setResettingUserId] = useState(null);
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
@@ -65,6 +71,7 @@ const SettingsInfo = () => {
         displayName,
       });
       setForm({ firstName: '', lastName: '', username: '', password: '' });
+      setShowCreatePassword(false);
       await loadUsers();
       showToast('کاربر اضافه شد.');
     } catch (err) {
@@ -79,10 +86,47 @@ const SettingsInfo = () => {
     }
   };
 
+  const beginPasswordReset = (id) => {
+    setResettingUserId(id);
+    setNewUserPassword('');
+    setShowNewUserPassword(false);
+    setResetPasswordError('');
+  };
+
+  const cancelPasswordReset = () => {
+    setResettingUserId(null);
+    setNewUserPassword('');
+    setShowNewUserPassword(false);
+    setResetPasswordError('');
+  };
+
+  const handleResetUserPassword = async (event, targetUser) => {
+    event.preventDefault();
+    setResetPasswordError('');
+    if (!newUserPassword) {
+      setResetPasswordError('رمز جدید را وارد کنید.');
+      return;
+    }
+    if (!window.confirm(`رمز عبور «${targetUser.displayName || targetUser.username}» تغییر کند؟ نشست‌های فعال او بسته می‌شوند.`)) return;
+
+    setSavingPassword(true);
+    try {
+      await usersApi.resetPassword(targetUser.id, newUserPassword);
+      cancelPasswordReset();
+      showToast('رمز جدید ثبت شد؛ کاربر باید دوباره وارد شود.');
+    } catch (err) {
+      console.error('Failed to reset user password:', err);
+      setResetPasswordError(err instanceof ApiError ? err.message : 'خطا در ثبت رمز جدید.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   const handleDeleteUser = async (u) => {
     if (!window.confirm(`حذف کاربر «${u.displayName || u.username}»؟`)) return;
     try {
       await usersApi.remove(u.id);
+      if (resettingUserId === u.id) cancelPasswordReset();
       await loadUsers();
       showToast('کاربر حذف شد.');
     } catch (err) {
@@ -350,7 +394,12 @@ const SettingsInfo = () => {
               </div>
               <div className="form-group">
                 <label>رمز عبور</label>
-                <input name="password" type="text" value={form.password} onChange={handleField} placeholder="رمز عبور" autoComplete="new-password" />
+                <div className="user-password-input">
+                  <input name="password" type={showCreatePassword ? 'text' : 'password'} value={form.password} onChange={handleField} placeholder="رمز عبور" autoComplete="new-password" />
+                  <button type="button" className="user-password-visibility" aria-label={showCreatePassword ? 'مخفی کردن رمز' : 'نمایش رمز'} title={showCreatePassword ? 'مخفی کردن رمز' : 'نمایش رمز'} onClick={() => setShowCreatePassword((visible) => !visible)}>
+                    <i className={`fa-solid ${showCreatePassword ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true" />
+                  </button>
+                </div>
               </div>
             </div>
             {error && <div className="inline-error">{error}</div>}
@@ -361,17 +410,54 @@ const SettingsInfo = () => {
 
           <div className="users-list">
             {users.map((u) => (
-              <div key={u.id} className="user-row">
-                <div className="user-row-info">
-                  <strong>{u.displayName || u.username}</strong>
-                  <span className="muted">
-                    {u.username}{u.role === 'admin' ? ' · مدیر' : ''}
-                  </span>
+              <div key={u.id} className="user-entry">
+                <div className="user-row">
+                  <div className="user-row-info">
+                    <strong>{u.displayName || u.username}</strong>
+                    <span className="muted">
+                      {u.username}{u.role === 'admin' ? ' · مدیر' : ''}
+                    </span>
+                  </div>
+                  {u.id !== user?.id && (
+                    <div className="user-row-actions">
+                      <button
+                        type="button"
+                        className="action-btn"
+                        title={resettingUserId === u.id ? 'بستن تنظیم رمز' : 'تنظیم رمز جدید'}
+                        aria-label={resettingUserId === u.id ? 'بستن تنظیم رمز' : `تنظیم رمز جدید برای ${u.displayName || u.username}`}
+                        disabled={savingPassword}
+                        onClick={() => resettingUserId === u.id ? cancelPasswordReset() : beginPasswordReset(u.id)}
+                      ><i className={`fa-solid ${resettingUserId === u.id ? 'fa-xmark' : 'fa-key'}`} aria-hidden="true" /></button>
+                      <button type="button" className="action-btn delete" title="حذف" onClick={() => handleDeleteUser(u)}>
+                        <i className="fa-solid fa-trash" aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {u.id !== user?.id && (
-                  <button className="action-btn delete" title="حذف" onClick={() => handleDeleteUser(u)}>
-                    <i className="fa-solid fa-trash"></i>
-                  </button>
+                {resettingUserId === u.id && (
+                  <form className="user-password-reset-form" onSubmit={(event) => handleResetUserPassword(event, u)}>
+                    <p className="user-password-reset-hint">رمز فعلی قابل مشاهده نیست؛ برای این کاربر رمز جدید تعیین کنید.</p>
+                    <label htmlFor={`new-password-${u.id}`}>رمز جدید</label>
+                    <div className="user-password-input">
+                      <input
+                        id={`new-password-${u.id}`}
+                        type={showNewUserPassword ? 'text' : 'password'}
+                        value={newUserPassword}
+                        onChange={(event) => setNewUserPassword(event.target.value)}
+                        autoComplete="new-password"
+                        required
+                        disabled={savingPassword}
+                      />
+                      <button type="button" className="user-password-visibility" aria-label={showNewUserPassword ? 'مخفی کردن رمز جدید' : 'نمایش رمز جدید'} title={showNewUserPassword ? 'مخفی کردن رمز جدید' : 'نمایش رمز جدید'} onClick={() => setShowNewUserPassword((visible) => !visible)} disabled={savingPassword}>
+                        <i className={`fa-solid ${showNewUserPassword ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true" />
+                      </button>
+                    </div>
+                    {resetPasswordError && <div className="inline-error">{resetPasswordError}</div>}
+                    <div className="user-password-reset-actions">
+                      <button type="submit" className="primary-btn" disabled={savingPassword}>{savingPassword ? 'در حال ذخیره...' : 'ثبت رمز جدید'}</button>
+                      <button type="button" className="user-password-cancel" onClick={cancelPasswordReset} disabled={savingPassword}>انصراف</button>
+                    </div>
+                  </form>
                 )}
               </div>
             ))}

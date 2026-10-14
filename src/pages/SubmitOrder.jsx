@@ -9,7 +9,7 @@ import { db, jalaliDateKey, newUid } from '../db';
 import { ordersApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
 import { useSettings } from '../context/SettingsContext';
-import { MATERIAL_LABELS, PLATING_OPTIONS, ORDER_STATES } from '../constants';
+import { MATERIAL_LABELS, PLATING_OPTIONS, INITIAL_ORDER_STATE } from '../constants';
 import styles from './Management.module.css';
 
 const managementRootClass = styles.root;
@@ -44,7 +44,11 @@ const getCustomerDisplayName = (customer) => (
 const todayJalaliDate = () => new DateObject({ calendar: persian, locale: persian_fa });
 
 const COMMON_DIMENSION_PRESETS = [
+  { diameter: '32.5', thickness: '2.5', label: '32.5 × 2.5' },
+  { diameter: '32.5', thickness: '2', label: '32.5 × 2' },
+  { diameter: '32', thickness: '2.5', label: '32 × 2.5' },
   { diameter: '32', thickness: '2', label: '32 × 2' },
+  { diameter: '31.5', thickness: '2.5', label: '31.5 × 2.5' },
   { diameter: '31.5', thickness: '2', label: '31.5 × 2' },
   { diameter: '28.5', thickness: '2', label: '28.5 × 2' },
   { diameter: '28', thickness: '2', label: '28 × 2' },
@@ -418,7 +422,7 @@ const SubmitOrder = () => {
 
     const storedItems = items.map((it) => {
       const isNew = !it.state;
-      const initialState = ORDER_STATES[0].value;
+      const initialState = INITIAL_ORDER_STATE;
       const num = (v) => (v === '' || v == null ? null : Number(v));
       return {
         uid: it.uid || newUid(),

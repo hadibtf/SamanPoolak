@@ -14,7 +14,9 @@ import { productionDateKey } from '../productionStatistics';
 import { useAuth } from '../auth/AuthContext';
 import {
   ORDER_STATES,
+  ORDER_STATE_CHOICES,
   ORDER_STATE_LABELS,
+  INITIAL_ORDER_STATE,
   MATERIAL_LABELS,
   PLATING_LABELS,
   INVOICE_PLATING_LABELS,
@@ -33,6 +35,12 @@ const formatDimension = (value) => {
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString('en-US') : '—';
 };
+const formatDimensions = (item) => {
+  const diameter = Number(item?.diameter);
+  const thickness = Number(item?.thickness);
+  if (!Number.isFinite(diameter) || diameter <= 0 || !Number.isFinite(thickness) || thickness <= 0) return '—';
+  return `${formatDimension(item.diameter)} × ${formatDimension(item.thickness)}`;
+};
 
 const formatWeight = (grams) => {
   const g = Number(grams) || 0;
@@ -44,6 +52,20 @@ const formatWeight = (grams) => {
 const formatStamp = (ms) => {
   if (!ms) return '';
   return new DateObject({ date: ms, calendar: persian, locale: persian_fa }).format('YYYY/MM/DD - HH:mm');
+};
+
+const historyStateOptions = (entry) => {
+  const options = ORDER_STATE_CHOICES
+    .filter((choice) => choice.value)
+    .map(({ value }) => ({ value, label: ORDER_STATE_LABELS[value] || value }));
+  if (entry.event === 'PRODUCTION_RESUMED') {
+    options.unshift({ value: 'PRODUCTION_RESUMED', label: 'ادامه تولید' });
+  }
+  const currentValue = entry.event === 'PRODUCTION_RESUMED' ? 'PRODUCTION_RESUMED' : entry.state;
+  if (currentValue && !options.some((option) => option.value === currentValue)) {
+    options.unshift({ value: currentValue, label: ORDER_STATE_LABELS[currentValue] || currentValue });
+  }
+  return options;
 };
 
 const formatJalali = (dateKey) => {
@@ -69,18 +91,21 @@ const invoiceDescription = (item) => {
   const plating = INVOICE_PLATING_LABELS[item.platingColor] || '';
   if (plating) parts.push(plating);
   let desc = parts.join(' - ');
-  if (item.thickness != null || item.diameter != null) {
-    desc += ` ${formatDimension(item.diameter)} × ${formatDimension(item.thickness)} mm`;
-  }
+  const dimensions = formatDimensions(item);
+  if (dimensions !== '—') desc += ` ${dimensions} mm`;
   if (item.description) desc += ` - ${item.description}`;
   return desc;
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
 const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, canAssign, canViewProduction, hidden = false }) => {
+  const dimensions = formatDimensions(item);
   const [nextState, setNextState] = useState('');
   const [stageWeight, setStageWeight] = useState('');
   const [stateNote, setStateNote] = useState('');
+  const [editingHistoryIndex, setEditingHistoryIndex] = useState(null);
+  const [historyEditState, setHistoryEditState] = useState('');
+  const [mutatingHistory, setMutatingHistory] = useState(false);
   const [weightOf10Input, setWeightOf10Input] = useState('');
   const [savingWeightOf10, setSavingWeightOf10] = useState(false);
   const [editingWeightOf10, setEditingWeightOf10] = useState(false);
@@ -244,9 +269,18 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const productionStopped = Boolean(item.productionStopped) || item.state === 'PRODUCTION_COMPLETE';
   const productionCompleteStateIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
   const itemStateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
-  const workflowAdvancedPastProduction = itemStateIndex > productionCompleteStateIndex;
+  const workflowAdvancedPastProduction = item.state !== INITIAL_ORDER_STATE
+    && itemStateIndex > productionCompleteStateIndex;
   const remainingQuantity = productionSummary ? Math.max(0, orderQuantity - totalProducedQuantity) : null;
   const remainingWeight = remainingQuantity == null ? null : unitWeight * remainingQuantity;
+  const orderedProductionLogs = [...productionLogs].sort((a, b) => {
+    const dateOrder = String(a.productionDate || '').localeCompare(String(b.productionDate || ''));
+    if (dateOrder !== 0) return dateOrder;
+    const createdOrder = String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+    if (createdOrder !== 0) return createdOrder;
+    return Number(a.id) - Number(b.id);
+  });
+  const displayedProductionLogs = [...orderedProductionLogs].reverse();
 
   const confirmProductionStop = async () => {
     if (confirmingProductionStop) return;
@@ -310,12 +344,87 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     onToast('وضعیت ثبت شد.');
   };
 
+  const markDelivered = () => {
+    const stateHistory = [
+      ...(item.stateHistory || []),
+      { state: 'DELIVERED_WORKSHOP', date: Date.now(), totalWeight: null },
+    ];
+    onUpdate(index, { state: 'DELIVERED_WORKSHOP', stateHistory });
+    setNextState('');
+    setStageWeight('');
+    setStateNote('');
+    onToast('تحویل مشتری ثبت شد.');
+  };
+
   const undoLast = () => {
     const stateHistory = [...(item.stateHistory || [])];
     if (stateHistory.length <= 1) { onToast('حذف اولین وضعیت ممکن نیست.', 'error'); return; }
     stateHistory.pop();
     onUpdate(index, { state: stateHistory[stateHistory.length - 1].state, stateHistory });
+    setEditingHistoryIndex(null);
     onToast('آخرین وضعیت حذف شد.');
+  };
+
+  const beginHistoryEdit = (historyIndex, entry) => {
+    setEditingHistoryIndex(historyIndex);
+    setHistoryEditState(entry.event === 'PRODUCTION_RESUMED' ? 'PRODUCTION_RESUMED' : entry.state || INITIAL_ORDER_STATE);
+  };
+
+  const cancelHistoryEdit = () => {
+    setEditingHistoryIndex(null);
+    setHistoryEditState('');
+  };
+
+  const saveHistoryEdit = async (historyIndex) => {
+    if (mutatingHistory) return;
+    const stateHistory = [...(item.stateHistory || [])];
+    const entry = stateHistory[historyIndex];
+    if (!entry || !historyEditState) return;
+
+    const editedEntry = { ...entry };
+    if (historyEditState === 'PRODUCTION_RESUMED') {
+      if (entry.event !== 'PRODUCTION_RESUMED') return;
+    } else {
+      editedEntry.state = historyEditState;
+      delete editedEntry.event;
+    }
+    stateHistory[historyIndex] = editedEntry;
+    const currentState = stateHistory[stateHistory.length - 1]?.state || INITIAL_ORDER_STATE;
+
+    setMutatingHistory(true);
+    try {
+      const saved = await onUpdate(index, { state: currentState, stateHistory });
+      if (saved) {
+        cancelHistoryEdit();
+        onToast('وضعیت ویرایش شد.');
+      }
+    } finally {
+      setMutatingHistory(false);
+    }
+  };
+
+  const deleteHistoryEntry = async (historyIndex, entry) => {
+    if (mutatingHistory) return;
+    const label = entry.event === 'PRODUCTION_RESUMED'
+      ? 'ادامه تولید'
+      : (ORDER_STATE_LABELS[entry.state] || entry.state || 'وضعیت');
+    if (!window.confirm(`وضعیت «${label}» از تاریخچه حذف شود؟`)) return;
+
+    const stateHistory = [...(item.stateHistory || [])];
+    if (!stateHistory[historyIndex]) return;
+    stateHistory.splice(historyIndex, 1);
+    const currentState = stateHistory[stateHistory.length - 1]?.state || INITIAL_ORDER_STATE;
+
+    setMutatingHistory(true);
+    try {
+      const saved = await onUpdate(index, { state: currentState, stateHistory });
+      if (saved) {
+        cancelHistoryEdit();
+        onToast('وضعیت از تاریخچه حذف شد.');
+      }
+    } finally {
+      setMutatingHistory(false);
+    }
   };
 
   const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
@@ -399,7 +508,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           </div>
           <div className="order-weight-fact" data-kind="dimensions">
             <MetallicText as="small" tone="silver">ابعاد</MetallicText>
-            <MetallicText as="strong" tone="silver" dir="ltr">{formatDimension(item.diameter)} × {formatDimension(item.thickness)} mm</MetallicText>
+            <MetallicText as="strong" tone="silver" dir="ltr">{dimensions}{dimensions !== '—' ? ' mm' : ''}</MetallicText>
           </div>
         </div>
         {(markImg || item.markingName) && (
@@ -448,10 +557,10 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           </section>
         )}
 
-        {canAssign && productionSummary && (
+        {canViewProduction && productionSummary && (
         <div className="production-summary">
-          {productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
-          {productionSummary.logs.length > 0 && <div className="production-record-list">
+          {canAssign && productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
+          {displayedProductionLogs.length > 0 && <div className="production-record-list">
             <div className="production-record-table-wrap">
               <table className="production-record-table">
                 <thead>
@@ -464,7 +573,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                     <th scope="col">عملیات</th>
                   </tr>
                 </thead>
-                <tbody>{productionSummary.logs.map((log, index) => {
+                <tbody>{displayedProductionLogs.map((log, index) => {
                   const isEditing = editingManagerLogId === log.id;
                   return isEditing ? (
                     <tr key={log.id} className="production-record-edit-row">
@@ -498,7 +607,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                     </tr>
                   ) : (
                     <tr key={log.id}>
-                      <td>{fa(productionSummary.logs.length - index)}</td>
+                      <td>{fa(displayedProductionLogs.length - index)}</td>
                       <td>{log.employeeName || '—'}</td>
                       <td>{log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم` : '—'}</td>
                       <td>{fa(log.quantity)}</td>
@@ -550,47 +659,109 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       <section className="order-section order-state-section" aria-label="وضعیت">
       <h4 className="order-section-title">وضعیت</h4>
       <div className="state-form">
-        <select value={nextState} onChange={(e) => setNextState(e.target.value)}>
+        <select value={nextState} disabled={editingHistoryIndex !== null || mutatingHistory} onChange={(e) => setNextState(e.target.value)}>
           <option value="">انتخاب وضعیت جدید...</option>
-          {ORDER_STATES.map((s) => (
-            <option key={s.value} value={s.value}>{s.label}</option>
+          {ORDER_STATE_CHOICES.map((choice, choiceIndex) => choice.separator ? (
+            <option key={`separator-${choiceIndex}`} value={`__separator-${choiceIndex}`} disabled>
+              ────────────────
+            </option>
+          ) : (
+            <option key={choice.value} value={choice.value}>{ORDER_STATE_LABELS[choice.value]}</option>
           ))}
         </select>
         <input
           type="number" step="0.1" dir="ltr" className="ltr-num"
+          disabled={editingHistoryIndex !== null || mutatingHistory}
           value={stageWeight}
           onChange={(e) => setStageWeight(e.target.value)}
           placeholder="وزن کل (کیلوگرم) - اختیاری"
         />
         <input
           type="text"
+          disabled={editingHistoryIndex !== null || mutatingHistory}
           value={stateNote}
           onChange={(e) => setStateNote(e.target.value)}
           placeholder="یادداشت وضعیت - اختیاری"
         />
-        <button className="primary-btn compact" onClick={addState}>ثبت وضعیت</button>
+        <button className="primary-btn compact" disabled={editingHistoryIndex !== null || mutatingHistory} onClick={addState}>ثبت وضعیت</button>
       </div>
 
       <div className="timeline">
         <div className="timeline-head">
           <h4>تاریخچه وضعیت</h4>
           {history.length > 1 && (
-            <button className="link-btn" onClick={undoLast}>
+            <button className="link-btn" disabled={editingHistoryIndex !== null || mutatingHistory} onClick={undoLast}>
               <i className="fa-solid fa-rotate-left"></i> حذف آخرین
             </button>
           )}
         </div>
-        {history.map((h, i) => (
-          <div key={i} className={`timeline-item${i === 0 ? ' current' : ''}${h.event === 'PRODUCTION_RESUMED' ? ' resumed' : ''}`}>
-            <span className="timeline-dot" />
-            <div className="timeline-body">
-              <strong>{h.event === 'PRODUCTION_RESUMED' ? 'ادامه تولید' : (ORDER_STATE_LABELS[h.state] || h.state)}</strong>
-              {h.date && <span className="timeline-date">{formatStamp(h.date)}</span>}
-              {h.totalWeight != null && <span className="timeline-weight">وزن: {formatWeight(h.totalWeight)}</span>}
-              {h.note && <span className="timeline-note">یادداشت: {h.note}</span>}
+        {history.map((h, i) => {
+          const historyIndex = history.length - i - 1;
+          const isEditing = editingHistoryIndex === historyIndex;
+          const editValue = h.event === 'PRODUCTION_RESUMED' ? 'PRODUCTION_RESUMED' : h.state;
+          const options = historyStateOptions(h);
+          const label = h.event === 'PRODUCTION_RESUMED' ? 'ادامه تولید' : (ORDER_STATE_LABELS[h.state] || h.state);
+          return (
+            <div key={historyIndex} className={`timeline-item${i === 0 ? ' current' : ''}${h.event === 'PRODUCTION_RESUMED' ? ' resumed' : ''}`}>
+              <span className="timeline-dot" />
+              <div className="timeline-body">
+                {isEditing ? (
+                  <select
+                    className="timeline-state-editor"
+                    aria-label={`ویرایش وضعیت ${label}`}
+                    value={historyEditState || editValue}
+                    disabled={mutatingHistory}
+                    onChange={(event) => setHistoryEditState(event.target.value)}
+                  >
+                    {options.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <strong>{label}</strong>
+                )}
+                {h.date && <span className="timeline-date">{formatStamp(h.date)}</span>}
+                {h.totalWeight != null && <span className="timeline-weight">وزن: {formatWeight(h.totalWeight)}</span>}
+                {h.note && <span className="timeline-note">یادداشت: {h.note}</span>}
+              </div>
+              {isEditing ? (
+                <div className="timeline-entry-actions">
+                  <button type="button" className="timeline-save-action" disabled={mutatingHistory} onClick={() => saveHistoryEdit(historyIndex)}>
+                    {mutatingHistory ? 'در حال ذخیره...' : 'ذخیره'}
+                  </button>
+                  <button type="button" className="timeline-cancel-action" disabled={mutatingHistory} onClick={cancelHistoryEdit}>انصراف</button>
+                </div>
+              ) : (
+                <div className="timeline-entry-actions">
+                  <button
+                    type="button"
+                    className="link-btn timeline-entry-action"
+                    aria-label={`ویرایش ${label}`}
+                    title="ویرایش وضعیت"
+                    disabled={mutatingHistory || editingHistoryIndex !== null}
+                    onClick={() => beginHistoryEdit(historyIndex, h)}
+                  ><i className="fa-solid fa-pen-to-square" aria-hidden="true" /></button>
+                  <button
+                    type="button"
+                    className="link-btn danger timeline-entry-action"
+                    aria-label={`حذف ${label}`}
+                    title="حذف وضعیت"
+                    disabled={mutatingHistory || editingHistoryIndex !== null}
+                    onClick={() => deleteHistoryEntry(historyIndex, h)}
+                  ><i className="fa-solid fa-trash-can" aria-hidden="true" /></button>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+      <div className="state-delivery-quick-action">
+        <button
+          type="button"
+          className="primary-btn compact state-delivery-quick-btn"
+          disabled={editingHistoryIndex !== null || mutatingHistory}
+          onClick={markDelivered}
+        >تحویل شد</button>
       </div>
       </section>
     </div>
@@ -790,15 +961,14 @@ const OrderView = () => {
                 const produced = productionQuantities[item.uid];
                 const quantity = Number(item.quantity) || 0;
                 const remaining = produced == null ? null : Math.max(quantity - Number(produced), 0);
-                const diameter = formatDimension(item.diameter);
-                const thickness = formatDimension(item.thickness);
+                const dimensions = formatDimensions(item);
                 const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
                   ? item.platingColor
                   : 'NONE';
                 const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
                 const stateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
                 const isDone = Boolean(item.productionStopped)
-                  || stateIndex >= productionCompleteIndex
+                  || (item.state !== INITIAL_ORDER_STATE && stateIndex >= productionCompleteIndex)
                   || (produced != null && produced >= quantity);
                 return (
                   <tr
@@ -816,7 +986,7 @@ const OrderView = () => {
                       >
                         <span className="order-glance-product">
                           <span className="order-glance-product-name" title={item.productName || '—'}>{item.productName || '—'}</span>
-                          <bdi className="order-glance-dimensions" dir="ltr">{diameter}×{thickness}</bdi>
+                          <bdi className="order-glance-dimensions" dir="ltr">{dimensions}</bdi>
                           <MetallicText className="order-glance-plating" tone={platingTone}>
                             {PLATING_LABELS[platingColor]}
                           </MetallicText>

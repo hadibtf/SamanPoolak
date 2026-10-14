@@ -41,6 +41,44 @@ function users_create($params, $body, $user)
     json_response(['user' => public_user($stmt->fetch())], 201);
 }
 
+// PUT /users/{id}  { password }
+// Passwords are write-only; only a new password can be set, never retrieved.
+function users_update($params, $body, $user)
+{
+    require_admin($user);
+    require_fields($body, ['password']);
+
+    $id = (int) $params['id'];
+    if ($id <= 0 || $id === (int) $user['id']) {
+        json_error('تنظیم رمز فقط برای حساب کاربر دیگری مجاز است', 422);
+    }
+    $password = (string) $body['password'];
+    if ($password === '') {
+        json_error('رمز جدید را وارد کنید', 422);
+    }
+
+    $exists = db()->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+    $exists->execute([':id' => $id]);
+    if (!$exists->fetch()) {
+        json_error('کاربر یافت نشد', 404);
+    }
+
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $update = $pdo->prepare('UPDATE users SET password_hash = :passwordHash WHERE id = :id');
+        $update->execute([':passwordHash' => password_hash($password, PASSWORD_DEFAULT), ':id' => $id]);
+        $sessions = $pdo->prepare('DELETE FROM sessions WHERE user_id = :id');
+        $sessions->execute([':id' => $id]);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+
+    json_response(['ok' => true, 'id' => $id]);
+}
+
 // DELETE /users/{id}
 function users_delete($params, $body, $user)
 {

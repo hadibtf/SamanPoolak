@@ -109,6 +109,7 @@ export const usersApi = {
   list: () => api.get('/users'),
   /** @param {Partial<import('../types/domain').User> & {password?: string}} user */
   create: (user) => api.post('/users', user),
+  resetPassword: (id, password) => api.put(`/users/${encodeURIComponent(id)}`, { password }),
   remove: (id) => api.del(`/users/${encodeURIComponent(id)}`),
 };
 

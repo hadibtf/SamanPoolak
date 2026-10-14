@@ -1706,6 +1706,8 @@
 :local(.root) :global(.timeline-body) {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   gap: 2px;
 }
 
@@ -1713,6 +1715,52 @@
 :local(.root) :global(.timeline-date) { font-size: 12px; color: #8e8e93; }
 :local(.root) :global(.timeline-weight) { font-size: 12px; color: #007aff; }
 :local(.root) :global(.timeline-note) { font-size: 12px; color: #636366; white-space: pre-wrap; }
+:local(.root) :global(.timeline-entry-actions) {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+:local(.root) :global(.timeline-entry-action) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+}
+:local(.root) :global(.timeline-save-action),
+:local(.root) :global(.timeline-cancel-action) {
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+  padding: 6px 9px;
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+:local(.root) :global(.timeline-save-action) { color: #fff; background: #16834b; border-color: #16834b; }
+:local(.root) :global(.timeline-save-action):hover:not(:disabled) { background: #116b3d; }
+:local(.root) :global(.timeline-cancel-action) { color: var(--active-color); }
+:local(.root) :global(.timeline-save-action):disabled,
+:local(.root) :global(.timeline-cancel-action):disabled { opacity: .6; cursor: wait; }
+:local(.root) :global(.timeline-state-editor) {
+  width: 100%;
+  max-width: 260px;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--sp-border);
+  border-radius: 8px;
+  background: var(--sp-surface);
+  color: var(--sp-text);
+  font: inherit;
+  font-size: 13px;
+}
 
 /* Clickable order cards + actions */
 :local(.root) :global(.order-card):global(.clickable) { cursor: pointer; }
@@ -2303,6 +2351,17 @@
   -webkit-text-stroke: 0.65px currentColor;
   text-shadow: 0 0 0.45px currentColor;
 }
+:local(.root):global(.order-list) :global(.order-item-progress-produced),
+:local(.root):global(.order-list) :global(.order-item-progress-produced) :global(.order-list-numeric) {
+  font-weight: 300;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+:local(.root):global(.order-list) :global(.order-item-progress-target) :global(.order-item-ordered-count) {
+  font-weight: 900;
+  -webkit-text-stroke: 0.5px currentColor;
+  text-shadow: 0 0 0.35px currentColor;
+}
 :local(.root):global(.order-list) :global(.order-item.is-ready) {
   border-color: color-mix(in srgb, var(--sp-success) 22%, var(--sp-border));
   border-inline-start-color: var(--sp-success);
@@ -2708,6 +2767,19 @@
   background: var(--order-section-accent);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--order-section-accent) 22%, transparent);
 }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-delivery-quick-action) {
+  display: flex;
+  margin-top: 12px;
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-delivery-quick-action) :global(.state-delivery-quick-btn) {
+  width: 100%;
+  flex: 1 1 auto;
+  background: #16834b;
+  box-shadow: 0 4px 12px rgba(22, 131, 75, 0.24);
+}
+:local(.root):global(.order-view) :global(.order-state-section) :global(.state-delivery-quick-action) :global(.state-delivery-quick-btn):hover:not(:disabled) {
+  background: #116b3d;
+}
 :local(.root):global(.order-view) :global(.order-state-section) :global(.timeline) {
   padding: 12px;
   border: 1px solid color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
@@ -2815,6 +2887,8 @@
   border-radius: 7px;
   background: color-mix(in srgb, var(--sp-surface) 88%, var(--order-section-accent) 12%);
 }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-entry-action):global(.danger) { color: #c43e3e; }
+:local(.root):global(.order-view) :global(.order-state-section) :global(.timeline-entry-action):global(.danger):hover:not(:disabled) { background: rgba(196, 62, 62, .08); }
 
 /* The part name leads its details without an extra card around them. */
 :local(.root):global(.order-view) :global(.order-item-details) :global(.order-section-title) {

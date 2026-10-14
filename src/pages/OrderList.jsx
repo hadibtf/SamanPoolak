@@ -549,8 +549,12 @@ const OrderList = () => {
                         const parsedOrderedCount = Number(toEnglishDigits(item.quantity));
                         const itemOrderedCount = Number.isFinite(parsedOrderedCount) ? parsedOrderedCount : 0;
                         const hasOverproduction = itemProducedCount > itemOrderedCount;
-                        const diameter = formatItemNumber(item.diameter) || '0';
-                        const thickness = formatItemNumber(item.thickness) || '0';
+                        const diameter = formatItemNumber(item.diameter);
+                        const thickness = formatItemNumber(item.thickness);
+                        const hasDimensions = diameter !== ''
+                          && thickness !== ''
+                          && Number(diameter) !== 0
+                          && Number(thickness) !== 0;
                         const platingColor = item.platingColor === 'GOLD' || item.platingColor === 'SILVER'
                           ? item.platingColor
                           : 'NONE';
@@ -561,9 +565,15 @@ const OrderList = () => {
                               <span className="order-item-title">{renderTextWithEnglishDigits(item.productName || 'بدون نام')}</span>
                               <span className="order-item-specs">
                                 <bdi className="order-item-dimensions" dir="ltr">
-                                  <span className="order-list-numeric">{diameter}</span>
-                                  <span className="order-item-dimension-multiply">×</span>
-                                  <span className="order-list-numeric">{thickness}</span>
+                                  {hasDimensions ? (
+                                    <>
+                                      <span className="order-list-numeric">{diameter}</span>
+                                      <span className="order-item-dimension-multiply">×</span>
+                                      <span className="order-list-numeric">{thickness}</span>
+                                    </>
+                                  ) : (
+                                    <span className="order-list-numeric">—</span>
+                                  )}
                                 </bdi>
                                 <MetallicText tone={platingTone}>{PLATING_LABELS[platingColor]}</MetallicText>
                               </span>
