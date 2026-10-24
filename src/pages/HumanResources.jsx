@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { db, jalaliDateKey } from '../db';
 import JalaliDatePicker from "../components/JalaliDatePicker";
+import DateObject from 'react-date-object';
 import PersonFormSheet from '../components/PersonFormSheet';
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useSettings } from '../context/SettingsContext';
+import { useHolidays } from '../holidays';
+import { computeDay, groupByDay, toMinutes } from '../utils/attendance';
 import PayrollAttendance from './PayrollAttendance';
 import PayrollSettings from './PayrollSettings';
 import JobApplications from './JobApplications';
@@ -84,13 +87,13 @@ const HumanResources = () => {
   const [activeTab, setActiveTab] = useState('calc'); // 'calc' | 'attendance'
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [sanavat, setSanavat] = useState(0);
-  const [children, setChildren] = useState(0);
-  const [overtime, setOvertime] = useState(0);
-  const [hourlyDeduction, setHourlyDeduction] = useState(0);
-  const [unusedLeave, setUnusedLeave] = useState(0);
-  const [absentDays, setAbsentDays] = useState(0);
-  const [reward, setReward] = useState(0);
+  const [sanavat, setSanavat] = useState('');
+  const [children, setChildren] = useState('');
+  const [overtime, setOvertime] = useState('');
+  const [hourlyDeduction, setHourlyDeduction] = useState('');
+  const [unusedLeave, setUnusedLeave] = useState('');
+  const [absentDays, setAbsentDays] = useState('');
+  const [reward, setReward] = useState('');
   const [married, setMarried] = useState(false);
   const [noInsurance, setNoInsurance] = useState(false);
   const { isToman, currencyLabel } = useSettings(); // app-wide currency
@@ -98,6 +101,20 @@ const HumanResources = () => {
   const [results, setResults] = useState(null);
   const [daysInfo, setDaysInfo] = useState({ text: "", days: 0 });
   const [copied, setCopied] = useState(false);
+
+  const handleSelectPreviousMonth = () => {
+    const currentDate = new DateObject({ calendar: persian, locale: persian_fa });
+    let year = currentDate.year;
+    let month = currentDate.month.number - 1;
+
+    if (month < 1) {
+      month = 12;
+      year -= 1;
+    }
+
+    setStartDate(new DateObject({ year, month, day: 1, calendar: persian, locale: persian_fa }));
+    setEndDate(new DateObject({ year, month, day: getDaysInMonth(year, month), calendar: persian, locale: persian_fa }));
+  };
 
   const slipRef = useRef(null);
   // True once the user has calculated; lets inputs/currency changes re-run the
@@ -110,6 +127,9 @@ const HumanResources = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEmployeeSheetOpen, setIsEmployeeSheetOpen] = useState(false);
   const [toast, setToast] = useState(null);
+  const { isHoliday, version: holidayVersion } = useHolidays();
+  const breakMin = (Number(s.breakfastMin) || 0) + (Number(s.lunchMin) || 0);
+  const shiftWindowMin = Math.max(0, (toMinutes(s.shiftEnd) ?? 0) - (toMinutes(s.shiftStart) ?? 0));
 
   const matchedEmployees = useLiveQuery(
     () => {
@@ -127,15 +147,54 @@ const HumanResources = () => {
     [searchFullName]
   );
 
+  const attendanceFromKey = startDate ? jalaliDateKey(startDate) : '';
+  const attendanceToKey = endDate ? jalaliDateKey(endDate) : '';
+  const attendanceScans = useLiveQuery(
+    () => {
+      const cardNo = selectedEmployee?.cardNo;
+      if (!cardNo || !attendanceFromKey || !attendanceToKey || attendanceFromKey > attendanceToKey) return [];
+      return db.attendance
+        .where('cardNo').equals(String(cardNo))
+        .filter((scan) => !scan.deletedAt && scan.dateKey >= attendanceFromKey && scan.dateKey <= attendanceToKey)
+        .toArray();
+    },
+    [selectedEmployee?.cardNo, attendanceFromKey, attendanceToKey]
+  );
+
+  const attendanceAdjustments = useMemo(() => {
+    let overtimeMinutes = 0;
+    let deductionMinutes = 0;
+    let completeDays = 0;
+
+    for (const day of groupByDay(attendanceScans || [])) {
+      const summary = computeDay(day.scans, {
+        doubleScanMinutes: 10,
+        breakMin,
+        shiftWindowMin,
+        isHoliday: isHoliday(day.dateKey),
+      });
+      if (summary.balanceMin == null) continue;
+      completeDays += 1;
+      if (summary.balanceMin > 0) overtimeMinutes += summary.balanceMin;
+      else if (summary.balanceMin < 0) deductionMinutes += Math.abs(summary.balanceMin);
+    }
+
+    return { overtimeMinutes, deductionMinutes, completeDays };
+  }, [attendanceScans, breakMin, shiftWindowMin, isHoliday, holidayVersion]);
+
   const handleSelectEmployee = (emp) => {
     setSelectedEmployee(emp);
     setSearchFullName(`${emp.firstName} ${emp.lastName}`);
     setShowDropdown(false);
+    setOvertime('');
+    setHourlyDeduction('');
   };
 
   const handleClearSelection = () => {
     setSelectedEmployee(null);
     setSearchFullName('');
+    setOvertime('');
+    setHourlyDeduction('');
   };
 
   const showToast = (message, type = 'success') => {
@@ -228,6 +287,20 @@ const HumanResources = () => {
     });
   }, [startDate, endDate, sanavat, children, overtime, hourlyDeduction, unusedLeave, absentDays, reward, married, noInsurance, isToman, s]);
 
+  useEffect(() => {
+    if (!selectedEmployee || !startDate || !endDate || attendanceScans === undefined) return;
+
+    if (!selectedEmployee.cardNo || attendanceAdjustments.completeDays === 0) {
+      setOvertime('');
+      setHourlyDeduction('');
+      return;
+    }
+
+    const asHours = (minutes) => minutes === 0 ? '0' : String(Number((minutes / 60).toFixed(2)));
+    setOvertime(asHours(attendanceAdjustments.overtimeMinutes));
+    setHourlyDeduction(asHours(attendanceAdjustments.deductionMinutes));
+  }, [selectedEmployee, startDate, endDate, attendanceScans, attendanceAdjustments]);
+
   // Re-run the calc when inputs or the currency change — but only after the
   // first manual calculation, and WITHOUT depending on `results` (the previous
   // version did, so handleCalculate's own setResults re-triggered the effect in
@@ -298,7 +371,7 @@ const HumanResources = () => {
   };
 
   return (
-    <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''}`}>
+    <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''} ${activeTab === 'calc' ? 'payroll-container-calc' : ''}`}>
       <div className="payroll-tabs">
         <div className="segmented-control">
           <button
@@ -338,7 +411,7 @@ const HumanResources = () => {
       {activeTab === 'calc' && (
       <>
       <div className="card">
-        <h1>محاسبه‌گر حقوق و بیمه ۱۴۰۵</h1>
+        <h1>حقوق کارکنان</h1>
 
         <div className="search-section">
           {selectedEmployee ? (
@@ -348,24 +421,21 @@ const HumanResources = () => {
             </div>
           ) : (
             <>
-              <div className="form-group" style={{ maxWidth: '100%', margin: 0 }}>
-                <label>جستجوی نام و نام خانوادگی</label>
-                <div className={styles.employeeSearchRow}>
+              <div className={`form-group ${styles.employeeSearchGroup}`}>
+                <div className={styles.employeeControls}>
+                <div className={`${styles.employeeSearchRow} ${styles.fieldShell} ${styles.employeeField}`}>
+                  <span className={`${styles.fieldIcon} ${styles.neutralIcon}`} aria-hidden="true"><i className="fa-regular fa-user" /></span>
                   <input
+                    id="payroll-employee-search"
                     value={searchFullName}
                     onChange={(e) => { setSearchFullName(e.target.value); setShowDropdown(true); }}
-                    placeholder="نام یا نام خانوادگی را وارد کنید..."
+                    placeholder="نام کارگر"
                     className={styles.searchInput}
                     type="search"
                     dir="rtl"
                   />
-                  <button
-                    type="button"
-                    className={`add-btn ${styles.employeeAddButton}`}
-                    onClick={() => setIsEmployeeSheetOpen(true)}
-                  >
-                    افزودن کارمند جدید +
-                  </button>
+                </div>
+                <button type="button" className={styles.employeeAddButton} aria-label="افزودن کارمند جدید" title="افزودن کارمند جدید" onClick={() => setIsEmployeeSheetOpen(true)}>+</button>
                 </div>
               </div>
 
@@ -384,28 +454,18 @@ const HumanResources = () => {
 
         <div className="grid-form">
           <div className="form-group span-2">
-            <label>بازه زمانی کارکرد</label>
             <div className="date-picker-wrapper">
-              <JalaliDatePicker
-                value={startDate}
-                onChange={setStartDate}
-                calendar={persian}
-                locale={persian_fa}
-                weekDays={weekDays}
-                placeholder="از تاریخ"
-                calendarPosition="bottom-right"
-                containerClassName="full-width-date-picker"
-              />
-              <JalaliDatePicker
-                value={endDate}
-                onChange={setEndDate}
-                calendar={persian}
-                locale={persian_fa}
-                weekDays={weekDays}
-                placeholder="تا تاریخ"
-                calendarPosition="bottom-right"
-                containerClassName="full-width-date-picker"
-              />
+              <div className={`${styles.fieldShell} ${styles.dateField}`}>
+                <JalaliDatePicker value={startDate} onChange={setStartDate} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="از تاریخ" calendarPosition="bottom-right" containerClassName={`full-width-date-picker ${styles.datePicker}`} />
+                <button type="button" className={styles.previousMonthButton} onClick={handleSelectPreviousMonth} aria-label="انتخاب ماه قبل" title="ماه قبل">
+                  <i className="fa-solid fa-hand-pointer" aria-hidden="true" />
+                </button>
+                <span className={`${styles.fieldIcon} ${styles.blueIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar" /></span>
+              </div>
+              <div className={`${styles.fieldShell} ${styles.dateField}`}>
+                <JalaliDatePicker value={endDate} onChange={setEndDate} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تا تاریخ" calendarPosition="bottom-right" containerClassName={`full-width-date-picker ${styles.datePicker}`} />
+                <span className={`${styles.fieldIcon} ${styles.blueIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar" /></span>
+              </div>
             </div>
             {daysInfo.days > 0 && (
               <div className="days-msg">⏱️ کارکرد: {daysInfo.text}</div>
@@ -413,50 +473,43 @@ const HumanResources = () => {
           </div>
 
           <div className="form-group">
-            <label>مبلغ سنواتی روزانه ({currText})</label>
-            <input type="number" value={sanavat} onChange={(e) => setSanavat(e.target.value)} placeholder="۰" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={sanavat} onChange={(e) => setSanavat(e.target.value)} placeholder="سنواتی روزانه" aria-label={`مبلغ سنواتی روزانه (${currText})`} /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar-plus" /></span></div>
           </div>
 
           <div className="form-group">
-            <label>تعداد فرزند (زیر ۱۸ سال/محصل)</label>
-            <input type="number" value={children} onChange={(e) => setChildren(e.target.value)} min="0" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={children} onChange={(e) => setChildren(e.target.value)} min="0" placeholder="تعداد فرزند" aria-label="تعداد فرزند (زیر ۱۸ سال/محصل)" /><span className={`${styles.fieldIcon} ${styles.greenIcon}`} aria-hidden="true"><i className="fa-solid fa-users" /></span></div>
           </div>
 
           <div className="form-group">
-            <label>ساعت اضافه‌کاری</label>
-            <input type="number" value={overtime} onChange={(e) => setOvertime(e.target.value)} min="0" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={overtime} onChange={(e) => setOvertime(e.target.value)} min="0" step="0.01" placeholder="اضافه کار" aria-label="ساعت اضافه‌کاری" /><span className={`${styles.fieldIcon} ${styles.orangeIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">
-            <label>ساعت کسری کار</label>
-            <input type="number" value={hourlyDeduction} onChange={(e) => setHourlyDeduction(e.target.value)} min="0" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={hourlyDeduction} onChange={(e) => setHourlyDeduction(e.target.value)} min="0" step="0.01" placeholder="کسر کار" aria-label="ساعت کسری کار" /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">
-            <label>مرخصی استفاده نشده (روز)</label>
-            <input type="number" value={unusedLeave} onChange={(e) => setUnusedLeave(e.target.value)} min="0" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={unusedLeave} onChange={(e) => setUnusedLeave(e.target.value)} min="0" placeholder="مانده مرخصی" aria-label="مرخصی استفاده نشده (روز)" /><span className={`${styles.fieldIcon} ${styles.tealIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar" /></span></div>
           </div>
 
           <div className="form-group">
-            <label>روزهای غیبت</label>
-            <input type="number" value={absentDays} onChange={(e) => setAbsentDays(e.target.value)} min="0" />
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={absentDays} onChange={(e) => setAbsentDays(e.target.value)} min="0" placeholder="غیبت" aria-label="روزهای غیبت" /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-solid fa-circle-minus" /></span></div>
           </div>
 
-          <div className="form-group">
-            <label>پاداش ({currText})</label>
-            <input
+          <div className={`form-group ${styles.rewardGroup}`}>
+            <div className={`${styles.fieldShell} ${styles.inputField} ${styles.rewardField}`}><input
               type="number"
               value={reward}
               onChange={(e) => setReward(e.target.value)}
-              placeholder={isToman ? "مبلغ به تومان" : "مبلغ به ریال"}
+              placeholder="پاداش"
+              aria-label={`پاداش (${currText})`}
               min="0"
-            />
+            /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-solid fa-gift" /></span></div>
           </div>
-          <div className="form-group"/>
-
           <div className="form-group">
             <label className="checkbox-group">
               <input type="checkbox" checked={married} onChange={(e) => setMarried(e.target.checked)} />
+              <i className={`fa-regular fa-heart ${styles.marriedIcon}`} aria-hidden="true" />
               <span>متاهل هستم</span>
             </label>
           </div>
@@ -464,6 +517,7 @@ const HumanResources = () => {
           <div className="form-group">
             <label className="checkbox-group no-ins">
               <input type="checkbox" checked={noInsurance} onChange={(e) => setNoInsurance(e.target.checked)} />
+              <i className={`fa-solid fa-shield-halved ${styles.insuranceIcon}`} aria-hidden="true" />
               <span>بیمه نمی‌خوام</span>
             </label>
           </div>

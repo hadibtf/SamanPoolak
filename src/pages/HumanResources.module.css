@@ -3,6 +3,7 @@
     max-width: 750px;
     margin: 40px auto;
     padding: 0 15px;
+    box-sizing: border-box;
     line-height: 1.6;
 }
 
@@ -10,6 +11,8 @@
 :local(.root):global(.payroll-container-wide) {
     max-width: 1160px;
 }
+
+:local(.root):global(.payroll-container-calc) { max-width: 1220px; }
 
 :local(.root) :global(.payroll-tabs) {
     margin-bottom: 22px;
@@ -54,7 +57,7 @@
     -webkit-backdrop-filter: blur(30px) saturate(180%);
     border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.6));
     border-radius: 22px;
-    padding: 30px;
+    padding: clamp(18px, 3vw, 36px);
     box-shadow: 0 12px 40px -12px rgba(0,0,0,0.18);
 }
 
@@ -65,14 +68,23 @@
     text-align: center;
 }
 
+:local(.root) .employeeSearchGroup {
+    max-width: 100%;
+    margin: 0;
+}
+
 :local(.root) :global(.grid-form) {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 22px 28px;
     margin-bottom: 25px;
 }
 
 @media(max-width: 600px) {
+    :local(.root) :global(.card) { padding: 18px; }
+    :local(.root) :global(.grid-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
+    :local(.root) :global(.grid-form) :global(.span-2),
+    :local(.root) .rewardGroup { grid-column: span 2; }
     :local(.root) :global(.grid-form) { grid-template-columns: 1fr; }
 }
 
@@ -80,6 +92,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 :local(.root) :global(.span-2) {
@@ -114,32 +127,160 @@
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+:local(.root) .employeeControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
 :local(.root) .employeeSearchRow {
     display: flex;
-    align-items: stretch;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
 }
+
+:local(.root) .fieldShell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #dce4f0;
+    border-radius: 17px;
+    background: rgba(255,255,255,.78);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+:local(.root) .fieldShell:focus-within {
+    border-color: #8ab9ff;
+    box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+}
+
+:local(.root) .fieldShell input,
+:local(.root) .fieldShell :global(.rmdp-input) {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    height: 44px !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #1e293b;
+    font: inherit;
+    font-size: 16px !important;
+    font-weight: 600;
+    text-align: right;
+}
+
+:local(.root) .fieldShell input::placeholder,
+:local(.root) .fieldShell :global(.rmdp-input)::placeholder { color: #9aa5b8; opacity: 1; }
+
+:local(.root) .fieldIcon {
+    display: grid;
+    flex: 0 0 52px;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: inherit;
+    font-size: 21px;
+}
+
+:local(.root) .blueIcon { background: #edf4ff; color: #1877ed; }
+:local(.root) .greenIcon { background: #e9f7f3; color: #248c7b; }
+:local(.root) .purpleIcon { background: #f3edfc; color: #71529b; }
+:local(.root) .orangeIcon { background: #fff3e8; color: #c86713; }
+:local(.root) .pinkIcon { background: #fcecf3; color: #ad3974; }
+:local(.root) .tealIcon { background: #e8f7f5; color: #258780; }
+:local(.root) .neutralIcon { background: transparent; color: #53627c; }
+
+:local(.root) .employeeField { flex: 1 1 auto; }
 
 :local(.root) .employeeSearchRow .searchInput {
     flex: 1 1 auto;
     width: auto;
+    min-height: 46px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.86);
 }
 
 :local(.root) .employeeAddButton {
-    flex: 0 0 auto;
-    min-height: 44px;
-    white-space: nowrap;
+    flex: 0 0 68px;
+    width: 68px;
+    height: 68px;
+    padding: 0;
+    border: 1px solid #d7e5ff;
+    border-radius: 17px;
+    background: #edf4ff;
+    color: #1478f5;
+    box-shadow: none;
+    font: inherit;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+:local(.root) .employeeAddButton:hover {
+    color: #075da7;
+    background: #e4efff;
+    transform: scale(1.08);
+}
+
+:local(.root) .dateField { min-width: 0; }
+:local(.root) .dateField :global(.rmdp-container) { flex: 1 1 auto; min-width: 0; }
+:local(.root) .previousMonthButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #176fcd;
+    font: inherit;
+    font-size: 17px;
+    cursor: pointer;
+}
+:local(.root) .previousMonthButton:hover { background: #edf4ff; }
+:local(.root) .rewardGroup { grid-column: span 2; }
+:local(.root) .checkbox-group { min-height: 68px; gap: 12px; border-radius: 16px; }
+:local(.root) .checkbox-group input { order: 1; width: 21px; height: 21px; accent-color: #1677f5; }
+:local(.root) .checkbox-group span { order: 2; }
+:local(.root) .checkbox-group i { order: 3; font-size: 23px; }
+:local(.root) .marriedIcon { color: #1677f5; }
+:local(.root) .insuranceIcon { color: #dc2626; }
+
+@media(max-width: 600px) {
+    :local(.root) .rewardGroup { grid-column: auto; }
+    :local(.root) .fieldIcon { flex-basis: 48px; width: 48px; height: 48px; border-radius: 15px; font-size: 21px; }
+    :local(.root) .fieldShell input,
+    :local(.root) .fieldShell :global(.rmdp-input) { height: 44px !important; font-size: 15px !important; }
+    :local(.root) .employeeAddButton { flex-basis: 64px; width: 64px; height: 64px; font-size: 34px; }
+    :local(.root) .employeeControls { gap: 10px; }
+}
+
+:local(.root) .employeeAddButton:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.3);
+    outline-offset: 2px;
 }
 
 @media(max-width: 480px) {
-    :local(.root) .employeeSearchRow {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    :local(.root) .employeeAddButton {
-        align-self: flex-start;
-    }
+    :local(.root) .employeeSearchRow { gap: 8px; }
+    :local(.root) .employeeAddButton { flex-basis: 42px; width: 42px; height: 44px; }
+    :local(.root) .employeeSearchRow .searchInput { min-height: 44px; }
 }
 
 :local(.root) .searchInput:focus {
@@ -162,6 +303,18 @@
     transition: all 0.3s !important;
     background: #fcfcfc !important;
     height: auto !important;
+}
+
+/* Keep numeric payroll fields clean across Chromium and Firefox. */
+:local(.root) input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+:local(.root) input[type="number"]::-webkit-inner-spin-button,
+:local(.root) input[type="number"]::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
 }
 
 :local(.root) input:focus,:local(.root) :global(.rmdp-input):focus {
@@ -507,11 +660,35 @@
 /* Search Section */
 :local(.root) :global(.search-section) {
     position: relative;
-    margin-bottom: 30px;
-    background: #f8fafc;
-    padding: 20px;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
+    width: min(100%, 360px);
+    margin: 0 0 22px auto;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    border: 0;
+}
+
+:local(.root) .employeeSearchRow { gap: 6px; }
+
+:local(.root) .employeeSearchRow .searchInput {
+    min-height: 42px;
+    padding: 8px 12px;
+    border-radius: 11px;
+    font-size: 14px;
+}
+
+:local(.root) .employeeAddButton {
+    flex-basis: 34px;
+    width: 34px;
+    height: 42px;
+    font-size: 27px;
+}
+
+@media(max-width: 480px) {
+    :local(.root) :global(.search-section) { width: min(100%, 320px); margin-bottom: 18px; }
+    :local(.root) .employeeSearchRow { gap: 5px; }
+    :local(.root) .employeeAddButton { flex-basis: 32px; width: 32px; height: 40px; }
+    :local(.root) .employeeSearchRow .searchInput { min-height: 40px; }
 }
 
 :local(.root) :global(.search-dropdown) {
@@ -577,6 +754,13 @@
 :local(.root) :global(.full-width-date-picker) :global(.rmdp-input) {
   width: 100% !important;
   box-sizing: border-box !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+:local(.root) :global(.full-width-date-picker) :global(.rmdp-input):not(:placeholder-shown) {
+  direction: ltr !important;
+  text-align: right !important;
 }
 
 
@@ -691,3 +875,100 @@
 
 :local(.root) :global(.toast):global(.success) { background: rgba(52, 199, 89, 0.95); }
 :local(.root) :global(.toast):global(.error) { background: rgba(255, 59, 48, 0.95); }
+
+/* Final payroll form layout overrides */
+:local(.root) h1 { font-size: clamp(26px, 2.5vw, 32px); margin-bottom: 26px; }
+:local(.root) :global(.search-section) { width: 100%; margin: 0 0 26px; }
+:local(.root) .employeeSearchGroup { width: 100%; }
+:local(.root) .employeeControls { flex-direction: row; }
+:local(.root) .employeeSearchRow { flex: 1 1 auto; gap: 10px; }
+:local(.root) .employeeSearchRow .searchInput {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 16px;
+}
+:local(.root) .employeeAddButton { flex-basis: 68px; width: 68px; height: 68px; font-size: 34px; }
+:local(.root) .employeeAddButton {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+:local(.root) .employeeAddButton:hover { background: transparent; }
+:local(.root) :global(.date-picker-wrapper) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    column-gap: 28px;
+    direction: rtl;
+}
+:local(.root) .dateField { min-width: 0; }
+:local(.root) .dateField :global(.rmdp-container) { flex: 1 1 auto; min-width: 0; }
+:local(.root) .fieldShell input[type="number"] { width: 100% !important; padding: 0 10px !important; }
+:local(.root) .fieldShell input[type="number"] {
+    min-height: 0 !important;
+    height: 44px !important;
+    padding: 0 10px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    font: inherit !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    text-align: right !important;
+}
+:local(.root) .fieldShell input[type="number"]:focus { border: 0 !important; box-shadow: none !important; }
+:local(.root) .fieldShell :global(.rmdp-input) {
+    min-height: 0 !important;
+    height: 44px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    font: inherit !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+:local(.root) .fieldShell :global(.rmdp-input):focus { border: 0 !important; box-shadow: none !important; }
+:local(.root) .fieldShell input[type="number"]::-webkit-inner-spin-button,
+:local(.root) .fieldShell input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+@media(max-width: 600px) {
+    :local(.root) { margin: 20px auto; padding: 0 10px; }
+    :local(.root) :global(.card) { padding: 16px; border-radius: 18px; }
+    :local(.root) :global(.grid-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 10px; }
+    :local(.root) :global(.grid-form) :global(.span-2),
+    :local(.root) .rewardGroup { grid-column: span 2; }
+    :local(.root) h1 { font-size: 24px; margin-bottom: 18px; }
+    :local(.root) :global(.search-section) { width: 100%; margin-bottom: 20px; }
+    :local(.root) .employeeControls { gap: 9px; }
+    :local(.root) .employeeSearchRow { gap: 8px; }
+    :local(.root) .employeeSearchRow .searchInput { min-height: 44px; font-size: 15px; }
+    :local(.root) .employeeAddButton { flex-basis: 46px; width: 46px; height: 46px; font-size: 27px; border-radius: 14px; }
+    :local(.root) :global(.date-picker-wrapper) { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; }
+    :local(.root) .previousMonthButton { flex-basis: 26px; width: 26px; min-width: 26px; height: 26px; min-height: 26px; font-size: 15px; }
+    :local(.root) .fieldShell { gap: 5px; padding: 4px; border-radius: 12px; }
+    :local(.root) .fieldIcon { flex-basis: 34px; width: 34px; height: 34px; border-radius: inherit; font-size: 16px; }
+    :local(.root) .fieldShell input,
+    :local(.root) .fieldShell :global(.rmdp-input) { height: 36px !important; font-size: 13px !important; }
+    :local(.root) .fieldShell input[type="number"] { height: 36px !important; font-size: 13px !important; }
+    :local(.root) .checkbox-group { min-height: 56px; padding: 8px; gap: 7px; border-radius: 13px; font-size: 12px; }
+    :local(.root) .checkbox-group input { width: 19px; height: 19px; }
+    :local(.root) .checkbox-group i { font-size: 19px; }
+}
+
+@media(max-width: 360px) {
+    :local(.root) :global(.grid-form) { grid-template-columns: minmax(0, 1fr); }
+    :local(.root) :global(.grid-form) :global(.span-2),
+    :local(.root) .rewardGroup { grid-column: auto; }
+    :local(.root) :global(.date-picker-wrapper) { grid-template-columns: minmax(0, 1fr); row-gap: 10px; }
+}

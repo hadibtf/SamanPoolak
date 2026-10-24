@@ -86,7 +86,8 @@
  * @property {number|string} id Manager-entered log IDs use a `manager-` prefix.
  * @property {number|null} taskId Manager-entered logs have no employee task.
  * @property {boolean} isManagerEntry
- * @property {UserId} employeeUserId
+ * @property {UserId|null} employeeUserId Manager entries may belong to a profile without a login.
+ * @property {PersonId|null} employeePersonId
  * @property {OrderId} orderId
  * @property {string} orderItemUid
  * @property {PieceCount} quantity
@@ -115,7 +116,8 @@
  * @property {string} submissionKey
  *
  * @typedef {Object} ManagerProductionLogRequest
- * @property {UserId} employeeUserId
+ * @property {PersonId} [employeePersonId] Preferred identity for linked employee profiles.
+ * @property {UserId} [employeeUserId] Used for legacy employee logins without a People profile.
  * @property {Kilograms} weightKg
  * @property {JalaliDateKey} productionDate
  * @property {string} submissionKey

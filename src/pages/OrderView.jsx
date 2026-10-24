@@ -74,6 +74,9 @@ const formatJalali = (dateKey) => {
 };
 
 const currentJalaliDateKey = () => productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
+const managerEmployeeIdentity = (employee) => employee?.personId
+  ? { employeePersonId: employee.personId }
+  : { employeeUserId: Number(employee?.userId) };
 const pickerDateFromKey = (dateKey) => /^\d{8}$/.test(dateKey) ? new DateObject({
   calendar: persian,
   locale: persian_fa,
@@ -117,13 +120,13 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const [summaryError, setSummaryError] = useState('');
   const [manualDate, setManualDate] = useState(currentJalaliDateKey);
   const [manualWeightKg, setManualWeightKg] = useState('');
-  const [manualEmployeeId, setManualEmployeeId] = useState('');
+  const [manualEmployeeKey, setManualEmployeeKey] = useState('');
   const [savingManualLog, setSavingManualLog] = useState(false);
   const [resumingProduction, setResumingProduction] = useState(false);
   const [editingManagerLogId, setEditingManagerLogId] = useState(null);
   const [managerLogEditDate, setManagerLogEditDate] = useState('');
   const [managerLogEditWeightKg, setManagerLogEditWeightKg] = useState('');
-  const [managerLogEditEmployeeId, setManagerLogEditEmployeeId] = useState('');
+  const [managerLogEditEmployeeKey, setManagerLogEditEmployeeKey] = useState('');
   const [mutatingManagerLogId, setMutatingManagerLogId] = useState(null);
   const [confirmingProductionStop, setConfirmingProductionStop] = useState(false);
   const manualPickerDate = useMemo(() => pickerDateFromKey(manualDate), [manualDate]);
@@ -181,14 +184,15 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const saveManualProduction = async (event) => {
     event.preventDefault();
     const weightKg = Number(manualWeightKg);
-    if (!manualEmployeeId || !manualDate || !Number.isFinite(weightKg) || weightKg <= 0 || savingManualLog) {
+    const employee = employees.find((candidate) => candidate.employeeKey === manualEmployeeKey);
+    if (!employee || !manualDate || !Number.isFinite(weightKg) || weightKg <= 0 || savingManualLog) {
       onToast('تاریخ، وزن تولید و کارمند را کامل کنید.', 'error');
       return;
     }
     setSavingManualLog(true);
     try {
       await productionApi.logManagerProduction(orderId, item.uid, {
-        employeeUserId: Number(manualEmployeeId),
+        ...managerEmployeeIdentity(employee),
         weightKg,
         productionDate: manualDate,
         submissionKey: submissionKey(),
@@ -205,27 +209,33 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     setEditingManagerLogId(log.id);
     setManagerLogEditDate(log.productionDate);
     setManagerLogEditWeightKg(String(Number(log.totalWeightGrams) / 1000));
-    setManagerLogEditEmployeeId(String(log.employeeUserId));
+    const employee = employees.find((candidate) => log.employeePersonId
+      ? candidate.personId === log.employeePersonId
+      : Number(candidate.userId) === Number(log.employeeUserId));
+    setManagerLogEditEmployeeKey(employee?.employeeKey || (log.employeePersonId
+      ? `person:${log.employeePersonId}`
+      : `user:${log.employeeUserId}`));
   };
 
   const cancelManagerLogEdit = () => {
     setEditingManagerLogId(null);
     setManagerLogEditDate('');
     setManagerLogEditWeightKg('');
-    setManagerLogEditEmployeeId('');
+    setManagerLogEditEmployeeKey('');
   };
 
   const saveManagerLogEdit = async (event, log) => {
     event.preventDefault();
     const weightKg = Number(managerLogEditWeightKg);
-    if (!managerLogEditDate || !managerLogEditEmployeeId || !Number.isFinite(weightKg) || weightKg <= 0) {
+    const employee = employees.find((candidate) => candidate.employeeKey === managerLogEditEmployeeKey);
+    if (!managerLogEditDate || !employee || !Number.isFinite(weightKg) || weightKg <= 0) {
       onToast('تاریخ، وزن و کارمند را کامل کنید.', 'error');
       return;
     }
     setMutatingManagerLogId(log.id);
     try {
       await productionApi.updateManagerProduction(orderId, item.uid, log.id, {
-        employeeUserId: Number(managerLogEditEmployeeId),
+        ...managerEmployeeIdentity(employee),
         weightKg,
         productionDate: managerLogEditDate,
       });
@@ -529,9 +539,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           <section className="manager-production-log-section" aria-label="ثبت دستی تولید توسط مدیر">
             <form className="manager-production-log-form" onSubmit={saveManualProduction}>
               <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={manualWeightKg} onChange={(event) => setManualWeightKg(event.target.value)} placeholder="وزن" required />
-              <select aria-label="انتخاب کارمند" value={manualEmployeeId} onChange={(event) => setManualEmployeeId(event.target.value)} required>
+              <select aria-label="انتخاب کارمند" value={manualEmployeeKey} onChange={(event) => setManualEmployeeKey(event.target.value)} required>
                 <option value="">انتخاب کارمند...</option>
-                {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+                {employees.map((employee) => <option key={employee.employeeKey} value={employee.employeeKey}>{employee.name}</option>)}
               </select>
               <JalaliDatePicker
                 aria-label="تاریخ تولید"
@@ -594,9 +604,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                             containerClassName="manager-production-date"
                           />
                           <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} placeholder="وزن" required />
-                          <select aria-label="انتخاب کارمند" value={managerLogEditEmployeeId} onChange={(event) => setManagerLogEditEmployeeId(event.target.value)} required>
+                          <select aria-label="انتخاب کارمند" value={managerLogEditEmployeeKey} onChange={(event) => setManagerLogEditEmployeeKey(event.target.value)} required>
                             <option value="">انتخاب کارمند...</option>
-                            {employees.map((employee) => <option key={employee.userId} value={employee.userId}>{employee.name}</option>)}
+                            {employees.map((employee) => <option key={employee.employeeKey} value={employee.employeeKey}>{employee.name}</option>)}
                           </select>
                           <div className="manager-production-log-edit-actions">
                             <button type="submit" className="primary-btn compact" disabled={mutatingManagerLogId === log.id}>{mutatingManagerLogId === log.id ? 'در حال ذخیره...' : 'ذخیره'}</button>

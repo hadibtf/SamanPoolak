@@ -49,6 +49,7 @@ const PayrollAttendance = () => {
   const [fFrom, setFFrom] = useState(null);
   const [fTo, setFTo] = useState(null);
   const [exitInputs, setExitInputs] = useState({}); // dateKey -> "HH:mm"
+  const [expandedDays, setExpandedDays] = useState({});
 
   const employees = useLiveQuery(
     () => db.people.where('category').equals('EMPLOYEE').toArray(),
@@ -142,11 +143,11 @@ const PayrollAttendance = () => {
   const openEmployee = (emp) => {
     const cardNo = cardByPerson[emp.id];
     if (!cardNo) {
-      showToast('برای این کارمند کد کارت ثبت نشده — در صفحه افراد وارد کنید.', 'error');
+      showToast('برای این کارمند کد ثبت نشده — در صفحه افراد وارد کنید.', 'error');
       return;
     }
     const name = `${emp.firstName || ''} ${emp.lastName || ''}`.trim()
-      || `کارت ${cardNo}`;
+      || `کد ${cardNo}`;
     setSelected({ cardNo, name });
     setExitInputs({});
     // Default range = current Jalali month to today.
@@ -249,7 +250,7 @@ const PayrollAttendance = () => {
               >
                 <span className="att-emp-name">{name}</span>
                 <span className="att-emp-card">
-                  {card ? `کارت ${card}` : 'بدون کد کارت'}
+                  {card ? <>کد: <strong>{String(card).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit])}</strong></> : 'بدون کد'}
                 </span>
               </button>
             );
@@ -264,78 +265,90 @@ const PayrollAttendance = () => {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content att-modal" onClick={(e) => e.stopPropagation()}>
             <div className="att-modal-head">
-              <h2>{selected.name}</h2>
-              <button className="att-close" onClick={closeModal}>بستن</button>
+              <div className="att-person-title">
+                <span className="att-person-icon"><i className="fa-solid fa-user" aria-hidden="true" /></span>
+                <h2>{selected.name}</h2>
+              </div>
+              <button className="att-close" onClick={closeModal}><i className="fa-solid fa-xmark" aria-hidden="true" /> بستن</button>
             </div>
 
             <div className="att-range">
               <div className="att-range-pickers">
-                <JalaliDatePicker
-                  value={fFrom}
-                  onChange={setFFrom}
-                  calendar={persian}
-                  locale={persian_fa}
-                  weekDays={weekDays}
-                  placeholder="از تاریخ"
-                  calendarPosition="bottom-right"
-                />
-                <JalaliDatePicker
-                  value={fTo}
-                  onChange={setFTo}
-                  calendar={persian}
-                  locale={persian_fa}
-                  weekDays={weekDays}
-                  placeholder="تا تاریخ"
-                  calendarPosition="bottom-right"
-                />
+                <div className="att-date-field">
+                  <label>از تاریخ</label>
+                  <div className="att-date-control">
+                    <JalaliDatePicker value={fFrom} onChange={setFFrom} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="از تاریخ" calendarPosition="bottom-right" />
+                    <i className="fa-regular fa-calendar" aria-hidden="true" />
+                  </div>
+                </div>
+                <div className="att-date-field">
+                  <label>تا تاریخ</label>
+                  <div className="att-date-control">
+                    <JalaliDatePicker value={fTo} onChange={setFTo} calendar={persian} locale={persian_fa} weekDays={weekDays} placeholder="تا تاریخ" calendarPosition="bottom-right" />
+                    <i className="fa-regular fa-calendar" aria-hidden="true" />
+                  </div>
+                </div>
               </div>
-              <div className="att-quick">
-                <button onClick={setThisMonth}>این ماه</button>
-                <button onClick={setPrevMonth}>ماه قبل</button>
+              <div className="att-range-presets">
+                <span className="att-preset-label">بازه زمانی</span>
+                <div className="att-quick">
+                  <button onClick={setThisMonth}>این ماه</button>
+                  <button onClick={setPrevMonth}>ماه قبل</button>
+                </div>
               </div>
             </div>
 
             <div className="att-summary">
-              <div className="att-sum-cell">
-                <span>کل کارکرد</span>
+              <div className="att-sum-cell att-sum-work">
+                <span className="att-sum-icon"><i className="fa-regular fa-clock" aria-hidden="true" /></span>
+                <span>کل ساعت کارکرد</span>
                 <strong>{formatDuration(totals.worked)}</strong>
                 <small>{toFa(totals.daysWorked)} روز</small>
               </div>
-              <div className="att-sum-cell">
+              <div className="att-sum-cell att-sum-overtime">
+                <span className="att-sum-icon"><i className="fa-solid fa-arrow-trend-up" aria-hidden="true" /></span>
                 <span>اضافه‌کاری</span>
                 <strong className="pos">{formatDuration(totals.overtime)}</strong>
               </div>
-              <div className="att-sum-cell">
+              <div className="att-sum-cell att-sum-deduction">
+                <span className="att-sum-icon"><i className="fa-solid fa-circle-minus" aria-hidden="true" /></span>
                 <span>کسری</span>
                 <strong className="neg">{formatDuration(totals.deduction)}</strong>
               </div>
               <div className="att-sum-cell att-sum-net">
+                <span className="att-sum-icon"><i className="fa-solid fa-wallet" aria-hidden="true" /></span>
                 <span>{totals.netMin >= 0 ? 'خالص اضافه‌کاری' : 'خالص کسری'}</span>
                 <strong className={totals.netMin >= 0 ? 'pos' : 'neg'}>
                   {formatMoney(Math.round(Math.abs(totals.netRial)))}
                 </strong>
               </div>
             </div>
-            <p className="att-hint">
-              شیفت {toFa(s.shiftStart)} تا {toFa(s.shiftEnd)} • تنفس روزانه {toFa(breakMin)} دقیقه
-              (از زمان کار کسر می‌شود) • قابل تغییر در تب «تنظیمات».
-            </p>
+            <div className="att-info-banner">
+              <i className="fa-solid fa-circle-info" aria-hidden="true" />
+              <p className="att-hint">
+                شیفت: {toFa(s.shiftStart)} تا {toFa(s.shiftEnd)} • تنفس روزانه {toFa(breakMin)} دقیقه از زمان کار کسر می‌شود • قابل تغییر در تب «تنظیمات».
+              </p>
+            </div>
 
             <div className="att-days">
+              <div className="att-days-title-row">
+                <h3 className="att-list-title"><i className="fa-regular fa-calendar" aria-hidden="true" /> لیست حضور و غیاب</h3>
+                <span className="att-days-count"><i className="fa-regular fa-calendar" aria-hidden="true" /> {toFa(days.length)} روز</span>
+              </div>
               {days.length > 0 && (
                 <div className="att-day-header">
-                  <span>روز</span>
+                  <span>روز و تاریخ</span>
                   <span>ورود / خروج</span>
-                  <span>کارکرد</span>
+                  <span>مدت کارکرد</span>
+                  <span>وضعیت</span>
+                  <span />
                 </div>
               )}
               {days.length === 0 && <p className="att-hint">رکوردی در این بازه یافت نشد.</p>}
               {days.map(({ dateKey, summary }) => {
                 const dupSecondIds = new Set(summary.flags.duplicates.map((d) => d.second.id));
-                // Chips only for genuinely messy days (3+ punches or a duplicate);
-                // a plain entry+manual-exit day stays as the single summary line.
-                const hasExtra = summary.scans.length > 2 || dupSecondIds.size > 0;
                 const flagged = summary.flags.missingExit || summary.flags.duplicates.length > 0;
+                const detailsOpen = expandedDays[dateKey] ?? false;
                 const firstScan = summary.scans[0];
                 const lastScan = summary.scans[summary.scans.length - 1];
                 const renderTime = (scan) => (scan ? (
@@ -360,17 +373,23 @@ const PayrollAttendance = () => {
                       </span>
                       <span className={`att-day-dur ${summary.flags.missingExit ? 'warn' : ''}`}>
                         {summary.workedMin != null ? (
-                          <>
-                            <span className="att-worked">{formatDuration(summary.workedMin)}</span>
-                            <span className={`att-bal ${summary.balanceMin >= 0 ? 'pos' : 'neg'}`}>
-                              {formatBalance(summary.balanceMin)}
-                            </span>
-                          </>
+                          <span className="att-worked">{formatDuration(summary.workedMin)}</span>
                         ) : 'بدون خروج'}
                       </span>
+                      <span className={`att-status ${summary.workedMin == null ? 'warn' : summary.balanceMin >= 0 ? 'pos' : 'neg'}`}>
+                        <i aria-hidden="true" />
+                        {summary.workedMin == null ? 'ناقص' : formatBalance(summary.balanceMin)}
+                      </span>
+                      <button
+                        type="button"
+                        className={`att-day-chevron ${detailsOpen ? 'expanded' : ''}`}
+                        aria-label={detailsOpen ? 'بستن جزئیات روز' : 'نمایش جزئیات روز'}
+                        aria-expanded={detailsOpen}
+                        onClick={() => setExpandedDays((prev) => ({ ...prev, [dateKey]: !detailsOpen }))}
+                      ><i className="fa-solid fa-chevron-down" aria-hidden="true" /></button>
                     </div>
 
-                    {hasExtra && (
+                    {detailsOpen && summary.scans.length > 0 && (
                       <div className="att-scans">
                         {summary.scans.map((s) => (
                           <span
@@ -390,7 +409,7 @@ const PayrollAttendance = () => {
                       </div>
                     )}
 
-                    {summary.flags.missingExit && (
+                    {detailsOpen && summary.flags.missingExit && (
                       <div className="att-flag warn">
                         <span>⚠️ خروج ثبت نشده</span>
                         <div className="att-exit-add">
@@ -404,7 +423,7 @@ const PayrollAttendance = () => {
                       </div>
                     )}
 
-                    {summary.flags.duplicates.map((d, i) => (
+                    {detailsOpen && summary.flags.duplicates.map((d, i) => (
                       <div key={i} className="att-flag info att-dup-row">
                         <span>↔️ ثبت نزدیک: {toFa(d.first.time)} / {toFa(d.second.time)} ({toFa(d.gap)} دقیقه)</span>
                         <button onClick={() => removeScan(d.second.id)}>ادغام</button>

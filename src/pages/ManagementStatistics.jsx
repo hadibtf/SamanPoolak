@@ -56,9 +56,11 @@ export default function ManagementStatistics() {
   const dailyEmployeeTotals = useMemo(() => {
     const totalsByEmployee = new Map();
     (details?.records || []).forEach((record) => {
-      const key = String(record.employeeUserId ?? `name:${record.employeeName || '—'}`);
+      const key = record.employeePersonId
+        ? `person:${record.employeePersonId}`
+        : String(record.employeeUserId ?? `name:${record.employeeName || '—'}`);
       if (!totalsByEmployee.has(key)) {
-        totalsByEmployee.set(key, { employeeUserId: key, employeeName: record.employeeName || '—', quantity: 0 });
+        totalsByEmployee.set(key, { employeeKey: key, employeeName: record.employeeName || '—', quantity: 0 });
       }
       totalsByEmployee.get(key).quantity += Number(record.quantity) || 0;
     });
@@ -176,7 +178,7 @@ export default function ManagementStatistics() {
             <strong>{fa(details.total)} <small>عدد</small></strong>
           </section>
           <section className="statistics-comparison glass-card">
-            {dailyEmployeeTotals.length ? dailyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}>
+            {dailyEmployeeTotals.length ? dailyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeeKey}>
               <span>{row.employeeName}</span>
               <div className="statistics-employee-meter"><span style={{ width: `${dailyMaxProduction ? row.quantity / dailyMaxProduction * 100 : 0}%` }} /></div>
               <strong>{fa(row.quantity)}</strong>
@@ -193,7 +195,7 @@ export default function ManagementStatistics() {
           <strong>{fa(stats.total)} <small>عدد</small></strong>
         </section>
         <section className="statistics-comparison glass-card">
-          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}>
+          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeePersonId ? `person:${row.employeePersonId}` : `user:${row.employeeUserId ?? row.employeeName}`}>
             <span>{row.employeeName}</span>
             <div className="statistics-employee-meter"><span style={{ width: `${monthlyMaxProduction ? row.quantity / monthlyMaxProduction * 100 : 0}%` }} /></div>
             <strong>{fa(row.quantity)}</strong>
@@ -214,7 +216,7 @@ export default function ManagementStatistics() {
           <strong>{fa(yearlyTotal)} <small>عدد</small></strong>
         </section>
         <section className="statistics-comparison glass-card">
-          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeeUserId}>
+          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeePersonId ? `person:${row.employeePersonId}` : `user:${row.employeeUserId ?? row.employeeName}`}>
             <span>{row.employeeName}</span>
             <div className="statistics-employee-meter"><span style={{ width: `${yearlyMaxProduction ? row.quantity / yearlyMaxProduction * 100 : 0}%` }} /></div>
             <strong>{fa(row.quantity)}</strong>
