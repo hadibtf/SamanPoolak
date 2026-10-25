@@ -6,13 +6,119 @@
 .root :global(.header-section) { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
 .root :global(.header-section h1) { font-size: 24px; font-weight: 700; margin: 0; color: #1c1c1e; }
 .root :global(.people-list) { display: flex; flex-direction: column; gap: 12px; }
-.root :global(.person-card) { background: var(--glass-surface, rgba(255,255,255,.72)); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--glass-border, rgba(255,255,255,.6)); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 28px -10px rgba(0,0,0,.14); }
-.root :global(.person-info) { min-width: 0; }
-.personHeading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; margin-bottom: 4px; }
-.personIdentifier { font-size: 13px; color: #8e8e93; overflow-wrap: anywhere; }
-.root :global(.person-info h3) { margin: 0; font-size: 16px; color: #1c1c1e; }
-.root :global(.person-info p) { margin: 0; font-size: 13px; color: #8e8e93; }
-.root :global(.person-actions) { display: flex; gap: 12px; }
+.root :global(.person-card) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(12px, 2vw, 24px);
+  min-height: 92px;
+  padding: 14px 18px;
+  direction: rtl;
+  border: 1px solid rgba(255, 255, 255, .82);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 12px 32px -22px rgba(32, 83, 150, .28), inset 0 1px 0 rgba(255, 255, 255, .86);
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.root :global(.person-card:hover) {
+  border-color: rgba(10, 132, 255, .18);
+  box-shadow: 0 14px 34px -22px rgba(32, 83, 150, .36), inset 0 1px 0 rgba(255, 255, 255, .92);
+  transform: translateY(-1px);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .root :global(.person-card) {
+    background: rgba(255, 255, 255, .76);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+}
+.root :global(.person-info) { flex: 1 1 auto; min-width: 0; }
+.personHeading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 5px; }
+.personIdentifier {
+  max-width: min(32vw, 240px);
+  padding: 4px 11px;
+  overflow: hidden;
+  color: #7896b8;
+  background: rgba(10, 132, 255, .08);
+  border: 1px solid rgba(10, 132, 255, .06);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+}
+.root :global(.person-info h3) { max-width: 100%; margin: 0; color: #17283e; font-size: 18px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.root :global(.person-info p) { margin: 0; color: #7d8795; font-size: 13px; line-height: 1.5; unicode-bidi: plaintext; }
+.personActions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  direction: rtl;
+  border: 1px solid rgba(10, 132, 255, .13);
+  border-radius: 19px;
+  background: rgba(239, 246, 255, .82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .88), 0 4px 14px -10px rgba(33, 105, 190, .36);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .personActions {
+    background: rgba(239, 246, 255, .64);
+    backdrop-filter: blur(16px) saturate(155%);
+    -webkit-backdrop-filter: blur(16px) saturate(155%);
+  }
+}
+.personAction {
+  display: grid;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  padding: 0;
+  color: #087cf0;
+  background: rgba(255, 255, 255, .76);
+  border: 1px solid rgba(255, 255, 255, .88);
+  border-radius: 14px;
+  box-shadow: 0 3px 9px -6px rgba(24, 75, 133, .38), inset 0 1px 0 rgba(255, 255, 255, .9);
+  cursor: pointer;
+  font-size: 18px;
+  transition: color .18s ease, background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.personAction:hover { background: #fff; box-shadow: 0 5px 13px -7px rgba(24, 75, 133, .42); transform: translateY(-1px); }
+.personAction:active { transform: scale(.96); }
+.personAction:focus-visible { outline: 3px solid rgba(10, 132, 255, .46); outline-offset: 2px; }
+.personActionDetails, .personActionEdit { color: #087cf0; }
+.personActionDelete { color: #ed4f52; background: rgba(255, 241, 241, .88); border-color: rgba(255, 226, 226, .9); }
+.personActionDelete:hover { color: #d9363e; background: #fff7f7; box-shadow: 0 5px 13px -7px rgba(190, 45, 55, .34); }
+[data-theme="dark"] .root :global(.person-card) {
+  background: rgba(32, 36, 45, .86);
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 12px 32px -22px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .07);
+}
+[data-theme="dark"] .root :global(.person-card:hover) { border-color: rgba(117, 186, 255, .25); }
+[data-theme="dark"] .root :global(.person-info h3) { color: #edf3fc; }
+[data-theme="dark"] .root :global(.person-info p) { color: #a7b2c0; }
+[data-theme="dark"] .personIdentifier { color: #9bb7d9; background: rgba(90, 157, 224, .15); border-color: rgba(130, 181, 234, .12); }
+[data-theme="dark"] .personActions { background: rgba(32, 58, 88, .62); border-color: rgba(117, 186, 255, .2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07); }
+[data-theme="dark"] .personAction { color: #8ec5ff; background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+[data-theme="dark"] .personAction:hover { background: rgba(255, 255, 255, .14); }
+[data-theme="dark"] .personActionDelete { color: #ff9296; background: rgba(166, 52, 58, .2); border-color: rgba(255, 140, 146, .12); }
+@media (max-width: 600px) {
+  .root :global(.person-card) { padding: 12px; gap: 12px; border-radius: 18px; }
+  .personAction { width: 44px; height: 44px; border-radius: 13px; }
+}
+@media (max-width: 440px) {
+  .root :global(.person-card) { flex-direction: column; align-items: stretch; }
+  .personActions { align-self: flex-end; }
+  .personIdentifier { max-width: 58vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .root :global(.person-card), .personAction { transition: none; }
+  .root :global(.person-card:hover), .personAction:hover, .personAction:active { transform: none; }
+}
 .root :global(.form-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 600px) { .root :global(.form-grid) { grid-template-columns: 1fr; } }
 .root :global(.form-group) { display: flex; flex-direction: column; gap: 6px; }

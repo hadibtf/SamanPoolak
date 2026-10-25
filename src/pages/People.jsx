@@ -92,30 +92,44 @@ const People = () => {
             <div className="person-info">
               <div className={styles.personHeading}>
                 {person.category === 'EMPLOYEE' && person.cardNo && (
-                  <span className={styles.personIdentifier}>{person.cardNo}</span>
+                  <span className={styles.personIdentifier} dir="auto" title={person.cardNo}>{person.cardNo}</span>
                 )}
                 {person.category === 'CUSTOMER' && person.companyName?.trim() && (
-                  <span className={styles.personIdentifier}>{person.companyName.trim()}</span>
+                  <span className={styles.personIdentifier} dir="auto" title={person.companyName.trim()}>{person.companyName.trim()}</span>
                 )}
-                <h3>{person.firstName} {person.lastName}</h3>
+                <h3 dir="auto">{person.firstName} {person.lastName}</h3>
               </div>
-              {person.phones?.[0] && <p>{person.phones[0]}</p>}
+              {person.phones?.[0] && <p dir="auto">{person.phones[0]}</p>}
             </div>
-            <div className="person-actions">
+            <div className={styles.personActions} role="group" aria-label={`عملیات ${person.firstName} ${person.lastName}`}>
               {person.category === 'CUSTOMER' && (
                 <button
-                  className="action-btn"
-                  title="مارک‌ها"
+                  type="button"
+                  className={`${styles.personAction} ${styles.personActionDetails}`}
+                  title="مدیریت نشان‌های مشتری"
+                  aria-label={`مدیریت نشان‌های مشتری ${person.firstName} ${person.lastName}`}
                   onClick={() => setMarkingsCustomer(person)}
                 >
-                  <i className="fa-solid fa-stamp"></i>
+                  <i className="fa-solid fa-user" aria-hidden="true"></i>
                 </button>
               )}
-              <button className="action-btn" onClick={() => handleOpenModal(person)}>
-                <i className="fa-solid fa-pen-to-square"></i>
+              <button
+                type="button"
+                className={`${styles.personAction} ${styles.personActionEdit}`}
+                title="ویرایش اطلاعات"
+                aria-label={`ویرایش ${person.firstName} ${person.lastName}`}
+                onClick={() => handleOpenModal(person)}
+              >
+                <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
               </button>
-              <button className="action-btn delete" onClick={() => handleDelete(person.id)}>
-                <i className="fa-solid fa-trash"></i>
+              <button
+                type="button"
+                className={`${styles.personAction} ${styles.personActionDelete}`}
+                title="حذف"
+                aria-label={`حذف ${person.firstName} ${person.lastName}`}
+                onClick={() => handleDelete(person.id)}
+              >
+                <i className="fa-solid fa-trash" aria-hidden="true"></i>
               </button>
             </div>
           </div>
