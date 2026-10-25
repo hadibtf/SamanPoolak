@@ -22,7 +22,7 @@ function AppShell() {
 
   return (
     <div className="app-shell">
-      <main className="app-container">
+      <main className="app-container management-content">
         <Routes>
           <Route path="/" element={<Navigate to="/payroll" replace />} />
           <Route path="/payroll" element={<HumanResources />} />

@@ -64,30 +64,8 @@
   font-size: 14px;
 }
 
-:local(.root) :global(.filter-tabs) {
-  display: flex;
-  background: rgba(118, 118, 128, 0.12);
-  border-radius: 12px;
-  padding: 4px;
-}
-
-:local(.root) :global(.filter-tabs) button {
-  border: none;
-  background: transparent;
-  color: #6b7280;
-  border-radius: 9px;
-  padding: 8px 12px;
-  font-family: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-:local(.root) :global(.filter-tabs) button:global(.active) {
-  background: #fff;
-  color: #007aff;
-  box-shadow: 0 5px 18px -12px rgba(0, 0, 0, 0.45);
-}
+:local(.filterTabs) { --tabs-width: 100%; overflow-x: auto; }
+:local(.filterTabs) > button { font-weight: 700; }
 
 :local(.root) :global(.inquiries-list) {
   display: flex;
@@ -192,7 +170,6 @@
   background: var(--glass-surface);
   border-color: var(--glass-border);
 }
-[data-theme="dark"] :local(.root) :global(.filter-tabs) button:global(.active) { background: rgba(255, 255, 255, 0.12); }
 [data-theme="dark"] :local(.root) :global(.inquiry-note) { background: rgba(255, 255, 255, 0.07); color: #d7d7dd; }
 
 @media (max-width: 640px) {
@@ -202,5 +179,4 @@
     align-items: stretch;
   }
   :local(.root) :global(.refresh-btn),:local(.root) :global(.status-btn) { width: 100%; }
-  :local(.root) :global(.filter-tabs) { overflow-x: auto; }
 }

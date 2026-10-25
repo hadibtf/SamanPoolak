@@ -16,6 +16,7 @@ import PayrollSettings from './PayrollSettings';
 import JobApplications from './JobApplications';
 import { usePayrollSettings } from '../payrollSettings';
 import styles from './HumanResources.module.css';
+import SegmentedTabs from '../components/SegmentedTabs';
 
 const formatNum = (num) => {
   return Math.round(num).toLocaleString('fa-IR');
@@ -373,36 +374,12 @@ const HumanResources = () => {
   return (
     <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''} ${activeTab === 'calc' ? 'payroll-container-calc' : ''}`}>
       <div className="payroll-tabs">
-        <div className="segmented-control">
-          <button
-            type="button"
-            className={`segment ${activeTab === 'calc' ? 'active' : ''}`}
-            onClick={() => setActiveTab('calc')}
-          >
-            حقوق
-          </button>
-          <button
-            type="button"
-            className={`segment ${activeTab === 'attendance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('attendance')}
-          >
-            حضور غیاب
-          </button>
-          <button
-            type="button"
-            className={`segment ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            تنظیمات
-          </button>
-          <button
-            type="button"
-            className={`segment ${activeTab === 'jobs' ? 'active' : ''}`}
-            onClick={() => setActiveTab('jobs')}
-          >
-            استخدام
-          </button>
-        </div>
+        <SegmentedTabs className={styles.payrollTabs} label="بخش‌های منابع انسانی" value={activeTab} onChange={setActiveTab} items={[
+          { value: 'calc', label: 'حقوق', icon: 'fa-solid fa-file-invoice' },
+          { value: 'attendance', label: 'حضور غیاب', icon: 'fa-solid fa-user' },
+          { value: 'settings', label: 'تنظیمات', icon: 'fa-solid fa-gear' },
+          { value: 'jobs', label: 'استخدام', icon: 'fa-solid fa-user-group' },
+        ]} />
       </div>
 
       {activeTab === 'attendance' && <PayrollAttendance />}

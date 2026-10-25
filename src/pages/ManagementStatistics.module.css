@@ -2,10 +2,8 @@
 :local(.panel) { min-width: 0; }
 :local(.root) > :local(.pageHeader) { display: block; width: 100%; margin: 0 0 12px; padding: 0; text-align: center; }
 :local(.root) > :local(.pageHeader) h1 { margin: 0; color: #1c1c1e; font-size: 25px; font-weight: 800; }
-:local(.viewTabs) { display: flex; justify-content: center; gap: 4px; width: max-content; max-width: 100%; padding: 4px; margin: 0 auto 18px; border-radius: 14px; background: rgba(118,118,128,.13); }
-:local(.viewTab) { min-width: 100px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 11px; background: transparent; color: #505866; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
-:local(.viewTab):focus-visible { outline: 2px solid #007aff; outline-offset: 2px; }
-:local(.viewTab.active) { background: #fff; color: #007aff; box-shadow: 0 2px 8px rgba(31,38,55,.1); }
+:local(.viewTabs) { --tabs-width: 320px; --tabs-margin: 0 auto 18px; }
+:local(.viewTabs) > button { font-weight: 700; }
 :local(.monthTotal) { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; padding: 20px; }
 :local(.root) :local(.monthTotal):global(.glass-card) { background: linear-gradient(105deg,rgba(255,59,48,.25) 0%,rgba(255,149,0,.24) 16.66%,rgba(255,214,10,.25) 33.33%,rgba(52,199,89,.22) 50%,rgba(0,122,255,.24) 66.66%,rgba(88,86,214,.24) 83.33%,rgba(175,82,222,.24) 100%); }
 :local(.monthTotal) h2 { margin: 0; color: #fff; font-size: 19px; text-shadow: 0 1px 2px rgba(0,0,0,.24); }
@@ -47,14 +45,10 @@
 @media (max-width: 560px) {
   :local(.root) > :local(.pageHeader) h1 { font-size: 22px; }
   :local(.root) :global(.statistics-controls-year-only) { grid-template-columns: 1fr; }
-  :local(.viewTabs) { width: min(100%, 340px); margin-bottom: 14px; }
-  :local(.viewTab) { min-width: 0; flex: 1; padding-inline: 12px; }
+  :local(.viewTabs) { --tabs-margin: 0 auto 14px; }
   :local(.monthTotal) { align-items: flex-start; flex-direction: column; gap: 10px; padding: 16px; }
 }
 [data-theme="dark"] :local(.root) > :local(.pageHeader) h1 { color: #f5f5f7; }
-[data-theme="dark"] :local(.viewTabs) { background: rgba(255,255,255,.08); }
-[data-theme="dark"] :local(.viewTab) { color: #bfc3ce; }
-[data-theme="dark"] :local(.viewTab.active) { background: rgba(255,255,255,.15); color: #79b8ff; }
 [data-theme="dark"] :local(.root) :local(.monthTotal):global(.glass-card) { background: linear-gradient(105deg,rgba(255,59,48,.18) 0%,rgba(255,149,0,.17) 16.66%,rgba(255,214,10,.18) 33.33%,rgba(52,199,89,.16) 50%,rgba(0,122,255,.18) 66.66%,rgba(88,86,214,.17) 83.33%,rgba(175,82,222,.17) 100%); }
 [data-theme="dark"] :local(.monthTotal) h2 { color: #f5f5f7; }
 [data-theme="dark"] :local(.monthTotal) p { color: #a5a8b3; }

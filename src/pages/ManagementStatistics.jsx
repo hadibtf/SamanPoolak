@@ -8,6 +8,7 @@ import { productionApi, ApiError } from '../api/client';
 import { currentProductionDate, currentProductionMonth, productionFa as fa, productionFaYear, productionMonthDays, PRODUCTION_CHART_YEARS, PRODUCTION_MONTHS } from '../productionStatistics';
 import employeeStatisticsStyles from './EmployeeStatistics.module.css';
 import styles from './ManagementStatistics.module.css';
+import SegmentedTabs from '../components/SegmentedTabs';
 
 const defaultProductionDay = (monthStats) => {
   const today = currentProductionDate();
@@ -157,11 +158,11 @@ export default function ManagementStatistics() {
 
   return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
     <header className={styles.pageHeader}><h1>آمار تولید</h1></header>
-    <div className={styles.viewTabs} role="tablist" aria-label="بازه آمار تولید" dir="rtl">
-      <button id="management-statistics-day-tab" type="button" role="tab" aria-selected={view === 'day'} aria-controls="management-statistics-panel" className={`${styles.viewTab} ${view === 'day' ? styles.active : ''}`} onClick={() => changeView('day')}>روز</button>
-      <button id="management-statistics-month-tab" type="button" role="tab" aria-selected={view === 'month'} aria-controls="management-statistics-panel" className={`${styles.viewTab} ${view === 'month' ? styles.active : ''}`} onClick={() => changeView('month')}>ماه</button>
-      <button id="management-statistics-year-tab" type="button" role="tab" aria-selected={view === 'year'} aria-controls="management-statistics-panel" className={`${styles.viewTab} ${view === 'year' ? styles.active : ''}`} onClick={() => changeView('year')}>سال</button>
-    </div>
+    <SegmentedTabs className={styles.viewTabs} label="بازه آمار تولید" value={view} onChange={changeView} items={[
+      { value: 'day', label: 'روز', icon: 'fa-solid fa-calendar-day', id: 'management-statistics-day-tab', controls: 'management-statistics-panel' },
+      { value: 'month', label: 'ماه', icon: 'fa-solid fa-calendar', id: 'management-statistics-month-tab', controls: 'management-statistics-panel' },
+      { value: 'year', label: 'سال', icon: 'fa-solid fa-calendar-days', id: 'management-statistics-year-tab', controls: 'management-statistics-panel' },
+    ]} />
 
     <div id="management-statistics-panel" className={styles.panel} role="tabpanel" aria-labelledby={`management-statistics-${view}-tab`}>
       {view === 'month' && <ProductionMonthControls year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} onView={() => loadMonth(false)} loading={loading} />}

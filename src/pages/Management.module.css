@@ -20,46 +20,9 @@
   letter-spacing: -0.4px;
 }
 
-/* iOS segmented control */
-:local(.root) :global(.segmented-control) {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 14px;
-  background: rgba(118, 118, 128, 0.12);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  max-width: 560px;
-  margin: 0 auto;
-}
-
-:local(.root) :global(.segmented-control) :global(.segment) {
-  flex: 1;
-  text-align: center;
-  padding: 9px 12px;
-  border: none;
-  background: transparent;
-  font-family: inherit;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #3a3a3c;
-  text-decoration: none;
-  transition: all 0.25s ease;
-  cursor: pointer;
-}
-
-/* Inline variant used inside forms (e.g. plating color) — full width */
-:local(.root) :global(.segmented-control):global(.inline) {
-  max-width: none;
-  margin: 0;
-}
-
-:local(.root) :global(.segmented-control) :global(.segment):global(.active) {
-  background: rgba(255, 255, 255, 0.95);
-  color: var(--active-color);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-}
+/* The order header scrolls horizontally when labels cannot fit. */
+:local(.mainTabs) { overflow-x: auto; }
+:local(.statusTabs) { --tabs-width: 430px; --tabs-margin: 14px auto 12px; }
 
 :local(.root):global(.submit-order) :global(.item-editor) :global(.plating-gold) {
   display: inline-flex;
@@ -72,16 +35,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 rgba(138, 99, 0, 0.16);
 }
 
-:local(.root):global(.orders-container) > :global(.orders-header) > :global(.segmented-control) {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(max-content, 1fr));
-  overflow-x: auto;
-}
-
-:local(.root):global(.orders-container) > :global(.orders-header) > :global(.segmented-control) > :global(.segment) {
-  white-space: nowrap;
-  word-break: keep-all;
-}
+:local(.mainTabs) > * { min-width: max-content; }
 :local(.root):global(.submit-order) :global(.item-editor) :global(.plating-gold):global(.active) {
   border-color: #a77800;
   background: linear-gradient(145deg, #ffe98a 0%, #facc15 52%, #dda900 100%);
@@ -172,39 +126,7 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
-:local(.root):global(.order-list) :global(.order-list-status-tabs) {
-  display: flex;
-  gap: 4px;
-  width: min(100%, 430px);
-  margin: 14px auto 12px;
-  padding: 4px;
-  border: 0;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--sp-primary) 10%, var(--sp-surface-muted));
-}
-:local(.root):global(.order-list) :global(.order-list-status-tabs) button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: 1 1 0;
-  min-width: 0;
-  min-height: 42px;
-  padding: 9px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--sp-text);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
-}
-:local(.root):global(.order-list) :global(.order-list-status-tabs button:not(.active):hover) { background: color-mix(in srgb, var(--sp-primary) 6%, var(--sp-surface)); }
-:local(.root):global(.order-list) :global(.order-list-status-tabs button.active) { background: var(--sp-surface); color: var(--sp-primary); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
-:local(.root):global(.order-list) :global(.order-list-status-tabs button:focus-visible) { outline: 2px solid var(--sp-focus); outline-offset: 2px; }
-:local(.root):global(.order-list) :global(.order-list-status-tabs) small { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding-inline: 5px; border-radius: 999px; background: var(--sp-surface-muted); color: inherit; font-size: 11px; line-height: 1; }
+:local(.statusTabs) > button { font-size: 13px; }
 
 @media (max-width: 640px) {
   :local(.root):global(.submit-order) :global(.form-grid),:local(.root):global(.order-list) :global(.filter-grid) {
@@ -2000,8 +1922,8 @@
 :local(.root):global(.order-view) :global(.order-glance-state-short) { display: none; }
 
 @media (max-width: 420px) {
-  :local(.root):global(.order-list) :global(.order-list-status-tabs) { width: 100%; margin-block: 10px; }
-  :local(.root):global(.order-list) :global(.order-list-status-tabs) button { gap: 6px; padding-inline: 7px; font-size: 12px; }
+  :local(.statusTabs) { --tabs-margin: 10px auto; }
+  :local(.statusTabs) > button { gap: 6px; padding-inline: 7px; font-size: 12px; }
 }
 :local(.root):global(.order-view) :global(.order-spec-ribbon) {
   position: relative;

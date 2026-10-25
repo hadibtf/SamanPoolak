@@ -9,6 +9,7 @@ import { ordersApi, productionApi, ApiError } from '../api/client';
 import { PLATING_LABELS } from '../constants';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
+import SegmentedTabs from '../components/SegmentedTabs';
 
 const READY_OR_LATER_ITEM_STATES = new Set([
   'READY',
@@ -474,24 +475,10 @@ const OrderList = () => {
 
       </div>
 
-      <div className="order-list-status-tabs" role="group" aria-label="فیلتر وضعیت سفارش">
-        <button
-          type="button"
-          className={statusTab === 'in-progress' ? 'active' : ''}
-          aria-pressed={statusTab === 'in-progress'}
-          onClick={() => setStatusTab('in-progress')}
-        >
-          <span>در حال انجام</span><small>{formatCountValue(inProgressOrders.length)}</small>
-        </button>
-        <button
-          type="button"
-          className={statusTab === 'completed' ? 'active' : ''}
-          aria-pressed={statusTab === 'completed'}
-          onClick={() => setStatusTab('completed')}
-        >
-          <span>تکمیل شده</span><small>{formatCountValue(completedOrders.length)}</small>
-        </button>
-      </div>
+      <SegmentedTabs className={styles.statusTabs} role="group" label="فیلتر وضعیت سفارش" value={statusTab} onChange={setStatusTab} items={[
+        { value: 'in-progress', label: 'در حال انجام', icon: 'fa-solid fa-clock', badge: formatCountValue(inProgressOrders.length) },
+        { value: 'completed', label: 'تکمیل شده', icon: 'fa-solid fa-circle-check', badge: formatCountValue(completedOrders.length) },
+      ]} />
 
       <div className="orders-grid">
         {visibleOrders.length === 0 ? (

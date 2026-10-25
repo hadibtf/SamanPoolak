@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import SegmentedTabs from '../components/SegmentedTabs';
 import styles from './Management.module.css';
 
 const Management = () => {
@@ -7,30 +8,12 @@ const Management = () => {
     <div className={`${styles.root} orders-container`}>
       <div className="orders-header">
         <h1>مدیریت</h1>
-        <div className="segmented-control">
-          <NavLink
-            to="/orders"
-            end
-            className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}
-          >
-            ثبت سفارش
-          </NavLink>
-          <NavLink
-            to="/orders/list"
-            className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}
-          >
-            سفارشات
-          </NavLink>
-          <NavLink
-            to="/orders/inquiries"
-            className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}
-          >
-            درخواست‌ها
-          </NavLink>
-          <NavLink to="/orders/issue-notes" className={({ isActive }) => `segment ${isActive ? 'active' : ''}`}>
-            برگه خروج
-          </NavLink>
-        </div>
+        <SegmentedTabs className={styles.mainTabs} role="navigation" label="بخش‌های مدیریت" items={[
+          { value: 'new', label: 'ثبت سفارش', icon: 'fa-solid fa-circle-plus', to: '/orders', end: true },
+          { value: 'orders', label: 'سفارشات', icon: 'fa-solid fa-box', to: '/orders/list' },
+          { value: 'inquiries', label: 'درخواست‌ها', icon: 'fa-solid fa-inbox', to: '/orders/inquiries' },
+          { value: 'issue-notes', label: 'برگه خروج', icon: 'fa-solid fa-file-export', to: '/orders/issue-notes' },
+        ]} />
       </div>
 
       <div className="orders-body">

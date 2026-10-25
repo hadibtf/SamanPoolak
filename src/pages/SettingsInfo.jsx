@@ -5,6 +5,7 @@ import { usersApi, adminApi, holidaysApi, ApiError } from '../api/client';
 import { loadedHolidayYears, holidayStatus } from '../holidays';
 import { requestSync } from '../syncBus';
 import People from './People';
+import SegmentedTabs from '../components/SegmentedTabs';
 import styles from './SettingsInfo.module.css';
 
 const toFaDigits = (val) => String(val ?? '').replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -228,10 +229,10 @@ const SettingsInfo = () => {
     <div className={`${styles.root} settings-page ${activeTab === 'people' ? 'settings-page-wide' : ''}`}>
       <h1>تنظیمات و اطلاعات</h1>
 
-      <div className="settings-tabs" role="tablist" aria-label="بخش‌های تنظیمات">
-        <button type="button" role="tab" aria-selected={activeTab === 'settings'} className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>عمومی</button>
-        <button type="button" role="tab" aria-selected={activeTab === 'people'} className={activeTab === 'people' ? 'active' : ''} onClick={() => setActiveTab('people')}>افراد</button>
-      </div>
+      <SegmentedTabs className={styles.settingsTabs} label="بخش‌های تنظیمات" value={activeTab} onChange={setActiveTab} items={[
+        { value: 'settings', label: 'عمومی', icon: 'fa-solid fa-gear' },
+        { value: 'people', label: 'افراد', icon: 'fa-solid fa-users' },
+      ]} />
 
       {activeTab === 'people' ? <People /> : <>
 

@@ -161,6 +161,14 @@ body::before {
     overflow-y: auto; /* Allow pages to scroll */
 }
 
+/* Let management content pass behind its floating glass nav while keeping the
+   last controls scrollable above it. */
+.management-content {
+    height: 100vh;
+    height: 100dvh;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+
 /* 1. Force global inheritance on all form controls */
 input, 
 button, 

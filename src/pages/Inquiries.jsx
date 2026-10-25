@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { inquiriesApi, ApiError } from '../api/client';
 import styles from './Inquiries.module.css';
+import SegmentedTabs from '../components/SegmentedTabs';
 
 const sourceLabel = {
   direct: 'ثبت مستقیم',
@@ -94,11 +95,11 @@ const Inquiries = () => {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="جستجو در نام، شماره، محصول یا توضیحات..."
         />
-        <div className="filter-tabs">
-          <button className={filter === 'open' ? 'active' : ''} onClick={() => setFilter('open')}>باز</button>
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>همه</button>
-          <button className={filter === 'done' ? 'active' : ''} onClick={() => setFilter('done')}>انجام‌شده</button>
-        </div>
+        <SegmentedTabs className={styles.filterTabs} role="group" label="فیلتر درخواست‌ها" value={filter} onChange={setFilter} items={[
+          { value: 'open', label: 'باز', icon: 'fa-solid fa-envelope-open' },
+          { value: 'all', label: 'همه', icon: 'fa-solid fa-list' },
+          { value: 'done', label: 'انجام‌شده', icon: 'fa-solid fa-check' },
+        ]} />
       </div>
 
       <div className="inquiries-list">

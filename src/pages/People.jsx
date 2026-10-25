@@ -4,13 +4,14 @@ import { db } from '../db';
 import { peopleApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
 import MarkingsManager from '../components/MarkingsManager';
+import SegmentedTabs from '../components/SegmentedTabs';
 import styles from './People.module.css';
 
 const PEOPLE_CATEGORY_TABS = [
-  { value: 'ALL', label: 'همه' },
-  { value: 'CUSTOMER', label: 'مشتری' },
-  { value: 'EMPLOYEE', label: 'کارمند' },
-  { value: 'SERVICE_PROVIDER', label: 'فروشنده' },
+  { value: 'ALL', label: 'همه', icon: 'fa-solid fa-users' },
+  { value: 'CUSTOMER', label: 'مشتری', icon: 'fa-solid fa-user-tie' },
+  { value: 'EMPLOYEE', label: 'کارمند', icon: 'fa-solid fa-user' },
+  { value: 'SERVICE_PROVIDER', label: 'فروشنده', icon: 'fa-solid fa-truck' },
 ];
 
 const People = () => {
@@ -71,20 +72,7 @@ const People = () => {
         </button>
       </div>
 
-      <div className="settings-tabs" role="tablist" aria-label="دسته‌بندی افراد">
-        {PEOPLE_CATEGORY_TABS.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={activeCategory === value}
-            className={activeCategory === value ? 'active' : ''}
-            onClick={() => setActiveCategory(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedTabs className={styles.categoryTabs} label="دسته‌بندی افراد" items={PEOPLE_CATEGORY_TABS} value={activeCategory} onChange={setActiveCategory} />
 
       <div className="people-list">
         {filteredPeople?.map(person => (
