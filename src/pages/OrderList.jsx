@@ -548,6 +548,7 @@ const OrderList = () => {
                         const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
                         return (
                           <li className={`order-item ${stageClass}`} key={item.uid || index}>
+                            <span className="order-item-symbol" aria-hidden="true"><i className="fa-solid fa-layer-group" /></span>
                             <div className="order-item-content">
                               <span className="order-item-title">{renderTextWithEnglishDigits(item.productName || 'بدون نام')}</span>
                               <span className="order-item-specs">
@@ -583,6 +584,7 @@ const OrderList = () => {
                                 <span>از</span>
                                 <bdi className="order-list-numeric order-item-ordered-count" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
                               </span>
+                              <i className="fa-solid fa-tag order-item-metric-icon" aria-hidden="true" />
                             </span>
                           </li>
                         );
