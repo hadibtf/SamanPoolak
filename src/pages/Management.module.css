@@ -3067,6 +3067,11 @@
 
 @media (max-width: 640px) {
   :local(.root):global(.submit-order) :global(.order-item-card) { padding: 14px; border-radius: 21px; }
+  :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-field) {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: none;
+  }
   :local(.root):global(.submit-order) :global(.item-editor-head) { flex-wrap: wrap; }
   :local(.root):global(.submit-order) :global(.dimension-presets-wrap) { flex-basis: 100%; }
   :local(.root):global(.submit-order) :global(.item-editor-head) > :global(.link-btn) { margin-inline-start: auto; }
