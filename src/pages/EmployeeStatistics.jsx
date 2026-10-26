@@ -40,7 +40,7 @@ export default function EmployeeStatistics() {
     {error && <div className="statistics-message error">{error}</div>}
     {!stats && !loading && !error && <div className="statistics-message"><i className="fa-solid fa-chart-column" /><p>سال و ماه را انتخاب کنید و آمار را نمایش دهید.</p></div>}
     {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}
-    {stats && <section className="statistics-chart-card glass-card"><div className="statistics-card-title"><div><h2>{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن جزئیات، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>}
+    {stats && <section className="statistics-chart-card glass-chart-card glass-card"><div className="statistics-card-title"><div><h2>{PRODUCTION_MONTHS[stats.month - 1]} {faYear(stats.year)}</h2><p>برای دیدن جزئیات، یک ستون را لمس کنید.</p></div><b>{fa(stats.total)} عدد</b></div><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>}
     <ProductionDayDetails date={selectedDate} details={details} loading={detailsLoading} error={detailsError} />
   </div>;
 }

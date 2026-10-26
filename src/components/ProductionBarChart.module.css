@@ -28,3 +28,70 @@
 .chart-y-label,.chart-x-label { color: #6b7280; font-size: 12px; font-weight: 600; }
 .chart-y-label { position: absolute; left: 0; top: 0; }
 .chart-x-label { text-align: center; margin-top: 7px; }
+
+/* Shared glass treatment for daily, monthly, and yearly production charts. */
+.glass-chart { padding-top: 38px; }
+.glass-chart .chart-y-label { top: 0; right: 4px; left: auto; color: #7283a4; font-size: 15px; font-weight: 800; }
+.glass-chart .chart-viewport { align-items: stretch; }
+.glass-chart .chart-scale { flex-basis: 68px; height: 324px; color: #8191b0; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.glass-chart .chart-scale span { left: 0; }
+.glass-chart .chart-scale span:first-child { top: 24px; transform: translateY(-50%); }
+.glass-chart .chart-scale span:last-child { top: 142px; }
+.glass-chart .chart-scroll { padding: 0 2px 8px; scrollbar-color: rgba(117, 145, 192, .32) transparent; }
+.glass-chart .chart-grid { min-width: calc(var(--day-count) * 58px); height: 324px; border-bottom-color: rgba(119, 146, 189, .22); }
+.glass-chart .chart-grid::after { position: absolute; right: 0; bottom: 65px; left: 0; height: 1px; background: rgba(119, 146, 189, .27); content: ''; pointer-events: none; }
+.glass-chart .chart-guide { border-top-color: rgba(116, 145, 194, .32); border-top-width: 1px; }
+.glass-chart .chart-guide-top { top: 24px; }
+.glass-chart .chart-guide-mid { top: 142px; }
+.glass-chart .chart-bars { grid-template-columns: repeat(var(--day-count), minmax(58px, 1fr)); }
+.glass-chart .chart-bar { min-width: 0; padding: 0 5px 65px; text-align: center; }
+.glass-chart .chart-bar-fill { right: 12px; bottom: 65px; left: 12px; min-height: 2px; border: 1px solid rgba(0, 113, 244, .35); border-bottom: 0; border-radius: 10px 10px 4px 4px; background: linear-gradient(90deg, rgba(255,255,255,.3), transparent 22%, transparent 78%, rgba(0,80,206,.12)), linear-gradient(180deg, #5ac0ff 0%, #299dfb 20%, #1688f4 72%, #1177e9 100%); box-shadow: inset 0 2px 2px rgba(255,255,255,.68), 0 3px 8px rgba(20, 121, 237, .18); transition: height .25s ease, background .2s ease, box-shadow .2s ease, filter .2s ease, transform .2s ease; }
+.glass-chart .chart-bar-fill::before { position: absolute; top: 1px; right: 15%; left: 15%; height: 3px; border-radius: 100%; background: rgba(255,255,255,.68); content: ''; filter: blur(1px); }
+.glass-chart .chart-bar:hover .chart-bar-fill,
+.glass-chart .chart-bar:focus-visible .chart-bar-fill,
+.glass-chart .chart-bar.selected .chart-bar-fill { border-color: rgba(232, 119, 0, .45); background: linear-gradient(90deg, rgba(255,255,255,.34), transparent 25%, transparent 78%, rgba(199,82,0,.12)), linear-gradient(180deg, #ffd05c 0%, #ffac20 24%, #ff9210 74%, #ff7d08 100%); box-shadow: inset 0 2px 2px rgba(255,255,255,.78), 0 5px 12px rgba(247, 140, 20, .25); filter: none; transform: none; }
+.glass-chart .chart-day,
+.glass-chart .chart-weekday { position: absolute; right: 0; left: 0; display: block; white-space: nowrap; line-height: 1.2; }
+.glass-chart .chart-day { bottom: 34px; color: #6d80a5; font-size: 15px; font-weight: 800; }
+.glass-chart .chart-weekday { bottom: 11px; color: #98a5bf; font-size: 10px; font-weight: 600; }
+.glass-chart .chart-friday { color: #d93e54; font-weight: 800; }
+.glass-chart .chart-tooltip { right: 50%; bottom: min(calc(100% - 40px), calc(65px + var(--bar-height) + 10px)); left: auto; transform: translateX(50%); padding: 7px 11px; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; background: rgba(29, 42, 63, .91); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 9px 23px rgba(28, 48, 77, .2), inset 0 1px rgba(255,255,255,.15); color: #fff; font-size: 12px; font-weight: 700; animation: daily-tip-in .16s ease-out both; }
+.glass-chart .chart-tooltip::after { position: absolute; top: 100%; right: calc(50% - 5px); border: 5px solid transparent; border-top-color: rgba(29, 42, 63, .91); content: ''; }
+.glass-chart .chart-bar:first-child .chart-tooltip,
+.glass-chart .chart-bar:nth-child(2) .chart-tooltip { right: 0; transform: none; }
+.glass-chart .chart-bar:nth-last-child(-n+2) .chart-tooltip { right: auto; left: 0; transform: none; }
+.glass-chart .chart-x-label { margin-top: 12px; color: #7283a4; font-size: 15px; font-weight: 800; }
+.glass-chart .month-chart-grid { min-width: calc(var(--month-count) * 78px); }
+.glass-chart .year-chart-grid { min-width: calc(var(--year-count) * 76px); }
+.glass-chart .month-chart-bars { grid-template-columns: repeat(var(--month-count), minmax(78px, 1fr)); }
+.glass-chart .year-chart-bars { grid-template-columns: repeat(var(--year-count), minmax(76px, 1fr)); }
+.glass-chart .chart-month-number { position: absolute; right: 0; bottom: 34px; left: 0; color: #6d80a5; font-size: 15px; font-weight: 800; line-height: 1.2; }
+.glass-chart .chart-month { bottom: 11px; color: #98a5bf; font-size: 11px; font-weight: 600; line-height: 1.2; }
+.glass-chart .year-chart-fill { right: 15px; left: 15px; }
+.glass-chart .year-chart-label { right: 0; bottom: 26px; left: 0; color: #6d80a5; font-size: 13px; font-weight: 800; line-height: 1.2; }
+@keyframes daily-tip-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 560px) {
+  .glass-chart { padding-top: 34px; }
+  .glass-chart .chart-scale { flex-basis: 60px; font-size: 11px; }
+  .glass-chart .chart-grid { min-width: calc(var(--day-count) * 62px); }
+  .glass-chart .chart-bars { grid-template-columns: repeat(var(--day-count), minmax(62px, 1fr)); }
+  .glass-chart .chart-bar-fill { right: 15px; left: 15px; }
+  .glass-chart .chart-weekday { font-size: 10px; }
+  .glass-chart .month-chart-grid { min-width: calc(var(--month-count) * 82px); }
+  .glass-chart .year-chart-grid { min-width: calc(var(--year-count) * 80px); }
+  .glass-chart .month-chart-bars { grid-template-columns: repeat(var(--month-count), minmax(82px, 1fr)); }
+  .glass-chart .year-chart-bars { grid-template-columns: repeat(var(--year-count), minmax(80px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-chart .chart-bar-fill { transition: none; }
+  .glass-chart .chart-tooltip { animation: none; }
+}
+[data-theme="dark"] .glass-chart .chart-y-label,
+[data-theme="dark"] .glass-chart .chart-x-label { color: #c1cce5; }
+[data-theme="dark"] .glass-chart .chart-scale,
+[data-theme="dark"] .glass-chart .chart-day { color: #a8b9dc; }
+[data-theme="dark"] .glass-chart .chart-weekday { color: #8f9fbe; }
+[data-theme="dark"] .glass-chart .chart-friday { color: #ff8492; }
+[data-theme="dark"] .glass-chart .chart-month-number,
+[data-theme="dark"] .glass-chart .year-chart-label { color: #a8b9dc; }
+[data-theme="dark"] .glass-chart .chart-month { color: #8f9fbe; }

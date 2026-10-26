@@ -11,7 +11,7 @@ export default function ProductionMonthChart({ months, selectedMonth, onSelect }
     selectedBarRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [months, selectedMonth]);
 
-  return <div className={styles['production-chart']} aria-label="نمودار تولید ماهانه">
+  return <div className={`${styles['production-chart']} ${styles['glass-chart']}`} aria-label="نمودار تولید ماهانه">
     <div className={styles['chart-y-label']}>تعداد</div>
     <div className={styles['chart-viewport']}>
       <div className={styles['chart-scale']} aria-hidden="true"><span>{productionFa(max)}</span><span>{productionFa(max / 2)}</span></div>
@@ -24,7 +24,7 @@ export default function ProductionMonthChart({ months, selectedMonth, onSelect }
               const active = Number(month.month) === Number(selectedMonth);
               const showTip = hoveredMonth === month.month || (!hoveredMonth && active);
               const height = productionBarHeight(month.quantity, max);
-              const label = `${month.name} ${productionFaYear(month.year)}`;
+              const label = `${productionFa(month.month)}، ${month.name} ${productionFaYear(month.year)}`;
               return <button
                 key={month.month}
                 ref={active ? selectedBarRef : null}
@@ -40,6 +40,7 @@ export default function ProductionMonthChart({ months, selectedMonth, onSelect }
               >
                 {showTip && <span className={styles['chart-tooltip']} aria-hidden="true">{productionFa(month.quantity)} عدد</span>}
                 <span className={styles['chart-bar-fill']} />
+                <span className={styles['chart-month-number']}>{productionFa(month.month)}</span>
                 <span className={styles['chart-month']}>{month.name}</span>
               </button>;
             })}

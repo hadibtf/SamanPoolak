@@ -172,7 +172,7 @@ export default function ManagementStatistics() {
       {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}
 
       {statsMatchSelection && view === 'day' && <>
-        <section className="statistics-chart-card glass-card"><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
+        <section className="statistics-chart-card glass-chart-card glass-card"><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
         {selectedDate && details && <>
           <section className={`${styles.monthTotal} glass-card`}>
             <div><h2>تولید روز {fa(Number(selectedDate.slice(6, 8)))} {PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} {productionFaYear(selectedDate.slice(0, 4))}</h2></div>
@@ -190,7 +190,7 @@ export default function ManagementStatistics() {
       </>}
 
       {statsMatchSelection && view === 'month' && <>
-        <section className="statistics-chart-card glass-card"><ProductionMonthChart months={monthlyBars} selectedMonth={stats.month} onSelect={selectMonth} /></section>
+        <section className="statistics-chart-card glass-chart-card glass-card"><ProductionMonthChart months={monthlyBars} selectedMonth={stats.month} onSelect={selectMonth} /></section>
         <section className={`${styles.monthTotal} glass-card`}>
           <div><h2>تولید {PRODUCTION_MONTHS[stats.month - 1]} {productionFaYear(stats.year)}</h2></div>
           <strong>{fa(stats.total)} <small>عدد</small></strong>
@@ -211,7 +211,7 @@ export default function ManagementStatistics() {
       </>}
 
       {statsMatchSelection && view === 'year' && <>
-        <section className="statistics-chart-card glass-card"><ProductionYearChart years={yearlyBars} selectedYear={stats.year} onSelect={selectYear} /></section>
+        <section className="statistics-chart-card glass-chart-card glass-card"><ProductionYearChart years={yearlyBars} selectedYear={stats.year} onSelect={selectYear} /></section>
         <section className={`${styles.monthTotal} glass-card`}>
           <div><h2>تولید سال {productionFaYear(stats.year)}</h2></div>
           <strong>{fa(yearlyTotal)} <small>عدد</small></strong>

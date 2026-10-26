@@ -134,16 +134,18 @@ const HumanResources = () => {
 
   const matchedEmployees = useLiveQuery(
     () => {
-      if (!searchFullName) return [];
       const q = searchFullName.trim();
-      if (!q) return [];
       return db.people
         .where('category').equals('EMPLOYEE')
         .filter(person => {
-          const full = `${person.firstName} ${person.lastName}`;
+          if (!q) return true;
+          const full = `${person.firstName || ''} ${person.lastName || ''}`;
           return full.includes(q);
         })
-        .toArray();
+        .toArray()
+        .then(people => people.sort((a, b) =>
+          `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(`${b.firstName || ''} ${b.lastName || ''}`, 'fa')
+        ));
     },
     [searchFullName]
   );
@@ -387,8 +389,14 @@ const HumanResources = () => {
       {activeTab === 'jobs' && <JobApplications />}
       {activeTab === 'calc' && (
       <>
-      <div className="card">
-        <h1>حقوق کارکنان</h1>
+      <div className={`card ${styles.payrollForm}`}>
+        <div className={styles.formHeader}>
+          <div className={styles.headerIcon} aria-hidden="true"><i className="fa-solid fa-users" /></div>
+          <div className={styles.formHeading}>
+            <h1 className={styles.payrollTitle}>حقوق کارکنان</h1>
+            <p>اطلاعات حقوق و مزایای کارکنان را وارد کنید</p>
+          </div>
+        </div>
 
         <div className="search-section">
           {selectedEmployee ? (
@@ -406,7 +414,9 @@ const HumanResources = () => {
                     id="payroll-employee-search"
                     value={searchFullName}
                     onChange={(e) => { setSearchFullName(e.target.value); setShowDropdown(true); }}
-                    placeholder="نام کارگر"
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => window.setTimeout(() => setShowDropdown(false), 150)}
+                    placeholder="جستجو"
                     className={styles.searchInput}
                     type="search"
                     dir="rtl"
@@ -484,7 +494,7 @@ const HumanResources = () => {
             /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-solid fa-gift" /></span></div>
           </div>
           <div className="form-group">
-            <label className="checkbox-group">
+            <label className={`checkbox-group ${styles.choicePanel} ${married ? styles.isActive : ''}`}>
               <input type="checkbox" checked={married} onChange={(e) => setMarried(e.target.checked)} />
               <i className={`fa-regular fa-heart ${styles.marriedIcon}`} aria-hidden="true" />
               <span>متاهل هستم</span>
@@ -492,7 +502,7 @@ const HumanResources = () => {
           </div>
 
           <div className="form-group">
-            <label className="checkbox-group no-ins">
+            <label className={`checkbox-group no-ins ${styles.choicePanel} ${noInsurance ? styles.isActive : ''}`}>
               <input type="checkbox" checked={noInsurance} onChange={(e) => setNoInsurance(e.target.checked)} />
               <i className={`fa-solid fa-shield-halved ${styles.insuranceIcon}`} aria-hidden="true" />
               <span>بیمه نمی‌خوام</span>

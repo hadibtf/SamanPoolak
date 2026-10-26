@@ -26,6 +26,11 @@ test('an empty month still renders every day with zero production', () => {
   expect(days.every((day) => day.quantity === 0)).toBe(true);
 });
 
+test('daily chart weekdays follow the Persian calendar across week boundaries', () => {
+  const days = productionMonthDays(1405, 7);
+  expect(days.slice(0, 5).map((day) => day.weekday)).toEqual(['چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه', 'یکشنبه']);
+});
+
 test('Esfand leap years match the server date validator throughout 1405–1499', () => {
   const leapYears = [1408,1412,1416,1420,1424,1428,1432,1436,1441,1445,1449,1453,1457,1461,1465,1469,1473,1478,1482,1486,1490,1494,1498];
   const actual = Array.from({ length: 95 }, (_, index) => index + 1405)

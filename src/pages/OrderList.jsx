@@ -10,6 +10,7 @@ import { PLATING_LABELS } from '../constants';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
 import SegmentedTabs from '../components/SegmentedTabs';
+import ImageGlassSurface from '../components/ImageGlassSurface';
 
 const READY_OR_LATER_ITEM_STATES = new Set([
   'READY',
@@ -504,7 +505,8 @@ const OrderList = () => {
             const customerName = o.customerName?.trim() || customerDisplayName(person);
             const customerParts = getCustomerNameParts(customerName, companyName);
             return (
-              <div
+              <ImageGlassSurface
+                as="div"
                 key={o.id}
                 className="order-card clickable"
                 onClick={() => navigate(`/orders/view/${o.id}`)}
@@ -605,7 +607,7 @@ const OrderList = () => {
                     <span>حذف</span>
                   </button>
                 </div>
-              </div>
+              </ImageGlassSurface>
             );
           })
         )}

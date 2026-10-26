@@ -136,8 +136,8 @@ const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
           />
         </div>
 
-        {!hasSelectedPreset && (
-          <div className="dimension-custom-fields span-2">
+        <div className="order-measurements span-2">
+          <div className="dimension-custom-fields">
             <DimensionInput
               label="قطر"
               value={item.diameter}
@@ -149,37 +149,37 @@ const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
               onChange={(value) => set({ thickness: value })}
             />
           </div>
-        )}
 
-        <div className="form-group">
-          <input
-            aria-label="تعداد"
-            type="number"
-            min="0"
-            dir="ltr"
-            className="ltr-num"
-            value={item.quantity}
-            onChange={(e) => set({ quantity: e.target.value })}
-            placeholder="تعداد"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <div className="segmented-control inline" role="group" aria-label="رنگ آبکاری">
-            {PLATING_OPTIONS.map((opt) => (
-              <button
-                type="button"
-                key={opt.value}
-                className={`segment plating-${opt.value.toLowerCase()} ${item.platingColor === opt.value ? 'active' : ''}`}
-                aria-pressed={item.platingColor === opt.value}
-                onClick={() => set({ platingColor: opt.value })}
-              >
-                {opt.label}
-                {item.platingColor === opt.value && <span className="plating-checkmark" aria-hidden="true">✓</span>}
-              </button>
-            ))}
+          <div className="form-group">
+            <input
+              aria-label="تعداد"
+              type="number"
+              min="0"
+              dir="ltr"
+              className="ltr-num"
+              value={item.quantity}
+              onChange={(e) => set({ quantity: e.target.value })}
+              placeholder="تعداد"
+              required
+            />
           </div>
+        </div>
+      </div>
+
+      <div className="form-group plating-field">
+        <div className="segmented-control inline" role="group" aria-label="رنگ آبکاری">
+          {PLATING_OPTIONS.map((opt) => (
+            <button
+              type="button"
+              key={opt.value}
+              className={`segment plating-${opt.value.toLowerCase()} ${item.platingColor === opt.value ? 'active' : ''}`}
+              aria-pressed={item.platingColor === opt.value}
+              onClick={() => set({ platingColor: opt.value })}
+            >
+              {opt.label}
+              {item.platingColor === opt.value && <span className="plating-checkmark" aria-hidden="true">✓</span>}
+            </button>
+          ))}
         </div>
       </div>
 

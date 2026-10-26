@@ -22,6 +22,7 @@ import {
   INVOICE_PLATING_LABELS,
 } from '../constants';
 import styles from './Management.module.css';
+import glassStyles from './OrderViewGlass.module.css';
 
 const managementRootClass = styles.root;
 void styles;
@@ -443,33 +444,41 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const platingTone = platingColor === 'GOLD' ? 'gold' : platingColor === 'SILVER' ? 'silver' : 'matte';
 
   return (
-    <div hidden={hidden} className={`glass-card item-panel ${index % 2 === 0 ? 'item-panel-tone-white' : 'item-panel-tone-blue'}`}>
+    <div hidden={hidden} className={`item-panel ${glassStyles.stack}`}>
       <section className="order-section order-item-details" aria-label={`مشخصات ${item.productName || 'قطعه'}`}>
-        <h4 className="order-section-title">{item.productName || '—'}</h4>
+        <div className="order-details-heading">
+          <h4 className="order-section-title">{item.productName || '—'}</h4>
+        </div>
         <div className="order-spec-ribbon" aria-label="مشخصات سفارش">
           <div className="order-spec-item" data-kind="quantity">
+            <i className="fa-solid fa-layer-group" aria-hidden="true" />
             <small>تعداد</small>
             <strong>{fa(item.quantity)}</strong>
           </div>
           <div className="order-spec-item" data-kind="plating" data-plating={platingColor}>
+            <i className="fa-solid fa-droplet" aria-hidden="true" />
             <small>آبکاری</small>
             <MetallicText as="strong" className="order-spec-plating" tone={platingTone}>
               {PLATING_LABELS[platingColor]}
             </MetallicText>
           </div>
           <div className="order-spec-item" data-kind="material">
+            <i className="fa-solid fa-circle-dot" aria-hidden="true" />
             <small>جنس ورق</small>
             <strong>{MATERIAL_LABELS[item.material] || '—'}</strong>
           </div>
           <div className="order-spec-item" data-kind="hardening">
+            <i className="fa-solid fa-gear" aria-hidden="true" />
             <small>سخت‌کاری</small>
             <strong>{item.isHardened ? `بله${item.hardeningIntensity ? ` · ${item.hardeningIntensity}` : ''}` : 'خیر'}</strong>
           </div>
           <div className="order-spec-item" data-kind="estimated-weight">
+            <i className="fa-solid fa-weight-hanging" aria-hidden="true" />
             <small>وزن برآوردی</small>
             <strong>{measuredWeightOf10 > 0 ? formatWeight(expectedTotalWeight) : '—'}</strong>
           </div>
           <div className="order-spec-item" data-kind="unit-weight">
+            <i className="fa-solid fa-weight-hanging" aria-hidden="true" />
             <small>وزن واحد</small>
             <span className="order-spec-weight-value">
               {measuredWeightOf10 > 0 ? <button
@@ -920,7 +929,7 @@ const OrderView = () => {
   };
 
   return (
-    <div className={`${managementRootClass} order-view`}>
+    <div className={`${managementRootClass} order-view ${glassStyles.page}`}>
       <div className="page-back">
         <button className="back-btn" onClick={() => navigate('/orders/list')}>
           <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>

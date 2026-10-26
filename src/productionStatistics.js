@@ -40,6 +40,7 @@ export function productionMonthDays(year, month, daily = []) {
   return Array.from({ length }, (_, index) => {
     const day = index + 1;
     const date = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
-    return { day, date, quantity: totals.get(date) || 0, label: `${productionFa(day)} ${PRODUCTION_MONTHS[month - 1]} ${productionFaYear(year)}` };
+    const calendarDay = new DateObject({ calendar: persian, locale: persian_fa, year: Number(year), month: Number(month), day });
+    return { day, date, quantity: totals.get(date) || 0, label: `${productionFa(day)} ${PRODUCTION_MONTHS[month - 1]} ${productionFaYear(year)}`, weekday: calendarDay.weekDay?.name || '' };
   });
 }

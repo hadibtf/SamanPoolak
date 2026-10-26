@@ -144,7 +144,11 @@ body::before {
     position: fixed;
     inset: 0;
     z-index: -1;
+    filter: blur(10px);
+    transform: scale(1.03);
     background:
+        linear-gradient(rgba(255, 255, 255, .7), rgba(255, 255, 255, .7)),
+        url('/WEBP/app-background.webp') center / cover no-repeat,
         radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.18), transparent 42%),
         radial-gradient(circle at 88% 12%, rgba(175, 82, 222, 0.14), transparent 40%),
         radial-gradient(circle at 78% 88%, rgba(52, 199, 89, 0.12), transparent 44%),
@@ -157,7 +161,7 @@ body::before {
 .app-container {
     width: 100%;
     /* Leaves room for the bottom nav and respects iOS bottom safe area (home indicator) */
-    height: calc(100vh - 80px - env(safe-area-inset-bottom, 0px)); 
+    height: calc(100vh - 80px - env(safe-area-inset-bottom, 0px));
     overflow-y: auto; /* Allow pages to scroll */
 }
 
@@ -170,10 +174,10 @@ body::before {
 }
 
 /* 1. Force global inheritance on all form controls */
-input, 
-button, 
-textarea, 
-select, 
+input,
+button,
+textarea,
+select,
 option,
 .rmdp-input,
 .rmdp-container,
@@ -210,7 +214,8 @@ option,
 }
 
 /* Shared UI primitives used across independent page modules. */
-.glass-card { background: rgba(255,255,255,.72); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,.6); border-radius: 22px; padding: 24px; box-shadow: 0 12px 40px -12px rgba(0,0,0,.18); }
+.glass-card { position: relative; isolation: isolate; overflow: hidden; background: rgba(255,255,255,.72); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255,255,255,.6); border-radius: 22px; padding: 24px; box-shadow: 0 12px 40px -12px rgba(0,0,0,.18); }
+.glass-card::before { position: absolute; z-index: -1; inset: -12px; border-radius: inherit; background: linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,.7)),url('/WEBP/order-list-glass.webp') center/cover no-repeat; content: ''; filter: blur(10px); transform: scale(1.03); pointer-events: none; }
 .segmented-control { display:flex; gap:4px; padding:4px; border-radius:14px; background:rgba(118,118,128,.12); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); max-width:560px; margin:0 auto; }
 .segmented-control .segment { flex:1; text-align:center; padding:9px 12px; border:0; background:transparent; font-family:inherit; border-radius:10px; font-size:14px; font-weight:600; color:#3a3a3c; text-decoration:none; transition:all .25s ease; cursor:pointer; }
 .segmented-control.inline { max-width:none; margin:0; }
@@ -259,6 +264,8 @@ option,
 
 [data-theme="dark"] body::before {
     background:
+        linear-gradient(rgba(255, 255, 255, .7), rgba(255, 255, 255, .7)),
+        url('/WEBP/app-background.webp') center / cover no-repeat,
         radial-gradient(circle at 12% 18%, rgba(10, 132, 255, 0.16), transparent 42%),
         radial-gradient(circle at 88% 12%, rgba(175, 82, 222, 0.14), transparent 40%),
         radial-gradient(circle at 78% 88%, rgba(52, 199, 89, 0.10), transparent 44%),
@@ -274,6 +281,7 @@ option,
     border-color: var(--glass-border);
     color: #ececf1;
 }
+[data-theme="dark"] .glass-card::before { background-image: linear-gradient(rgba(28,32,39,.7),rgba(28,32,39,.7)),url('/WEBP/order-list-glass.webp'); }
 
 /* Headings + primary text */
 [data-theme="dark"] .orders-header h1,
