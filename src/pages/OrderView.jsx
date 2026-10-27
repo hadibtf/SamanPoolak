@@ -943,6 +943,7 @@ const OrderView = () => {
   return (
     <div className={`${managementRootClass} order-view ${glassStyles.page}`}>
       <ApiReadStatus queries={[orderQuery, markingsQuery, customerQuery]} />
+      <div className={glassStyles.overview}>
       <div className="page-back">
         <button className="back-btn" onClick={() => navigate('/orders/list')}>
           <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
@@ -1036,6 +1037,7 @@ const OrderView = () => {
           </table>
         </div>
       </section>
+      </div>
 
       {/* Item panels */}
       {items.map((item, index) => (
