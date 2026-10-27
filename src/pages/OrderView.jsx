@@ -1,6 +1,7 @@
 import { useApiQuery, liveRows } from '../hooks/useApiQuery';
 import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
@@ -12,6 +13,7 @@ import JalaliDatePicker from '../components/JalaliDatePicker';
 import MetallicText from '../components/MetallicText';
 import { productionDateKey } from '../productionStatistics';
 import { useAuth } from '../auth/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import {
   ORDER_STATES,
   ORDER_STATE_CHOICES,
@@ -29,13 +31,34 @@ void styles;
 
 const fa = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('fa-IR'));
 const faDigits = (value) => String(value).replace(/[0-9]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'[digit]);
-// Raw Rial formatting — the invoice is always in Rial, never converted.
-const faRial = (n) => Math.round(Number(n) || 0).toLocaleString('fa-IR');
+const RIALS_PER_TOMAN = 10;
+const formatInvoiceAmount = (amount, currency) => {
+  const rialAmount = Number(amount) || 0;
+  const displayAmount = currency === 'toman' ? rialAmount / RIALS_PER_TOMAN : rialAmount;
+  return displayAmount.toLocaleString('fa-IR', {
+    maximumFractionDigits: currency === 'toman' ? 2 : 0,
+  });
+};
 const formatDimension = (value) => {
   if (value == null || value === '') return '—';
   const number = Number(value);
   return Number.isFinite(number) ? number.toLocaleString('en-US') : '—';
 };
+const formatInvoiceDimension = (value) => {
+  const formatted = formatDimension(value);
+  return formatted === '—' ? formatted : `${formatted} mm`;
+};
+const formatInvoiceQuantityInput = (value) => {
+  const digits = String(value ?? '').replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit))).replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit))).replace(/\D/g, '');
+  return digits ? Number(digits).toLocaleString('en-US') : '';
+};
+const formatInvoicePriceInput = (value) => {
+  const raw = String(value ?? '').replace(/,/g, '');
+  if (!raw) return '';
+  const formatted = (Number(raw) || 0).toLocaleString('en-US', { maximumFractionDigits: 1 });
+  return raw.endsWith('.') ? `${formatted}.` : formatted;
+};
+const invoiceItemKey = (item, index) => item.uid || `item-${index}`;
 const formatDimensions = (item) => {
   const diameter = Number(item?.diameter);
   const thickness = Number(item?.thickness);
@@ -89,16 +112,35 @@ const submissionKey = () => window.crypto?.randomUUID?.() || `${Date.now().toStr
 const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
 // Builds the customer-facing invoice description for an item.
-const invoiceDescription = (item) => {
-  const parts = [item.productName];
+const cleanInvoiceProductName = (item, index) => {
+  const rowNumber = String(index + 1);
+  const productName = String(item.productName || '').replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+  return productName.replace(new RegExp(`^\\s*${rowNumber}\\s*[-–—:]\\s*`), '');
+};
+
+const invoiceDescription = (item, index) => {
+  const parts = [cleanInvoiceProductName(item, index)];
   if (item.isHardened) parts.push('سختکاری شده');
   const plating = INVOICE_PLATING_LABELS[item.platingColor] || '';
   if (plating) parts.push(plating);
   let desc = parts.join(' - ');
-  const dimensions = formatDimensions(item);
-  if (dimensions !== '—') desc += ` ${dimensions} mm`;
   if (item.description) desc += ` - ${item.description}`;
   return desc;
+};
+
+const invoiceDialogDescription = (item, index) => {
+  const productName = cleanInvoiceProductName(item, index);
+  const dimensions = formatDimensions(item);
+  const plating = INVOICE_PLATING_LABELS[item.platingColor] || '';
+  return (
+    <>
+      {productName}
+      {dimensions !== '—' && <> - <bdi dir="ltr">{dimensions} mm</bdi></>}
+      {item.isHardened && <> - سختکاری شده</>}
+      {plating && <> - {plating}</>}
+      {item.description && <> - {item.description}</>}
+    </>
+  );
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
@@ -793,6 +835,13 @@ const OrderView = () => {
   const linkedItemUid = searchParams.get('itemUid');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { currency: displayCurrency, fromRial, toRial } = useSettings();
+  const invoiceCurrency = displayCurrency === 'TOMAN' ? 'toman' : 'rial';
+  const [invoiceOrientation, setInvoiceOrientation] = useState('portrait');
+  const [invoiceQuantities, setInvoiceQuantities] = useState({});
+  const [invoicePrices, setInvoicePrices] = useState({});
+  const [isInvoiceExportOpen, setIsInvoiceExportOpen] = useState(false);
+  const [isExportingInvoice, setIsExportingInvoice] = useState(false);
   const orderId = Number(id);
 
   const orderQuery = useApiQuery(async () => {
@@ -815,6 +864,14 @@ const OrderView = () => {
   const invoiceRef = useRef(null);
 
   useEffect(() => setSelectedItemUid(linkedItemUid), [linkedItemUid, orderId]);
+  useEffect(() => {
+    if (!isInvoiceExportOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape' && !isExportingInvoice) setIsInvoiceExportOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [isInvoiceExportOpen, isExportingInvoice]);
 
   const markingMap = useMemo(() => {
     const map = {};
@@ -909,17 +966,54 @@ const OrderView = () => {
   const phones = (customer?.phones || []).filter(Boolean);
   const addresses = (customer?.addresses || []).filter(Boolean);
   const invoiceDate = new DateObject({ calendar: persian, locale: persian_fa }).format('YYYY/MM/DD');
-  const grandTotal = items.reduce(
-    (sum, it) => sum + (Number(it.salePrice) || 0) * (Number(it.quantity) || 0),
+  const getInvoiceQuantity = (item, index) => Math.max(0, Math.floor(Number(invoiceQuantities[invoiceItemKey(item, index)]) || 0));
+  const invoiceGrandTotal = items.reduce(
+    (sum, item, index) => sum + (Number(item.salePrice) || 0) * getInvoiceQuantity(item, index),
     0
   );
 
+  const openInvoiceExport = () => {
+    setInvoiceOrientation('portrait');
+    setInvoiceQuantities(Object.fromEntries(items.map((item, index) => [
+      invoiceItemKey(item, index),
+      Math.max(0, Number(productionQuantities[item.uid]) || 0),
+    ])));
+    setInvoicePrices(Object.fromEntries(items.map((item, index) => [
+      invoiceItemKey(item, index),
+      item.salePrice == null ? '' : formatInvoicePriceInput(fromRial(item.salePrice)),
+    ])));
+    setIsInvoiceExportOpen(true);
+  };
+
   const handleExportInvoice = async () => {
     if (!invoiceRef.current) return;
+    setIsExportingInvoice(true);
+    let savingPrices = false;
+    let exportSucceeded = false;
     try {
-      const canvas = await html2canvas(invoiceRef.current, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const nextItems = items.map((item, index) => {
+        const rawPrice = String(invoicePrices[invoiceItemKey(item, index)] ?? '').replace(/,/g, '').trim();
+        const nextPrice = rawPrice === '' ? null : toRial(Number(rawPrice));
+        return { ...item, salePrice: nextPrice };
+      });
+      const pricesChanged = nextItems.some((item, index) => (
+        (item.salePrice == null ? null : Number(item.salePrice))
+        !== (items[index].salePrice == null ? null : Number(items[index].salePrice))
+      ));
+      if (pricesChanged) {
+        savingPrices = true;
+        const { order: updatedOrder } = await ordersApi.update(orderId, { items: nextItems });
+        flushSync(() => setOrder(updatedOrder));
+        savingPrices = false;
+      }
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 1.5,
+        backgroundColor: '#ffffff',
+        imageTimeout: 5000,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const pdf = new jsPDF({ orientation: invoiceOrientation, unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const imgRatio = canvas.width / canvas.height;
@@ -934,9 +1028,13 @@ const OrderView = () => {
       const fileName = `${who}-${order.date}.pdf`;
       // Plain in-memory browser download — nothing is stored server-side.
       pdf.save(fileName);
+      exportSucceeded = true;
     } catch (error) {
       console.error('Invoice export failed:', error);
-      showToast('خطا در صدور فاکتور.', 'error');
+      showToast(savingPrices ? 'ذخیره قیمت‌های سفارش انجام نشد و فاکتور صادر نشد.' : 'خطا در صدور فاکتور.', 'error');
+    } finally {
+      setIsExportingInvoice(false);
+      if (exportSucceeded) setIsInvoiceExportOpen(false);
     }
   };
 
@@ -949,7 +1047,7 @@ const OrderView = () => {
           <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
         </button>
         <div className="page-actions">
-          <button className="icon-btn" onClick={handleExportInvoice} title="صدور فاکتور">
+          <button className="icon-btn" onClick={openInvoiceExport} title="صدور فاکتور">
             <i className="fa-solid fa-file-invoice"></i>
           </button>
           <button className="icon-btn" onClick={() => navigate(`/orders/edit/${orderId}`)} title="ویرایش">
@@ -1058,7 +1156,7 @@ const OrderView = () => {
 
       {/* Off-screen invoice (PDF source) */}
       <div className="invoice-offscreen" aria-hidden="true">
-        <div className="invoice-sheet" ref={invoiceRef}>
+        <div className="invoice-sheet" data-orientation={invoiceOrientation} ref={invoiceRef}>
           <div className="invoice-head">
             <div>
               <h1>فاکتور فروش</h1>
@@ -1080,7 +1178,10 @@ const OrderView = () => {
               <tr>
                 <th className="c-num">ردیف</th>
                 <th>شرح کالا</th>
-                <th className="c-qty">سفارش</th>
+                <th className="c-dimension">ضخامت</th>
+                <th className="c-dimension">قطر</th>
+                <th className="c-qty">تعداد</th>
+                <th className="c-unit">واحد</th>
                 <th className="c-price">قیمت واحد</th>
                 <th className="c-price">جمع</th>
               </tr>
@@ -1089,23 +1190,126 @@ const OrderView = () => {
               {items.map((it, i) => (
                 <tr key={it.uid || i}>
                   <td className="c-num">{(i + 1).toLocaleString('fa-IR')}</td>
-                  <td className="c-desc">{invoiceDescription(it)}</td>
-                  <td className="c-qty">{fa(it.quantity)}</td>
-                  <td className="c-price">{faRial(it.salePrice)}</td>
-                  <td className="c-price">{faRial((Number(it.salePrice) || 0) * (Number(it.quantity) || 0))}</td>
+                  <td className="c-desc">{invoiceDescription(it, i)}</td>
+                  <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.thickness)}</bdi></td>
+                  <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.diameter)}</bdi></td>
+                  <td className="c-qty">{fa(getInvoiceQuantity(it, i))}</td>
+                  <td className="c-unit">عدد</td>
+                  <td className="c-price"><bdi>{formatInvoiceAmount(it.salePrice, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
+                  <td className="c-price"><bdi>{formatInvoiceAmount((Number(it.salePrice) || 0) * getInvoiceQuantity(it, i), invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
-                <td colSpan={4} className="c-total-label">جمع کل</td>
-                <td className="c-price">{faRial(grandTotal)}</td>
+                <td colSpan={7} className="c-total-label">جمع کل</td>
+                <td className="c-price"><bdi>{formatInvoiceAmount(invoiceGrandTotal, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
 
+      {isInvoiceExportOpen && (
+        <div className={glassStyles.invoiceExportBackdrop} onMouseDown={() => !isExportingInvoice && setIsInvoiceExportOpen(false)}>
+          <section
+            className={glassStyles.invoiceExportDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invoice-export-title"
+            dir="rtl"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={glassStyles.invoiceExportHeader}>
+              <span className={glassStyles.invoiceExportIcon}><i className="fa-solid fa-file-invoice-dollar" aria-hidden="true" /></span>
+              <button type="button" className={glassStyles.invoiceExportClose} onClick={() => setIsInvoiceExportOpen(false)} aria-label="بستن" disabled={isExportingInvoice}>
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+              <h2 id="invoice-export-title">صدور فاکتور</h2>
+            </header>
+
+            <div className={glassStyles.invoiceExportBody}>
+              <div className={glassStyles.invoiceOrientationControl}>
+                <span>جهت فاکتور</span>
+                <div role="group" aria-label="جهت فاکتور">
+                  <button type="button" className={invoiceOrientation === 'portrait' ? glassStyles.invoiceOrientationActive : ''} aria-pressed={invoiceOrientation === 'portrait'} onClick={() => setInvoiceOrientation('portrait')}>
+                    <i className="fa-regular fa-file-lines" aria-hidden="true" /> عمودی
+                  </button>
+                  <button type="button" className={invoiceOrientation === 'landscape' ? glassStyles.invoiceOrientationActive : ''} aria-pressed={invoiceOrientation === 'landscape'} onClick={() => setInvoiceOrientation('landscape')}>
+                    <i className="fa-regular fa-image" aria-hidden="true" /> افقی
+                  </button>
+                </div>
+              </div>
+              <div className={glassStyles.invoiceQuantityList}>
+                <div className={glassStyles.invoiceQuantityHeading}><strong>تعداد و قیمت هر قلم</strong></div>
+                {items.map((item, index) => {
+                  const key = invoiceItemKey(item, index);
+                  return (
+                    <label className={glassStyles.invoiceQuantityRow} key={key}>
+                      <span className={glassStyles.invoiceQuantityProduct}>
+                        <strong>{invoiceDialogDescription(item, index)}</strong>
+                      </span>
+                      <span className={glassStyles.invoiceQuantityInputWrap}>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          enterKeyHint="done"
+                          autoComplete="off"
+                          dir="ltr"
+                          value={formatInvoiceQuantityInput(invoiceQuantities[key] ?? 0)}
+                          placeholder="تعداد"
+                          onFocus={(event) => event.currentTarget.select()}
+                          onChange={(event) => {
+                            const normalized = event.target.value
+                              .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+                              .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+                              .replace(/\D/g, '');
+                            setInvoiceQuantities((previous) => ({ ...previous, [key]: normalized }));
+                          }}
+                          aria-label={`تعداد فاکتور ${item.productName || index + 1}`}
+                        />
+                      </span>
+                      <span className={glassStyles.invoicePriceInputWrap}>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          enterKeyHint="done"
+                          autoComplete="off"
+                          dir="ltr"
+                          value={formatInvoicePriceInput(invoicePrices[key] ?? '')}
+                          placeholder="قیمت"
+                          title={`قیمت واحد به ${invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}`}
+                          onFocus={(event) => event.currentTarget.select()}
+                          onChange={(event) => {
+                            const normalized = event.target.value
+                              .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+                              .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+                              .replace(/,/g, '')
+                              .replace(/[^\d.]/g, '');
+                            const [integerPart, ...fractionParts] = normalized.split('.');
+                            const nextValue = fractionParts.length
+                              ? `${integerPart}.${fractionParts.join('').slice(0, 1)}`
+                              : integerPart;
+                            setInvoicePrices((previous) => ({ ...previous, [key]: nextValue }));
+                          }}
+                          aria-label={`قیمت واحد ${item.productName || index + 1} به ${invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}`}
+                        />
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <footer className={glassStyles.invoiceExportActions}>
+              <button type="button" className={glassStyles.invoiceExportCancel} onClick={() => setIsInvoiceExportOpen(false)} disabled={isExportingInvoice}>انصراف</button>
+              <button type="button" className={glassStyles.invoiceExportConfirm} onClick={handleExportInvoice} disabled={isExportingInvoice}>
+                {isExportingInvoice ? 'در حال ذخیره و صدور…' : 'ذخیره قیمت و صدور فاکتور'}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
       {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
     </div>
   );

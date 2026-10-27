@@ -2566,6 +2566,16 @@
   direction: rtl;
 }
 
+:local(.root) :global(.invoice-sheet[data-orientation="landscape"]) {
+  width: 1123px;
+  min-height: 794px;
+  padding: 38px 44px;
+}
+:local(.root) :global(.invoice-sheet[data-orientation="landscape"]) :global(.invoice-table) :global(.c-desc) {
+  white-space: nowrap;
+  font-size: 12px;
+}
+
 :local(.root) :global(.invoice-head) {
   display: flex;
   justify-content: space-between;
@@ -2606,7 +2616,8 @@
 :local(.root) :global(.invoice-table) th,:local(.root) :global(.invoice-table) td {
   border: 1px solid #cbd5e1;
   padding: 11px 12px;
-  text-align: right;
+  text-align: center;
+  vertical-align: middle;
 }
 
 :local(.root) :global(.invoice-table) thead th {
@@ -2619,11 +2630,16 @@
 
 :local(.root) :global(.invoice-table) :global(.c-num) { width: 48px; text-align: center; }
 :local(.root) :global(.invoice-table) :global(.c-qty) { width: 70px; text-align: center; }
-:local(.root) :global(.invoice-table) :global(.c-price) { width: 150px; text-align: left; }
-/* Only the numeric data cells go LTR. Headers avoid ASCII parens entirely
-   (html2canvas mis-mirrors them around Persian text) — the currency unit is a
-   small label beneath the header instead. */
-:local(.root) :global(.invoice-table) td:global(.c-price) { direction: ltr; }
+:local(.root) :global(.invoice-table) :global(.c-unit) { width: 52px; white-space: nowrap; text-align: center; }
+:local(.root) :global(.invoice-table) :global(.c-dimension) { width: 68px; white-space: nowrap; text-align: center; }
+:local(.root) :global(.invoice-table) :global(.c-price) {
+  width: 130px;
+  padding-inline: 6px;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+:local(.root) :global(.invoice-table) td:global(.c-price) { direction: rtl; }
 :local(.root) :global(.invoice-table) th:global(.c-price) { text-align: center; }
 :local(.root) :global(.invoice-table) th :global(.unit) {
   display: block;
@@ -2632,7 +2648,13 @@
   opacity: 0.85;
   margin-top: 2px;
 }
-:local(.root) :global(.invoice-table) :global(.c-desc) { line-height: 1.9; }
+:local(.root) :global(.invoice-table) :global(.c-desc) {
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: center;
+  direction: rtl;
+  overflow-wrap: anywhere;
+}
 
 :local(.root) :global(.invoice-table) tfoot td {
   font-weight: 700;
@@ -2641,7 +2663,7 @@
   font-size: 16px;
 }
 
-:local(.root) :global(.invoice-table) :global(.c-total-label) { text-align: left; }
+:local(.root) :global(.invoice-table) :global(.c-total-label) { text-align: center; }
 
 /* The three order-detail sections share their accent across their contents. */
 :local(.root):global(.order-view) :global(.order-section) {
