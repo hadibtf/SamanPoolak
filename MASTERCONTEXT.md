@@ -15,7 +15,7 @@ imply exhaustive test coverage.
 | --- | --- |
 | [operating-rules](#operating-rules) | Scope, Git, builds, deployment constraints |
 | [project-map](#project-map) | Product, domains, folders, source entry points |
-| [architecture](#architecture) | App surfaces, auth, API, mirror, state |
+| [architecture](#architecture) | App surfaces, auth, API, screen state |
 | [domain-rules](#domain-rules) | Money, dates, IDs, orders, weights |
 | [employee-production](#employee-production) | Isolation, assignments, logging, corrections, charts |
 | [ui-and-pdf](#ui-and-pdf) | Styling, calendar, RTL, exports |
@@ -67,11 +67,11 @@ same hosting account are outside this app's deployment targets.
 | Source | Responsibility |
 | --- | --- |
 | `src/index.jsx` | Build-time surface selection and mounting |
-| `src/App.jsx` | Management routes, login gate, sync bootstrap |
+| `src/App.jsx` | Management routes, login gate, calendar bootstrap |
 | `src/auth/AuthContext.jsx` | User/session, login/logout, token validation |
 | `src/api/client.js` | Fetch wrapper, bearer token, per-resource API helpers |
-| `src/db.js` | Dexie v10 schema/migrations and domain helpers |
-| `src/hooks/useSyncEngine.js` | Management delta synchronization |
+| `src/domain.js` | Pure date, weight and order helpers |
+| `src/hooks/useApiQuery.js` | Memory-only screen reads, entry/focus/reconnect refresh |
 | `src/context/SettingsContext.jsx` | Theme, currency, formatting |
 | `src/constants.js` | Enums and Persian labels |
 | `src/pages/`, `src/components/` | Screens and shared UI |
@@ -91,21 +91,21 @@ same hosting account are outside this app's deployment targets.
 React 19 / Vite clients call a vanilla PHP 8 + PDO + MySQL/MariaDB
 API. Production PHP is 8.1+. The server is the single source of truth.
 
-Management resources generally use a Dexie IndexedDB read mirror and
-`useLiveQuery`. The sync engine pulls deltas about every 15 seconds and on
-focus/reconnect, with per-resource cursors in localStorage. Initial sync fills
-the mirror; later pulls upsert changes and remove soft-deleted rows. Writes call
-the API first, then mirror the returned canonical row:
+All business reads use `src/api/client.js` and ordinary React memory. Screens
+fetch on entry and focus/reconnect through `useApiQuery`; filters/routes are
+query keys and late responses are ignored. Successful mutations apply the
+canonical server row or refetch the affected query. No persistent business-data
+cache, offline writes, global polling or sync cursors remain. Order item production
+summaries retain their scoped 15-second polling. Offline reload cannot show
+business records; request failures must be visible and retryable.
 
-```js
-const { order } = await ordersApi.update(id, patch);
-await db.orders.put(order);
-```
-
-Cached reads can work offline; writes require a connection. There is no offline
-outbox or Redux data store. Production screens and statistics instead call
-`productionApi` directly and keep local React state. Do not introduce unrestricted
-employee log mirroring.
+Holiday API responses may populate the lightweight `ir_holidays_*` localStorage
+calendar cache. Theme, currency, and auth preferences stay in localStorage.
+`src/legacyDataCleanup.js` is a temporary read/export/delete-only migration shim
+for `BusinessPlatformDB`. It protects old attendance/card data until a backup is
+downloaded and acknowledged, then handles blocked deletion with a retry/reload.
+Counters from unused client ID generators are retired. Remove the shim after
+this cleanup release reaches existing users; see `docs/REMOVE-DEXIE-AUDIT.md`.
 
 `VITE_APP_SURFACE=employee` selects the separate employee app at build time;
 otherwise the management app is selected.
@@ -121,8 +121,7 @@ Both app origins belong in `cors_allowed_origins`; the API answers OPTIONS.
 Uploaded images use absolute API URLs so they work across origins.
 
 React conventions: immutable object/array updates, local `useState`, effect
-cleanup, providers for auth/settings, and React Router for navigation. Dexie
-schema declarations list keys/indexes, not every property on stored objects.
+cleanup, providers for auth/settings, and React Router for navigation.
 
 <a id="domain-rules"></a>
 ## Domain rules
@@ -311,10 +310,9 @@ remain in [DEPLOY.md](DEPLOY.md).
 ## Verification and release status
 
 For a management resource: add schema/route, register the handler, apply live
-migration, add API helper, add Dexie version/store and sync resource when using
-the mirror pattern, then implement UI and verify cross-device behavior. Direct
-production API screens follow their existing local-state pattern instead.
-
+migration if required, add the API helper, then implement memory-only UI state,
+loading/errors, server-first mutations, and cross-device entry/focus refresh.
+Never add a browser database or background sync layer.
 Use checks proportionate to the change:
 
 - PHP lint for changed PHP files and `php server/tests/production_validation.php`.
@@ -331,7 +329,7 @@ production builds, live route checks, unauthenticated mutation rejection, and
 employee rejection from management statistics. Exhaustive authenticated
 admin/second-employee, concurrent-write, and duplicate-retry integration tests
 were not independently completed. Do not represent release acceptance as those
-tests having run. General offline write queues remain future work.
+tests having run. Offline business-data writes are unsupported.
 
 <a id="troubleshooting"></a>
 ## Known failures and remedies

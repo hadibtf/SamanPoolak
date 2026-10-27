@@ -71,7 +71,7 @@ function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded
     >
       <div className="statistics-employee-panel-inner" inert={!expanded}>
         <div className="statistics-details statistics-employee-records">
-          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} />)}
+          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} linkToOrder />)}
         </div>
       </div>
     </div>}

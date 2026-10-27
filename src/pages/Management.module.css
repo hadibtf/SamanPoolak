@@ -559,6 +559,8 @@
 
 :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-name-button) {
   display: inline-flex;
+  width: 100%;
+  min-width: 0;
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
@@ -569,20 +571,29 @@
   background: transparent;
   color: var(--sp-primary);
   font: inherit;
+  direction: rtl;
   text-align: start;
+  overflow: hidden;
+  padding-inline-start: 18px !important;
   cursor: text;
 }
 
 :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-name-button) strong {
+  flex: 1 1 auto;
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
 }
 
 :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-name-button) :global(.muted) {
+  flex: 0 0 auto;
   color: var(--sp-text-muted);
   font-size: 12px;
+  white-space: nowrap;
 }
 
 :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-name-button):hover strong {
@@ -2273,37 +2284,12 @@
   font-weight: 500;
 }
 :local(.root):global(.order-list) :global(.order-item-metric-icon) { order: 3; margin-inline-start: 6px; color: #8daed6; font-size: 17px; }
-:local(.root):global(.order-list) :global(.order-item-progress-produced),
-:local(.root):global(.order-list) :global(.order-item-progress-target) {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-:local(.root):global(.order-list) :global(.order-item-progress-produced) {
-  flex-wrap: nowrap;
-  color: var(--sp-text-muted);
-  font-size: 12px;
-}
-:local(.root):global(.order-list) :global(.order-item-progress-overage) {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
 :local(.root):global(.order-list) :global(.order-item-progress-count) :global(.order-list-numeric) {
   font-weight: 1000;
   -webkit-text-stroke: 0.65px currentColor;
   text-shadow: 0 0 0.45px currentColor;
 }
-:local(.root):global(.order-list) :global(.order-item-progress-produced),
-:local(.root):global(.order-list) :global(.order-item-progress-produced) :global(.order-list-numeric) {
-  font-weight: 300;
-  -webkit-text-stroke: 0;
-  text-shadow: none;
-}
-:local(.root):global(.order-list) :global(.order-item-progress-target) :global(.order-item-ordered-count) {
+:local(.root):global(.order-list) :global(.order-item-ordered-count) {
   color: var(--sp-text);
   font-size: 17px;
   font-weight: 900;
@@ -2378,9 +2364,9 @@
 }
 
 @media (max-width: 600px) {
-  :local(.root):global(.order-list) :global(.order-item) { grid-template-columns: 42px minmax(0, 1fr); min-height: 0; gap: 9px; padding: 9px; border-radius: 19px; }
+  :local(.root):global(.order-list) :global(.order-item) { grid-template-columns: 42px minmax(0, 1fr) auto; align-items: start; min-height: 0; gap: 9px; padding: 9px; border-radius: 19px; }
   :local(.root):global(.order-list) :global(.order-item-symbol) { width: 42px; height: 42px; border-radius: 14px; font-size: 18px; }
-  :local(.root):global(.order-list) :global(.order-item-metric) { grid-column: 1 / -1; justify-self: end; min-height: 40px; }
+  :local(.root):global(.order-list) :global(.order-item-metric) { grid-column: auto; justify-self: start; align-self: center; min-height: 40px; }
   :local(.root):global(.order-list) :global(.order-item-progress-count) { padding: 6px 11px; }
 }
 @media (max-width: 420px) {
@@ -2407,7 +2393,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 2px 8px rgba(0, 0, 0, .12);
 }
 [data-theme="dark"] :local(.root):global(.order-list) :global(.order-item-title),
-[data-theme="dark"] :local(.root):global(.order-list) :global(.order-item-progress-target) :global(.order-item-ordered-count) { color: #edf5ff; }
+[data-theme="dark"] :local(.root):global(.order-list) :global(.order-item-ordered-count) { color: #edf5ff; }
 :local(.root):global(.order-list) :global(.order-list-action) {
   position: relative;
   overflow: hidden;
@@ -3066,7 +3052,7 @@
 [data-theme="dark"] :local(.root):global(.submit-order) :global(.dimension-preset):global(.active) { background: rgba(48, 123, 213, .34) !important; color: #b9dcff; }
 
 @media (max-width: 640px) {
-  :local(.root):global(.submit-order) :global(.order-item-card) { padding: 14px; border-radius: 21px; }
+  :local(.root):global(.submit-order) :global(.order-item-card) { padding: 14px 6px; border-radius: 21px; }
   :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-field) {
     flex: 0 1 auto;
     width: 100%;
@@ -3077,6 +3063,41 @@
   :local(.root):global(.submit-order) :global(.item-editor-head) > :global(.link-btn) { margin-inline-start: auto; }
   :local(.root):global(.submit-order) :global(.order-measurements) { grid-template-columns: 1fr; }
   :local(.root):global(.submit-order) :global(.item-editor) :global(.segmented-control) :global(.segment) { flex: 1 1 90px; }
+}
+@media (max-width: 520px) {
+  :local(.root):global(.submit-order) :global(.order-meta-header) {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  :local(.root):global(.submit-order) :global(.order-meta-header) :global(.customer-field) {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+  :local(.root):global(.submit-order) :global(.customer-search-row),
+  :local(.root):global(.submit-order) :global(.customer-search-row) input { min-width: 0; }
+  :local(.root):global(.submit-order) :global(.order-date-inline) {
+    order: 0;
+    flex: 0 0 auto;
+    align-self: center;
+    height: 42px;
+    min-height: 42px;
+    padding: 0;
+  }
+  :local(.root):global(.submit-order) :global(.customer-name-button) {
+    height: 42px;
+    min-height: 42px;
+  }
+  :local(.root):global(.submit-order) :global(.order-date-inline-input) {
+    width: 72px !important;
+    min-width: 72px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding-inline: 0 !important;
+    font-size: 12px !important;
+    text-align: center !important;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   :local(.root):global(.submit-order) :global(.item-editor) button,

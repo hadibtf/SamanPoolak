@@ -1,11 +1,12 @@
+import { useApiQuery, newestFirst, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useMemo } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { useLiveQuery } from 'dexie-react-hooks';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { db, jalaliDateKey } from '../db';
+import { jalaliDateKey } from '../domain';
 import { expensesApi, ApiError } from '../api/client';
 import { useSettings } from '../context/SettingsContext';
 import { EXPENSE_CATEGORIES } from '../constants';
@@ -30,7 +31,8 @@ const dateObjFromKey = (key) =>
 const Expenses = () => {
   const { formatMoney, currencyLabel, toRial, fromRial } = useSettings();
 
-  const expenses = useLiveQuery(() => db.expenses.orderBy('id').reverse().toArray());
+  const expensesQuery = useApiQuery(async () => newestFirst((await expensesApi.list()).expenses));
+  const { data: expenses, setData: setExpenses } = expensesQuery;
 
   // Filters
   const [fText, setFText] = useState('');
@@ -131,7 +133,7 @@ const Expenses = () => {
       } else {
         ({ expense } = await expensesApi.create(payload));
       }
-      await db.expenses.put(expense);
+      setExpenses((rows) => newestFirst(upsertRow(rows, expense)));
       closeModal();
       showToast(editing ? 'هزینه ویرایش شد.' : 'هزینه ثبت شد.');
     } catch (err) {
@@ -148,7 +150,7 @@ const Expenses = () => {
     if (!window.confirm(`حذف هزینه «${expense.title}»؟`)) return;
     try {
       await expensesApi.remove(expense.id);
-      await db.expenses.delete(expense.id);
+      setExpenses((rows) => rows.filter((row) => row.id !== expense.id));
       showToast('هزینه حذف شد.');
     } catch (err) {
       console.error('Expense delete failed:', err);
@@ -171,6 +173,7 @@ const Expenses = () => {
         </Dialog.Trigger>
       </div>
 
+      <ApiReadStatus queries={[expensesQuery]} />
       <div className={`glass-card ${styles.filterCard}`}>
         <div className={styles['exp-filter-grid']}>
           <div className={styles.filterGroup}>
@@ -206,7 +209,7 @@ const Expenses = () => {
       </div>
 
       <div className={styles['expenses-list']}>
-        {filtered.length === 0 ? (
+        {expensesQuery.loading || expensesQuery.error ? null : filtered.length === 0 ? (
           <div className="empty-state">
             <i className="fa-solid fa-wallet"></i>
             <p>{expenses && expenses.length === 0 ? 'هنوز هزینه‌ای ثبت نشده است.' : 'هزینه‌ای با این فیلترها یافت نشد.'}</p>

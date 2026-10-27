@@ -1,11 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useApiQuery, liveRows, newestFirst } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { db, jalaliDateKey, deriveOrderStatus } from '../db';
-import { ordersApi, productionApi, ApiError } from '../api/client';
+import { jalaliDateKey, deriveOrderStatus } from '../domain';
+import { peopleApi, ordersApi, ApiError } from '../api/client';
 import { PLATING_LABELS } from '../constants';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
@@ -27,10 +28,6 @@ const SEMI_READY_ITEM_STATES = new Set([
   'SENT_PLATING',
   'PRODUCTION_COMPLETE',
 ]);
-const PRODUCTION_TOTAL_ITEM_STATES = new Set([
-  ...SEMI_READY_ITEM_STATES,
-  ...READY_OR_LATER_ITEM_STATES,
-]);
 const latestOrderItemStatus = (item) => {
   const history = item?.stateHistory || [];
   const latest = history[history.length - 1];
@@ -42,12 +39,6 @@ const orderItemStageClass = (item) => {
   if (READY_OR_LATER_ITEM_STATES.has(status)) return 'is-ready';
   if (SEMI_READY_ITEM_STATES.has(status)) return 'is-semi-ready';
   return '';
-};
-
-const summarizeProduction = (summary) => {
-  return {
-    totalProduced: Number(summary?.totalProduced) || 0,
-  };
 };
 
 const toEnglishDigits = (value) => String(value ?? '')
@@ -145,10 +136,11 @@ const OrderList = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [fAdvancedOrderNumber, setFAdvancedOrderNumber] = useState('');
   const [statusTab, setStatusTab] = useState('in-progress');
-  const [productionTotalsByItem, setProductionTotalsByItem] = useState({});
 
-  const orders = useLiveQuery(() => db.orders.orderBy('id').reverse().toArray(), []);
-  const people = useLiveQuery(() => db.people.toArray(), []);
+  const ordersQuery = useApiQuery(async () => newestFirst((await ordersApi.list()).orders));
+  const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people));
+  const { data: orders, setData: setOrders } = ordersQuery;
+  const { data: people } = peopleQuery;
   const personByCustomerId = useMemo(
     () => new Map((people || []).map((person) => [String(person.id), person])),
     [people]
@@ -231,44 +223,6 @@ const OrderList = () => {
   const completedOrders = useMemo(() => filtered.filter((order) => deriveOrderStatus(order).done), [filtered]);
   const inProgressOrders = useMemo(() => filtered.filter((order) => !deriveOrderStatus(order).done), [filtered]);
   const visibleOrders = statusTab === 'completed' ? completedOrders : inProgressOrders;
-  const productionSummaryItems = useMemo(() => visibleOrders.flatMap((order) =>
-    (order.items || [])
-      .filter((item) => item.uid && PRODUCTION_TOTAL_ITEM_STATES.has(latestOrderItemStatus(item)))
-      .map((item) => ({ orderId: order.id, itemUid: item.uid, key: `${order.id}:${item.uid}` }))
-  ), [visibleOrders]);
-
-  useEffect(() => {
-    if (!productionSummaryItems.length) return undefined;
-
-    let active = true;
-    let loading = false;
-    const refreshProductionTotals = async () => {
-      if (loading) return;
-      loading = true;
-      const results = await Promise.allSettled(productionSummaryItems.map(async ({ orderId, itemUid, key }) => {
-        const summary = await productionApi.itemSummary(orderId, itemUid);
-        return { key, totals: summarizeProduction(summary) };
-      }));
-      if (active) {
-        setProductionTotalsByItem((previous) => {
-          const next = { ...previous };
-          results.forEach((result) => {
-            if (result.status === 'fulfilled') next[result.value.key] = result.value.totals;
-          });
-          return next;
-        });
-      }
-      loading = false;
-    };
-
-    refreshProductionTotals();
-    const intervalId = window.setInterval(refreshProductionTotals, 15000);
-    return () => {
-      active = false;
-      window.clearInterval(intervalId);
-    };
-  }, [productionSummaryItems]);
-
   const hasFilters = Boolean(
     searchQuery.trim() || fAdvancedOrderNumber.trim() || fDate || fFrom || fTo
       || selectedCustomers.length || selectedSizes.length
@@ -312,7 +266,7 @@ const OrderList = () => {
     if (!window.confirm(`حذف سفارش #${toEnglishDigits(o.orderNumber)}؟`)) return;
     try {
       await ordersApi.remove(o.id);
-      await db.orders.delete(o.id);
+      setOrders((rows) => rows.filter((row) => row.id !== o.id));
     } catch (error) {
       console.error('Failed to delete order:', error);
       window.alert(
@@ -332,6 +286,7 @@ const OrderList = () => {
 
   return (
     <div className={`${styles.root} order-list`}>
+      <ApiReadStatus queries={[ordersQuery, peopleQuery]} />
       <div className="glass-card filter-card">
         <div className={styles.searchToolbar}>
           <label className={styles.searchInputWrap}>
@@ -482,7 +437,7 @@ const OrderList = () => {
       ]} />
 
       <div className="orders-grid">
-        {visibleOrders.length === 0 ? (
+        {ordersQuery.loading || peopleQuery.loading || ordersQuery.error || peopleQuery.error ? null : visibleOrders.length === 0 ? (
           <div className="empty-state">
             <i className="fa-solid fa-box-open"></i>
             <p>
@@ -531,13 +486,8 @@ const OrderList = () => {
                       {orderItems.length ? orderItems.map((item, index) => {
                         const itemStatus = latestOrderItemStatus(item);
                         const stageClass = orderItemStageClass(item);
-                        const productionTotals = productionTotalsByItem[`${o.id}:${item.uid}`];
-                        const itemProductionTotals = productionTotals || { totalProduced: 0 };
-                        const parsedProducedCount = Number(toEnglishDigits(itemProductionTotals.totalProduced));
-                        const itemProducedCount = Number.isFinite(parsedProducedCount) ? parsedProducedCount : 0;
                         const parsedOrderedCount = Number(toEnglishDigits(item.quantity));
                         const itemOrderedCount = Number.isFinite(parsedOrderedCount) ? parsedOrderedCount : 0;
-                        const hasOverproduction = itemProducedCount > itemOrderedCount;
                         const diameter = formatItemNumber(item.diameter);
                         const thickness = formatItemNumber(item.thickness);
                         const hasDimensions = diameter !== ''
@@ -568,24 +518,8 @@ const OrderList = () => {
                                 <MetallicText tone={platingTone}>{PLATING_LABELS[platingColor]}</MetallicText>
                               </span>
                             </div>
-                            <span className="order-item-metric order-item-progress-count" dir="rtl" aria-label="تعداد تولیدشده از تعداد سفارش">
-                              <span className="order-item-progress-produced">
-                                {hasOverproduction ? (
-                                  <>
-                                    <span className="order-item-progress-overage">
-                                      <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemProducedCount - itemOrderedCount)}</bdi>
-                                      <span>+</span>
-                                    </span>
-                                    <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
-                                  </>
-                                ) : (
-                                  <bdi className="order-list-numeric" dir="ltr">{formatCountValue(itemProducedCount)}</bdi>
-                                )}
-                              </span>
-                              <span className="order-item-progress-target">
-                                <span>از</span>
-                                <bdi className="order-list-numeric order-item-ordered-count" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
-                              </span>
+                            <span className="order-item-metric order-item-progress-count" dir="rtl" aria-label="تعداد سفارش">
+                              <bdi className="order-list-numeric order-item-ordered-count" dir="ltr">{formatCountValue(itemOrderedCount)}</bdi>
                               <i className="fa-solid fa-tag order-item-metric-icon" aria-hidden="true" />
                             </span>
                           </li>

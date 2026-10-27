@@ -4,8 +4,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Expenses from './Expenses';
 
-vi.mock('dexie-react-hooks', () => ({ useLiveQuery: () => [] }));
-vi.mock('../db', () => ({ db: {}, jalaliDateKey: vi.fn() }));
 vi.mock('../components/JalaliDatePicker', () => ({
   default: () => <input aria-label="تاریخ" />,
 }));
@@ -18,7 +16,7 @@ vi.mock('../context/SettingsContext', () => ({
   }),
 }));
 vi.mock('../api/client', () => ({
-  expensesApi: {},
+  expensesApi: { list: vi.fn().mockResolvedValue({ expenses: [] }) },
   ApiError: class ApiError extends Error {},
 }));
 

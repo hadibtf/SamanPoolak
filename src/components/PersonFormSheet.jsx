@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { db } from '../db';
 import { peopleApi, ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import JalaliDatePicker from './JalaliDatePicker';
@@ -329,7 +328,6 @@ const PersonFormSheet = ({
         ({ person: savedPerson } = await peopleApi.create(payload));
       }
 
-      await db.people.put(savedPerson);
     } catch (error) {
       onError?.(error, getSaveErrorMessage(error));
     } finally {
@@ -360,7 +358,7 @@ const PersonFormSheet = ({
       setCheckingDuplicates(true);
       let similarPeople = [];
       try {
-        similarPeople = findSimilarPeople(formData, await db.people.toArray(), {
+        similarPeople = findSimilarPeople(formData, (await peopleApi.list()).people, {
           includeNameCompanyMatches: !person,
           excludePersonId: person?.id ?? null,
         });

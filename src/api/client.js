@@ -96,6 +96,14 @@ export const api = {
   del: (path) => request('DELETE', path),
 };
 
+// Keep timestamp-string delta calls compatible with older consumers; new reads
+// may supply scoped filters. All query values are URL encoded.
+const resourceQuery = (options) => {
+  const values = typeof options === 'string' ? { updatedAfter: options } : options || {};
+  const query = new URLSearchParams(Object.entries(values).filter(([, value]) => value !== undefined && value !== null && value !== ''));
+  return query.size ? `?${query}` : '';
+};
+
 // --- Convenience wrappers -------------------------------------------------
 
 export const authApi = {
@@ -150,8 +158,7 @@ export const ordersApi = {
 
 export const markingsApi = {
   /** @returns {Promise<{markings: import('../types/domain').Marking[]}>} */
-  list: (updatedAfter) =>
-    api.get(`/markings${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  list: (options) => api.get(`/markings${resourceQuery(options)}`),
   /** @param {Pick<import('../types/domain').Marking, 'customerId'|'name'|'src'|'location'>} marking
  * @returns {Promise<{marking: import('../types/domain').Marking}>}
  */
@@ -229,8 +236,7 @@ export const jobApplicationsApi = {
 };
 
 export const attendanceApi = {
-  list: (updatedAfter) =>
-    api.get(`/attendance${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
+  list: (options) => api.get(`/attendance${resourceQuery(options)}`),
   create: (scan) => api.post('/attendance', scan),
   update: (id, patch) => api.put(`/attendance/${encodeURIComponent(id)}`, patch),
   remove: (id) => api.del(`/attendance/${encodeURIComponent(id)}`),

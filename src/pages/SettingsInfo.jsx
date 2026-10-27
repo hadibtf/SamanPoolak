@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { usersApi, adminApi, holidaysApi, ApiError } from '../api/client';
-import { loadedHolidayYears, holidayStatus } from '../holidays';
-import { requestSync } from '../syncBus';
+import { loadedHolidayYears, holidayStatus, refreshHolidays, useHolidays } from '../holidays';
 import People from './People';
 import SegmentedTabs from '../components/SegmentedTabs';
 import styles from './SettingsInfo.module.css';
@@ -32,7 +31,9 @@ const SettingsInfo = () => {
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState('settings');
-  const [syncing, setSyncing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { version: holidayVersion } = useHolidays();
+  useEffect(() => { setCalYears(loadedHolidayYears()); setCalStatus(holidayStatus()); }, [holidayVersion]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -165,9 +166,6 @@ const SettingsInfo = () => {
     try {
       const data = JSON.parse(await file.text());
       await adminApi.restore(data);
-      // Force a fresh full re-sync of local mirrors, then reload.
-      ['signit_people_synced_at', 'signit_orders_synced_at', 'signit_markings_synced_at']
-        .forEach((k) => localStorage.removeItem(k));
       showToast('بازگردانی انجام شد. بارگذاری مجدد...');
       setTimeout(() => window.location.reload(), 800);
     } catch (err) {
@@ -183,13 +181,8 @@ const SettingsInfo = () => {
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
-      // Host-first: upload to the server so the calendar is GLOBAL. Every device
-      // (including this one) then reads it from the host via sync — nothing is
-      // stored client-side except the usual synced mirror.
       const res = await holidaysApi.import({ data: Array.isArray(data?.data) ? data.data : data });
-      requestSync(); // pull the new rows into the mirror now
-      // Give the sync a moment, then refresh the UI counters from the mirror.
-      setTimeout(() => { setCalYears(loadedHolidayYears()); setCalStatus(holidayStatus()); }, 1500);
+      await refreshHolidays();
       const yearsFa = (res?.years || []).map(toFaDigits).join('، ');
       const count = res?.count ?? 0;
       showToast(`تقویم سال ${yearsFa} با ${toFaDigits(count)} روز تعطیل روی سرور ثبت شد.`);
@@ -202,26 +195,16 @@ const SettingsInfo = () => {
     }
   };
 
-  const handleFullSync = async () => {
-    if (!navigator.onLine) {
-      showToast('برای همگام‌سازی به اتصال اینترنت نیاز دارید.', 'error');
-      return;
-    }
-    setSyncing(true);
+  const handleRefresh = async () => {
+    setRefreshing(true);
     try {
-      [
-        'signit_people_synced_at', 'signit_orders_synced_at',
-        'signit_markings_synced_at', 'signit_expenses_synced_at',
-        'signit_issue_notes_synced_at', 'signit_attendance_synced_at',
-        'signit_holidays_synced_at',
-      ].forEach((key) => localStorage.removeItem(key));
-      await requestSync();
-      showToast('داده‌های دستگاه با سرور همگام‌سازی شد.');
+      await refreshHolidays();
+      await loadUsers();
+      showToast('اطلاعات به‌روز شد.');
     } catch (err) {
-      console.error('Full sync failed:', err);
-      showToast('خطا در همگام‌سازی داده‌ها.', 'error');
+      showToast('دریافت اطلاعات ناموفق بود. اتصال اینترنت را بررسی کنید.', 'error');
     } finally {
-      setSyncing(false);
+      setRefreshing(false);
     }
   };
 
@@ -292,13 +275,13 @@ const SettingsInfo = () => {
 
       <div className="settings-card glass-card">
         <h2 className="settings-section-title">
-          <i className="fa-solid fa-rotate"></i> همگام‌سازی داده‌ها
+          <i className="fa-solid fa-rotate"></i> به‌روزرسانی اطلاعات
         </h2>
         <p className="muted settings-hint">
-          فهرست افراد، سفارش‌ها، هزینه‌ها و سایر داده‌های این دستگاه را دوباره از سرور دریافت می‌کند.
+          اطلاعات این صفحه و تقویم را از سرور دریافت می‌کند. هر بخش هنگام ورود و بازگشت به برنامه تازه می‌شود.
         </p>
-        <button type="button" className="primary-btn" disabled={syncing} onClick={handleFullSync}>
-          <i className={`fa-solid fa-rotate ${syncing ? 'fa-spin' : ''}`}></i> {syncing ? 'در حال همگام‌سازی...' : 'همگام‌سازی با سرور'}
+        <button type="button" className="primary-btn" disabled={refreshing} onClick={handleRefresh}>
+          <i className={`fa-solid fa-rotate ${refreshing ? 'fa-spin' : ''}`}></i> {refreshing ? 'در حال دریافت...' : 'دریافت از سرور'}
         </button>
       </div>
 

@@ -1,13 +1,13 @@
+import { useApiQuery, liveRows } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { db } from '../db';
-import { ordersApi, productionApi, ApiError } from '../api/client';
+import { peopleApi, markingsApi, ordersApi, productionApi, ApiError } from '../api/client';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import MetallicText from '../components/MetallicText';
 import { productionDateKey } from '../productionStatistics';
@@ -789,21 +789,32 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
 const OrderView = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const linkedItemUid = searchParams.get('itemUid');
   const navigate = useNavigate();
   const { user } = useAuth();
   const orderId = Number(id);
 
-  const order = useLiveQuery(() => db.orders.get(orderId), [orderId]);
-  const markings = useLiveQuery(() => db.markings.toArray(), []);
-  const customer = useLiveQuery(
-    () => (order?.customerId != null ? db.people.get(order.customerId) : undefined),
-    [order?.customerId]
-  );
+  const orderQuery = useApiQuery(async () => {
+    try { return (await ordersApi.get(orderId)).order; }
+    catch (error) { if (error.status === 404) return null; throw error; }
+  }, [orderId]);
+  const { data: order, setData: setOrder } = orderQuery;
+  const markingsQuery = useApiQuery(async () => order?.customerId == null ? [] : liveRows((await markingsApi.list({ customerId: order.customerId })).markings), [order?.customerId]);
+  const { data: markings } = markingsQuery;
+  const customerQuery = useApiQuery(async () => {
+    if (order?.customerId == null) return null;
+    try { return (await peopleApi.get(order.customerId)).person; }
+    catch (error) { if (error.status === 404) return null; throw error; }
+  }, [order?.customerId]);
+  const { data: customer } = customerQuery;
 
   const [toast, setToast] = useState(null);
   const [productionQuantities, setProductionQuantities] = useState({});
-  const [selectedItemUid, setSelectedItemUid] = useState(null);
+  const [selectedItemUid, setSelectedItemUid] = useState(linkedItemUid);
   const invoiceRef = useRef(null);
+
+  useEffect(() => setSelectedItemUid(linkedItemUid), [linkedItemUid, orderId]);
 
   const markingMap = useMemo(() => {
     const map = {};
@@ -816,12 +827,14 @@ const OrderView = () => {
     setTimeout(() => setToast(null), 2500);
   };
 
+  if (orderQuery.error) return <div className={`${managementRootClass} order-view`}><ApiReadStatus queries={[orderQuery]} /></div>;
   if (order === undefined) {
     return <div className={`${managementRootClass} order-view`}><p className="hint-text">در حال بارگذاری...</p></div>;
   }
   if (order === null) {
     return (
       <div className={`${managementRootClass} order-view`}>
+      <ApiReadStatus queries={[orderQuery, markingsQuery, customerQuery]} />
         <div className="page-back">
           <button className="back-btn" onClick={() => navigate('/orders/list')}>
             <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>
@@ -842,8 +855,8 @@ const OrderView = () => {
       : { ...previous, [uid]: quantity });
     if (summary?.orderItem) {
       const currentState = summary.orderItem;
-      db.orders.get(orderId).then((currentOrder) => {
-        if (!currentOrder) return;
+      setOrder((currentOrder) => {
+        if (!currentOrder) return currentOrder;
         let changed = false;
         const updatedItems = (currentOrder.items || []).map((currentItem) => {
           if (currentItem.uid !== uid) return currentItem;
@@ -854,8 +867,8 @@ const OrderView = () => {
           changed = true;
           return { ...currentItem, state: currentState.state, stateHistory: nextHistory, productionStopped: Boolean(currentState.productionStopped) };
         });
-        if (changed) db.orders.put({ ...currentOrder, items: updatedItems });
-      }).catch((error) => console.error('Failed to refresh production state:', error));
+        return changed ? { ...currentOrder, items: updatedItems } : currentOrder;
+      });
     }
   };
 
@@ -863,7 +876,7 @@ const OrderView = () => {
     const newItems = items.map((it, i) => (i === index ? { ...it, ...patch } : it));
     try {
       const { order: updated } = await ordersApi.update(orderId, { items: newItems });
-      await db.orders.put(updated); // mirror the server's canonical row
+      setOrder(updated);
       return true;
     } catch (error) {
       console.error('Failed to update order:', error);
@@ -881,7 +894,6 @@ const OrderView = () => {
     if (!window.confirm('آیا از حذف این سفارش اطمینان دارید؟')) return;
     try {
       await ordersApi.remove(orderId);
-      await db.orders.delete(orderId);
       navigate('/orders/list');
     } catch (error) {
       console.error('Failed to delete order:', error);
@@ -930,6 +942,7 @@ const OrderView = () => {
 
   return (
     <div className={`${managementRootClass} order-view ${glassStyles.page}`}>
+      <ApiReadStatus queries={[orderQuery, markingsQuery, customerQuery]} />
       <div className="page-back">
         <button className="back-btn" onClick={() => navigate('/orders/list')}>
           <i className="fa-solid fa-chevron-left"></i><span>بازگشت</span>

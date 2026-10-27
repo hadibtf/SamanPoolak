@@ -4,7 +4,7 @@ import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import { Button, EmptyState, ErrorState, LoadingState } from '../components/ui/Ui';
-import { computeWeights } from '../db';
+import { computeWeights } from '../domain';
 import { productionApi, ApiError } from '../api/client';
 import { productionDateKey, productionPiecesFromWeight } from '../productionStatistics';
 import styles from './EmployeeTasks.module.css';

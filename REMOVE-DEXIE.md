@@ -21,7 +21,7 @@ a second background sync system. The API/server remains authoritative. Existing
 - Preserve API-backed create/update/delete behavior and server authorization.
 - Read on screen entry; after a mutation, use the canonical API response to
   update the current React state or refetch the affected query.
-- Refresh on navigation/focus where other users' changes need to appear. Add
+- Refresh on navigation/focus where other users' changes need to appear. Add 
   polling only to screens that need it; do not poll every resource globally.
 - Show explicit loading, empty, and error states. A failed/offline request must
   not silently fall back to a local write. Offline viewing after reload will no

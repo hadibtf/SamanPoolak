@@ -40,6 +40,9 @@
 :local(.root) :global(.statistics-details) :global(.statistics-worker-group):nth-of-type(even) :global(.statistics-worker-name) { border-bottom-color: #f3d6b3; background: #ffead0; color: #805100; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-record) { display: block; width: 100%; min-width: 0; box-sizing: border-box; margin: 0; padding: 0; border: 1px solid #c9d8e9; border-radius: 9px; background: #fff; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-record):last-child { border-bottom: 1px solid #c9d8e9; }
+:local(.root) :global(.statistics-production-link) { display: block; border-radius: 9px; color: inherit; text-decoration: none; }
+:local(.root) :global(.statistics-production-link):hover { background: rgba(0, 122, 255, .07); }
+:local(.root) :global(.statistics-production-link):focus-visible { outline: 2px solid #007aff; outline-offset: 2px; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-sentence) { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 2px; margin: 0; padding: 11px 13px; color: #303844; font-size: 13px; font-weight: 600; line-height: 1.9; text-align: right; overflow-wrap: anywhere; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-item-title) { display: inline-flex; min-width: 0; flex-direction: column; align-items: flex-start; line-height: 1.4; }
 :local(.root) :global(.statistics-details) :global(.statistics-production-name-row) { display: inline-flex; min-width: 0; align-items: center; gap: 6px; }

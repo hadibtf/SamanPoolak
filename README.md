@@ -34,9 +34,9 @@ team of users on different devices all see the same live data.
 - **Settings & Information** — light/dark theme, app-wide Rial/Toman currency,
   admin database backup/restore, and the People directory.
 - **Management** — order entry/list/detail plus the Inquiries tab.
-- **Local-mirror sync** — reads are instant from an IndexedDB mirror; the app
-  polls the server (~15s) so one user's change appears for the others. Reading
-  works offline; writing needs a connection.
+- **Direct API reads** — screens fetch on entry and focus/reconnect, keeping
+  results in React memory. Writes require server confirmation. Reloading offline
+  does not provide saved business records.
 
 ---
 
@@ -46,7 +46,7 @@ team of users on different devices all see the same live data.
 | --- | --- |
 | UI | React 19 + Vite |
 | Routing | React Router 7 |
-| Local mirror | Dexie.js 4 (IndexedDB) + `dexie-react-hooks` (`useLiveQuery`) |
+| Screen data | Authenticated API + memory-only React state |
 | Backend | Vanilla PHP 8 + PDO + MySQL/MariaDB (no framework) |
 | Auth | Per-user bcrypt + server-side bearer tokens |
 | Jalali dates | `react-multi-date-picker` + `react-date-object` |
@@ -54,8 +54,7 @@ team of users on different devices all see the same live data.
 | Styling | CSS Modules + deliberate global CSS, CSS variables, dark theme |
 | Font / icons | Vazirmatn (bundled) / Font Awesome |
 
-No TypeScript, no Redux/Zustand, no CSS framework. Cross-component data flows
-through the Dexie mirror via live queries.
+No TypeScript, no Redux/Zustand, no CSS framework. Screen data comes from the API; mutations apply its canonical response or refetch the affected query.
 
 ---
 
@@ -107,15 +106,15 @@ phpMyAdmin. Full details in [DEPLOY.md](DEPLOY.md).
 
 ```text
 src/
-├── index.js                  # Mounts <App> in <SettingsProvider><BrowserRouter><AuthProvider>
-├── App.js                    # Routes; gates app behind login; runs the sync engine
-├── db.js                     # Dexie schema (v1–v6) + helpers (IDs, weights, order status)
+├── index.jsx                 # Mounts <App> in <SettingsProvider><BrowserRouter><AuthProvider>
+├── App.jsx                   # Routes and authenticated management shell
+├── domain.js                 # Pure date, weight, and order-status helpers
 ├── constants.js              # Enums + Persian labels (materials, plating, states, expense categories)
 ├── index.css                 # Global styles incl. dark theme + bottom nav
 ├── api/client.js             # fetch wrapper + per-entity API objects + auth token handling
 ├── auth/AuthContext.jsx      # login/logout/me, current user, 401 handling
 ├── context/SettingsContext.jsx  # theme + currency, formatMoney/toRial/fromRial
-├── hooks/useSyncEngine.js    # polls /…?updatedAfter and mirrors deltas into Dexie
+├── hooks/useApiQuery.js      # Screen reads, late-response guards, entry/focus refresh
 ├── utils/image.js            # client-side image compression → Base64
 ├── components/               # BottomNav, MarkingsManager
 └── pages/                    # HumanResources (+ payroll tabs), Management (+ orders/inquiries),

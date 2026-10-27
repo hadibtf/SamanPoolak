@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { PLATING_OPTIONS } from '../constants';
 import { PRODUCTION_MONTHS, productionFa, productionStatusLabel } from '../productionStatistics';
 
@@ -20,15 +21,14 @@ const groupRecordsByEmployee = (records = []) => {
   return [...groups.values()];
 };
 
-export function EmployeeProductionRecord({ record }) {
+export function EmployeeProductionRecord({ record, linkToOrder = false }) {
   const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
   const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
   const dimension = [record.diameter, record.thickness]
     .map((value) => value == null || value === '' ? '—' : productionFa(value))
     .join(' × ');
 
-  return <article className="statistics-production-record" dir="rtl">
-    <p className="statistics-production-sentence">
+  const content = <p className="statistics-production-sentence">
         <span className="statistics-production-item-title">
           <span className="statistics-production-name-row">
             <strong className="statistics-production-product">{record.productName || '—'}</strong>
@@ -41,7 +41,13 @@ export function EmployeeProductionRecord({ record }) {
       {record.productionComplete && <span className="statistics-production-complete" role="img" aria-label="تولید این قلم تکمیل شده" title="تولید تکمیل شده">
         <i className="fa-solid fa-check" aria-hidden="true" />
       </span>}
-    </p>
+    </p>;
+  return <article className="statistics-production-record" dir="rtl">
+    {linkToOrder && record.orderId ? <Link
+      className="statistics-production-link"
+      to={`/orders/view/${record.orderId}${record.orderItemUid ? `?itemUid=${encodeURIComponent(record.orderItemUid)}` : ''}`}
+      aria-label={`نمایش سفارش ${record.orderNumber}، ${record.productName || 'قطعه'}`}
+    >{content}</Link> : content}
   </article>;
 }
 

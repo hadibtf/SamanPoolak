@@ -172,6 +172,8 @@ Employee projections exclude customer contacts, pricing, and administrative data
 
 ### Markings *(auth)*
 - `GET /markings` / `?updatedAfter=` (delta).
+- Optional `customerId` scopes the list to that customer's markings, including
+  when combined with the existing delta parameter.
 - `POST /markings` `{ customerId, name, location?, imageData? }` — `imageData` is a
   base64 data URL; the server writes a file under `/uploads/markings` and stores
   its URL in `src`. Names are auto-numerated per customer. → `201 { marking }`.
@@ -183,6 +185,19 @@ Employee projections exclude customer contacts, pricing, and administrative data
   → `201 { expense }`. `amount` is Rial.
 - `PUT /expenses/{id}` (partial) → `{ expense }`.
 - `DELETE /expenses/{id}` (soft) → `{ ok, id }`.
+
+### Attendance and holidays *(management auth)*
+- `GET /attendance` → `{ attendance: [...] }`; optional `cardNo`, `from`, `to`
+  scope scans by card and inclusive Jalali `YYYYMMDD` date keys. Optional
+  `countOnly=1` returns `{ count }` without downloading scans. `updatedAfter`
+  continues to include tombstones for compatibility with older clients.
+- `POST /attendance` → `{ attendance }`; `PUT /attendance/{id}` updates a scan;
+  `DELETE /attendance/{id}` soft-deletes it.
+- `POST /attendance/import` accepts `{ records, employees? }`, preserves manual
+  scans, replaces device scans in the imported range, and returns
+  `{ ok, count, minDate, maxDate }`.
+- `GET /holidays` → `{ holidays: [...] }`; `POST /holidays/import` imports the
+  calendar. Clients refresh the full calendar after import.
 
 ### Inquiries
 - `POST /inquiries` *(public)* `{ name, phone, product, quantity?, note?, source? }`

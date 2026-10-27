@@ -64,17 +64,24 @@ function save_marking_image($customerId, $dataUrl)
 function markings_list($params, $body, $user)
 {
     require_management($user);
+    $where = [];
+    $values = [];
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
-        if ($ts === null) {
-            json_error('Invalid updatedAfter timestamp', 422);
-        }
-        $stmt = db()->prepare('SELECT * FROM markings WHERE updated_at > :ts ORDER BY updated_at ASC');
-        $stmt->execute([':ts' => $ts]);
+        if ($ts === null) json_error('Invalid updatedAfter timestamp', 422);
+        $where[] = 'updated_at > :ts';
+        $values[':ts'] = $ts;
     } else {
-        $stmt = db()->query('SELECT * FROM markings WHERE deleted_at IS NULL ORDER BY id ASC');
+        $where[] = 'deleted_at IS NULL';
     }
+    if (isset($_GET['customerId'])) {
+        $where[] = 'customer_id = :customer';
+        $values[':customer'] = (string) $_GET['customerId'];
+    }
+    $order = $after ? 'updated_at' : 'id';
+    $stmt = db()->prepare('SELECT * FROM markings WHERE ' . implode(' AND ', $where) . " ORDER BY $order ASC");
+    $stmt->execute($values);
     json_response(['markings' => array_map('markings_to_wire', $stmt->fetchAll())]);
 }
 

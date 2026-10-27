@@ -1,6 +1,8 @@
+import { peopleApi, attendanceApi } from '../api/client';
+import { useApiQuery, liveRows, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, jalaliDateKey } from '../db';
+import { jalaliDateKey } from '../domain';
 import JalaliDatePicker from "../components/JalaliDatePicker";
 import DateObject from 'react-date-object';
 import PersonFormSheet from '../components/PersonFormSheet';
@@ -133,37 +135,18 @@ const HumanResources = () => {
   const breakMin = (Number(s.breakfastMin) || 0) + (Number(s.lunchMin) || 0);
   const shiftWindowMin = Math.max(0, (toMinutes(s.shiftEnd) ?? 0) - (toMinutes(s.shiftStart) ?? 0));
 
-  const matchedEmployees = useLiveQuery(
-    () => {
-      const q = searchFullName.trim();
-      return db.people
-        .where('category').equals('EMPLOYEE')
-        .filter(person => {
-          if (!q) return true;
-          const full = `${person.firstName || ''} ${person.lastName || ''}`;
-          return full.includes(q);
-        })
-        .toArray()
-        .then(people => people.sort((a, b) =>
-          `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(`${b.firstName || ''} ${b.lastName || ''}`, 'fa')
-        ));
-    },
-    [searchFullName]
-  );
+  const peopleQuery = useApiQuery(async () => activeTab !== 'calc' ? [] : liveRows((await peopleApi.list()).people).filter((p) => p.category === 'EMPLOYEE'), [activeTab]);
+  const matchedEmployees = peopleQuery.data?.filter((person) => `${person.firstName || ''} ${person.lastName || ''}`.includes(searchFullName.trim()))
+    .sort((a, b) => `${a.firstName || ''} ${a.lastName || ''}`.localeCompare(`${b.firstName || ''} ${b.lastName || ''}`, 'fa'));
 
   const attendanceFromKey = startDate ? jalaliDateKey(startDate) : '';
   const attendanceToKey = endDate ? jalaliDateKey(endDate) : '';
-  const attendanceScans = useLiveQuery(
-    () => {
-      const cardNo = selectedEmployee?.cardNo;
-      if (!cardNo || !attendanceFromKey || !attendanceToKey || attendanceFromKey > attendanceToKey) return [];
-      return db.attendance
-        .where('cardNo').equals(String(cardNo))
-        .filter((scan) => !scan.deletedAt && scan.dateKey >= attendanceFromKey && scan.dateKey <= attendanceToKey)
-        .toArray();
-    },
-    [selectedEmployee?.cardNo, attendanceFromKey, attendanceToKey]
-  );
+  const attendanceQuery = useApiQuery(async () => {
+    const cardNo = selectedEmployee?.cardNo;
+    if (activeTab !== 'calc' || !cardNo || !attendanceFromKey || !attendanceToKey || attendanceFromKey > attendanceToKey) return [];
+    return liveRows((await attendanceApi.list({ cardNo, from: attendanceFromKey, to: attendanceToKey })).attendance);
+  }, [activeTab, selectedEmployee?.cardNo, attendanceFromKey, attendanceToKey]);
+  const { data: attendanceScans } = attendanceQuery;
 
   const attendanceAdjustments = useMemo(() => {
     let overtimeMinutes = 0;
@@ -294,7 +277,7 @@ const HumanResources = () => {
   }, [startDate, endDate, sanavat, children, overtime, hourlyDeduction, unusedLeave, absentDays, reward, married, noInsurance, isToman, s]);
 
   useEffect(() => {
-    if (!selectedEmployee || !startDate || !endDate || attendanceScans === undefined) return;
+    if (!selectedEmployee || !startDate || !endDate || attendanceScans === undefined || attendanceQuery.loading || attendanceQuery.error) return;
 
     // Attendance is live, so its query can refresh after the user has edited
     // these fields. Seed the inputs once for each employee/date range instead
@@ -312,7 +295,7 @@ const HumanResources = () => {
     const asHours = (minutes) => minutes === 0 ? '0' : String(Number((minutes / 60).toFixed(2)));
     setOvertime(asHours(attendanceAdjustments.overtimeMinutes));
     setHourlyDeduction(asHours(attendanceAdjustments.deductionMinutes));
-  }, [selectedEmployee, startDate, endDate, attendanceFromKey, attendanceToKey, attendanceScans, attendanceAdjustments]);
+  }, [selectedEmployee, startDate, endDate, attendanceFromKey, attendanceToKey, attendanceScans, attendanceAdjustments, attendanceQuery.loading, attendanceQuery.error]);
 
   // Re-run the calc when inputs or the currency change — but only after the
   // first manual calculation, and WITHOUT depending on `results` (the previous
@@ -385,6 +368,7 @@ const HumanResources = () => {
 
   return (
     <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''} ${activeTab === 'calc' ? 'payroll-container-calc' : ''}`}>
+      <ApiReadStatus queries={[peopleQuery, attendanceQuery]} />
       <div className="payroll-tabs">
         <SegmentedTabs className={styles.payrollTabs} label="بخش‌های منابع انسانی" value={activeTab} onChange={setActiveTab} items={[
           { value: 'calc', label: 'حقوق', icon: 'fa-solid fa-file-invoice' },
@@ -684,6 +668,7 @@ const HumanResources = () => {
           showCategorySelector={false}
           onClose={() => setIsEmployeeSheetOpen(false)}
           onSaved={(employee) => {
+            peopleQuery.setData((rows) => upsertRow(rows, employee));
             handleSelectEmployee(employee);
             showToast('کارمند ثبت شد.');
           }}

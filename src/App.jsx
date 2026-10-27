@@ -13,16 +13,21 @@ import SettingsInfo from './pages/SettingsInfo';
 import ManagementStatistics from './pages/ManagementStatistics';
 import Login from './pages/Login';
 import { useAuth } from './auth/AuthContext';
-import { useSyncEngine } from './hooks/useSyncEngine';
+import LegacyDataCleanup from './components/LegacyDataCleanup';
+import ApiReadStatus from './components/ApiReadStatus';
+import { useApiQuery } from './hooks/useApiQuery';
+import { refreshHolidays } from './holidays';
 
-// The authenticated app shell. useSyncEngine runs only while logged in.
+// The authenticated management shell.
 function AppShell() {
   const { user } = useAuth();
-  useSyncEngine();
+  const holidaysQuery = useApiQuery(refreshHolidays);
 
   return (
     <div className="app-shell">
       <main className="app-container management-content">
+        <LegacyDataCleanup />
+        {holidaysQuery.error && <ApiReadStatus queries={[holidaysQuery]} />}
         <Routes>
           <Route path="/" element={<Navigate to="/payroll" replace />} />
           <Route path="/payroll" element={<HumanResources />} />

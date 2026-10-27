@@ -880,7 +880,7 @@ function production_management_employee_totals($start, $end, $employeeUserId = n
             SELECT ea.person_id AS employee_person_id, l.employee_user_id,
                 COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
                 l.quantity
-            FROM production_logs l JOIN users u ON u.id = l.employee_user_id
+            FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL JOIN users u ON u.id = l.employee_user_id
             LEFT JOIN employee_accounts ea ON ea.user_id = u.id
             LEFT JOIN people p ON p.id = ea.person_id
             WHERE l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd" . $taskFilter . "
@@ -888,7 +888,7 @@ function production_management_employee_totals($start, $end, $employeeUserId = n
             SELECT COALESCE(l.employee_person_id, ea.person_id) AS employee_person_id, l.employee_user_id,
                 COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
                 l.quantity
-            FROM manager_production_logs l
+            FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
             LEFT JOIN users u ON u.id = l.employee_user_id
             LEFT JOIN employee_accounts ea ON ea.user_id = u.id
             LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
@@ -943,19 +943,19 @@ function production_management_month_statistics($params, $body, $user)
     require_admin($user);
     [$year, $month, $prefix] = production_statistics_month_params();
     $employeeId = production_management_statistics_employee_filter();
-    $taskFilter = $employeeId === null ? '' : ' AND employee_user_id = :taskEmployee';
-    $managerFilter = $employeeId === null ? '' : ' AND employee_user_id = :managerEmployee';
+    $taskFilter = $employeeId === null ? '' : ' AND l.employee_user_id = :taskEmployee';
+    $managerFilter = $employeeId === null ? '' : ' AND l.employee_user_id = :managerEmployee';
     $dailyBind = [
         ':taskStart' => $prefix . '01', ':taskEnd' => $prefix . '31',
         ':managerStart' => $prefix . '01', ':managerEnd' => $prefix . '31',
     ];
     if ($employeeId !== null) { $dailyBind[':taskEmployee'] = $employeeId; $dailyBind[':managerEmployee'] = $employeeId; }
     $dailyStmt = db()->prepare('SELECT production_date, SUM(quantity) AS total_quantity FROM (
-            SELECT production_date, quantity FROM production_logs
-            WHERE deleted_at IS NULL AND production_date >= :taskStart AND production_date <= :taskEnd' . $taskFilter . '
+            SELECT l.production_date, l.quantity FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd' . $taskFilter . '
             UNION ALL
-            SELECT production_date, quantity FROM manager_production_logs
-            WHERE deleted_at IS NULL AND production_date >= :managerStart AND production_date <= :managerEnd' . $managerFilter . '
+            SELECT l.production_date, l.quantity FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :managerStart AND l.production_date <= :managerEnd' . $managerFilter . '
         ) all_production GROUP BY production_date ORDER BY production_date ASC');
     $dailyStmt->execute($dailyBind);
     $daily = array_map(fn ($row) => [
@@ -971,11 +971,11 @@ function production_management_month_statistics($params, $body, $user)
     if ($employeeId !== null) { $monthlyBind[':taskEmployee'] = $employeeId; $monthlyBind[':managerEmployee'] = $employeeId; }
     $monthlyStmt = db()->prepare('SELECT SUBSTRING(production_date, 5, 2) AS month_number,
         SUM(quantity) AS total_quantity FROM (
-            SELECT production_date, quantity FROM production_logs
-            WHERE deleted_at IS NULL AND production_date >= :taskYearStart AND production_date <= :taskYearEnd' . $taskFilter . '
+            SELECT l.production_date, l.quantity FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :taskYearStart AND l.production_date <= :taskYearEnd' . $taskFilter . '
             UNION ALL
-            SELECT production_date, quantity FROM manager_production_logs
-            WHERE deleted_at IS NULL AND production_date >= :managerYearStart AND production_date <= :managerYearEnd' . $managerFilter . '
+            SELECT l.production_date, l.quantity FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :managerYearStart AND l.production_date <= :managerYearEnd' . $managerFilter . '
         ) all_production GROUP BY SUBSTRING(production_date, 5, 2) ORDER BY month_number ASC');
     $monthlyStmt->execute($monthlyBind);
     $monthly = array_map(fn ($row) => [
@@ -991,11 +991,11 @@ function production_management_month_statistics($params, $body, $user)
     if ($employeeId !== null) { $yearlyBind[':taskEmployee'] = $employeeId; $yearlyBind[':managerEmployee'] = $employeeId; }
     $yearlyStmt = db()->prepare('SELECT SUBSTRING(production_date, 1, 4) AS year_number,
         SUM(quantity) AS total_quantity FROM (
-            SELECT production_date, quantity FROM production_logs
-            WHERE deleted_at IS NULL AND production_date >= :taskChartStart AND production_date <= :taskChartEnd' . $taskFilter . '
+            SELECT l.production_date, l.quantity FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :taskChartStart AND l.production_date <= :taskChartEnd' . $taskFilter . '
             UNION ALL
-            SELECT production_date, quantity FROM manager_production_logs
-            WHERE deleted_at IS NULL AND production_date >= :managerChartStart AND production_date <= :managerChartEnd' . $managerFilter . '
+            SELECT l.production_date, l.quantity FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            WHERE l.deleted_at IS NULL AND l.production_date >= :managerChartStart AND l.production_date <= :managerChartEnd' . $managerFilter . '
         ) all_production GROUP BY SUBSTRING(production_date, 1, 4) ORDER BY year_number ASC');
     $yearlyStmt->execute($yearlyBind);
     $yearly = array_map(fn ($row) => [
@@ -1015,7 +1015,7 @@ function production_management_month_statistics($params, $body, $user)
         FROM production_logs l JOIN production_tasks t ON t.id = l.task_id
         JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id LEFT JOIN people p ON p.id = ea.person_id
-        WHERE l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd" . $taskRecordsFilter . "
+        WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd" . $taskRecordsFilter . "
         ORDER BY l.production_date ASC, l.created_at ASC, l.id ASC");
     $taskRecordsStmt->execute($taskRecordsBind);
 
@@ -1028,7 +1028,7 @@ function production_management_month_statistics($params, $body, $user)
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id
         LEFT JOIN users u ON u.id = l.employee_user_id
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
-        WHERE l.deleted_at IS NULL AND l.production_date >= :managerStart AND l.production_date <= :managerEnd" . $managerRecordsFilter . "
+        WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date >= :managerStart AND l.production_date <= :managerEnd" . $managerRecordsFilter . "
         ORDER BY l.production_date ASC, l.created_at ASC, l.id ASC");
     $managerRecordsStmt->execute($managerRecordsBind);
 
@@ -1048,6 +1048,8 @@ function production_management_month_statistics($params, $body, $user)
             'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
             'employeePersonId' => $row['employee_person_id'] ?? null,
             'employeeName' => $row['employee_name'],
+            'orderId' => (int) $row['order_id'],
+            'orderItemUid' => $row['order_item_uid'],
             'orderNumber' => $row['order_number'],
             'productionComplete' => !empty($item['productionStopped']) || $itemState === 'PRODUCTION_COMPLETE' || production_state_is_after_completion($itemState),
             'customerName' => $row['customer_name'],
@@ -1090,7 +1092,7 @@ function production_management_day_statistics($params, $body, $user)
         JOIN orders o ON o.id = l.order_id JOIN users u ON u.id = l.employee_user_id
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id
         LEFT JOIN people p ON p.id = ea.person_id
-        WHERE l.deleted_at IS NULL AND l.production_date = :productionDate" . $filter . "
+        WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date = :productionDate" . $filter . "
         ORDER BY l.created_at ASC, l.id ASC");
     $stmt->execute($bind);
     $managerFilter = $employeeId === null ? '' : ' AND l.employee_user_id = :managerEmployee';
@@ -1103,7 +1105,7 @@ function production_management_day_statistics($params, $body, $user)
         LEFT JOIN users u ON u.id = l.employee_user_id
         LEFT JOIN employee_accounts ea ON ea.user_id = u.id
         LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
-        WHERE l.deleted_at IS NULL AND l.production_date = :managerDate" . $managerFilter . "
+        WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date = :managerDate" . $managerFilter . "
         ORDER BY l.created_at ASC, l.id ASC");
     $managerStmt->execute($managerBind);
     $rows = array_merge($stmt->fetchAll(), $managerStmt->fetchAll());
@@ -1121,6 +1123,8 @@ function production_management_day_statistics($params, $body, $user)
             'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
             'employeePersonId' => $row['employee_person_id'] ?? null,
             'employeeName' => $row['employee_name'],
+            'orderId' => (int) $row['order_id'],
+            'orderItemUid' => $row['order_item_uid'],
             'orderNumber' => $row['order_number'],
             'productionComplete' => !empty($item['productionStopped'])
                 || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE'

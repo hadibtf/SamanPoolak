@@ -1,6 +1,6 @@
 // Editable, locally-stored payroll/attendance settings — the SINGLE SOURCE for
 // rates used by BOTH the salary calculator and the attendance work-time calc.
-// Stored in localStorage (this whole attendance feature is device-local for now);
+// Preferences stay in localStorage; attendance scans are server-backed.
 // defaults come from src/constants.js so behaviour is unchanged until edited.
 
 import { useState, useEffect } from 'react';

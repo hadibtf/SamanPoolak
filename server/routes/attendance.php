@@ -37,17 +37,37 @@ function attendance_from_wire($body)
 function attendance_list($params, $body, $user)
 {
     require_management($user);
+    $where = [];
+    $values = [];
     $after = $_GET['updatedAfter'] ?? null;
     if ($after) {
         $ts = from_iso($after);
-        if ($ts === null) {
-            json_error('Invalid updatedAfter timestamp', 422);
-        }
-        $stmt = db()->prepare(ATTENDANCE_SELECT . ' WHERE a.updated_at > :ts ORDER BY a.updated_at ASC');
-        $stmt->execute([':ts' => $ts]);
+        if ($ts === null) json_error('Invalid updatedAfter timestamp', 422);
+        $where[] = 'a.updated_at > :ts';
+        $values[':ts'] = $ts;
     } else {
-        $stmt = db()->query(ATTENDANCE_SELECT . ' WHERE a.deleted_at IS NULL ORDER BY a.id ASC');
+        $where[] = 'a.deleted_at IS NULL';
     }
+    if (isset($_GET['cardNo'])) {
+        $where[] = 'a.card_no = :card';
+        $values[':card'] = (string) $_GET['cardNo'];
+    }
+    foreach (['from' => '>=', 'to' => '<='] as $key => $operator) {
+        if (!isset($_GET[$key])) continue;
+        if (!preg_match('/^[0-9]{8}$/D', (string) $_GET[$key])) json_error('Invalid date key', 422);
+        $where[] = "a.date_key $operator :$key";
+        $values[":$key"] = (string) $_GET[$key];
+    }
+    $clause = ' WHERE ' . implode(' AND ', $where);
+    if (($_GET['countOnly'] ?? '') === '1') {
+        $stmt = db()->prepare('SELECT COUNT(*) FROM attendance a' . $clause);
+        $stmt->execute($values);
+        json_response(['count' => (int) $stmt->fetchColumn()]);
+        return;
+    }
+    $order = $after ? 'a.updated_at' : 'a.id';
+    $stmt = db()->prepare(ATTENDANCE_SELECT . $clause . " ORDER BY $order ASC");
+    $stmt->execute($values);
     json_response(['attendance' => array_map('attendance_to_wire', $stmt->fetchAll())]);
 }
 
@@ -203,5 +223,5 @@ function attendance_import($params, $body, $user)
         json_error('Attendance import failed', 500, $e->getMessage());
     }
 
-    json_response(['ok' => true, 'count' => $count]);
+    json_response(['ok' => true, 'count' => $count, 'minDate' => isset($minK) ? (string) $minK : '', 'maxDate' => isset($maxK) ? (string) $maxK : '']);
 }

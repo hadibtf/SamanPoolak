@@ -1,12 +1,13 @@
+import { useApiQuery, liveRows, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
-import { db, jalaliDateKey, newUid } from '../db';
-import { ordersApi, ApiError } from '../api/client';
+import { jalaliDateKey, newUid } from '../domain';
+import { peopleApi, ordersApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
 import { useSettings } from '../context/SettingsContext';
 import { MATERIAL_LABELS, PLATING_OPTIONS, INITIAL_ORDER_STATE } from '../constants';
@@ -287,10 +288,10 @@ const SubmitOrder = () => {
 
   const { toRial, fromRial } = useSettings();
 
-  const existingOrder = useLiveQuery(
-    () => (editId != null ? db.orders.get(editId) : undefined),
-    [editId]
-  );
+  const orderQuery = useApiQuery(async () => editId == null ? null : (await ordersApi.get(editId)).order, [editId]);
+  const { data: existingOrder } = orderQuery;
+  const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people));
+  const customers = peopleQuery.data || [];
 
   const [orderDate, setOrderDate] = useState(todayJalaliDate);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -303,9 +304,11 @@ const SubmitOrder = () => {
   const [prefilled, setPrefilled] = useState(false);
   const [toast, setToast] = useState(null);
 
+  useEffect(() => { setPrefilled(false); }, [editId]);
+
   // Prefill when editing.
   useEffect(() => {
-    if (!isEdit || prefilled || !existingOrder) return;
+    if (!isEdit || prefilled || !existingOrder || !peopleQuery.data) return;
     let cancelled = false;
 
     (async () => {
@@ -344,7 +347,7 @@ const SubmitOrder = () => {
         }));
       }
 
-      const person = await db.people.get(o.customerId);
+      const person = customers.find((person) => person.id === o.customerId);
       if (!cancelled && person) {
         setSelectedCustomer(person);
         setCustomerSearch(getCustomerDisplayName(person));
@@ -353,24 +356,12 @@ const SubmitOrder = () => {
     })();
 
     return () => { cancelled = true; };
-  }, [isEdit, prefilled, existingOrder, fromRial]);
+  }, [isEdit, prefilled, existingOrder, fromRial, peopleQuery.data]);
 
-  const matchedCustomers = useLiveQuery(
-    () => {
-      const term = customerSearch.trim();
-      if (!term) return [];
-      return db.people
-        .where('category')
-        .equals('CUSTOMER')
-        .filter(
-          (p) =>
-            `${p.firstName} ${p.lastName}`.includes(term) ||
-            (p.companyName && p.companyName.includes(term))
-        )
-        .toArray();
-    },
-    [customerSearch]
-  );
+  const matchedCustomers = customers.filter((p) => {
+    const term = customerSearch.trim();
+    return term && p.category === 'CUSTOMER' && (`${p.firstName} ${p.lastName}`.includes(term) || p.companyName?.includes(term));
+  });
 
   const dateKey = useMemo(() => jalaliDateKey(orderDate), [orderDate]);
 
@@ -408,6 +399,7 @@ const SubmitOrder = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isEdit && (!prefilled || orderQuery.error || orderQuery.loading)) return;
 
     const hasDateObj = orderDate && orderDate.year;
     const finalDateKey = hasDateObj ? dateKey : isEdit ? existingOrder?.date : '';
@@ -463,7 +455,6 @@ const SubmitOrder = () => {
       } else {
         ({ order } = await ordersApi.create(header));
       }
-      await db.orders.put(order); // update the local mirror immediately
       showToast(isEdit ? 'سفارش ویرایش شد.' : `سفارش ${order.orderNumber} ثبت شد.`);
       navigate(`/orders/view/${order.id}`);
     } catch (error) {
@@ -480,6 +471,7 @@ const SubmitOrder = () => {
 
   return (
     <div className={`${managementRootClass} submit-order`}>
+      <ApiReadStatus queries={[orderQuery, peopleQuery]} />
       {isEdit && (
         <div className="page-back">
           <button type="button" className="back-btn" onClick={() => navigate(-1)}>
@@ -503,7 +495,6 @@ const SubmitOrder = () => {
                       aria-label={`تغییر مشتری: ${getCustomerDisplayName(selectedCustomer)}`}
                     >
                       <strong>{getCustomerDisplayName(selectedCustomer)}</strong>
-                      <span className="muted"> ({selectedCustomer.id})</span>
                     </button>
                   ) : (
                     <>
@@ -576,7 +567,7 @@ const SubmitOrder = () => {
           <i className="fa-solid fa-plus"></i> افزودن محصول
         </button>
 
-        <button type="submit" className="primary-btn">
+        <button type="submit" className="primary-btn" disabled={isEdit && (!prefilled || orderQuery.loading || Boolean(orderQuery.error))}>
           {isEdit ? 'ذخیره تغییرات' : 'ثبت سفارش'}
         </button>
       </form>
@@ -587,6 +578,7 @@ const SubmitOrder = () => {
           showCategorySelector={false}
           onClose={() => setIsCustomerSheetOpen(false)}
           onSaved={(customer) => {
+            peopleQuery.setData((rows) => upsertRow(rows, customer));
             handleSelectCustomer(customer);
             showToast('مشتری ثبت شد.');
           }}

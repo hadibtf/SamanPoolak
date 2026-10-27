@@ -1,4 +1,4 @@
-// Iranian (Jalali) public-holiday support — manual, file-fed (no network API).
+// Iranian (Jalali) public holidays from the API, with a lightweight calendar cache.
 //
 // The owner uploads one YEAR.json per year from Settings (same shape the device
 // calendar exports / the persian-calendar style file):
@@ -9,11 +9,12 @@
 // official events only).
 //
 //   isHoliday("14050101")  -> true | false   (sync: cached holiday OR Friday)
-//   importHolidayJson(json) -> { years, count }   (call from the Settings upload)
+//   refreshHolidays() -> fetch and apply the canonical calendar
 //   useHolidays()           -> { isHoliday, version }   (re-renders on import)
 //   holidayStatus()         -> year-end reminder info for the Settings banner
 
 import { useEffect, useState } from 'react';
+import { holidaysApi } from './api/client';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
@@ -32,9 +33,6 @@ const notify = () => {
   version += 1;
   listeners.forEach((fn) => fn(version));
 };
-
-/** "1404/01/01" -> "14040101" (digits only). */
-const shamsiToKey = (shamsi) => String(shamsi || '').replace(/[^0-9]/g, '');
 
 // Rebuild the in-memory sets from every ir_holidays_* entry in localStorage.
 const rebuildFromCache = () => {
@@ -61,52 +59,14 @@ const rebuildFromCache = () => {
 };
 rebuildFromCache();
 
-/**
- * Parse an uploaded calendar file and cache its holidays per year. Accepts
- * `{ data: [...] }` or a bare array of `{ shamsiDate, isHoliday }`. Replaces any
- * previously stored data for the years present in the file. Throws on an
- * unusable file. Returns `{ years, count }`.
- */
-export const importHolidayJson = (payload) => {
-  const data = Array.isArray(payload?.data)
-    ? payload.data
-    : (Array.isArray(payload) ? payload : null);
-  if (!data) throw new Error('فایل تقویم معتبر نیست.');
-
-  const byYear = new Map();
-  let count = 0;
-  for (const row of data) {
-    if (!row?.isHoliday) continue;
-    const key = shamsiToKey(row.shamsiDate);
-    if (key.length !== 8) continue;
-    const y = Number(key.slice(0, 4));
-    if (!byYear.has(y)) byYear.set(y, new Set());
-    byYear.get(y).add(key);
-    count += 1;
-  }
-  if (!byYear.size) throw new Error('در این فایل روز تعطیلی یافت نشد.');
-
-  for (const [y, set] of byYear) {
-    try {
-      localStorage.setItem(
-        cacheKey(y),
-        JSON.stringify({ importedAt: new Date().toISOString(), keys: [...set] })
-      );
-    } catch {
-      /* storage full — keep whatever else we could write */
-    }
-  }
-  rebuildFromCache();
-  notify();
-  return { years: [...byYear.keys()].sort((a, b) => a - b), count };
+/** Replace the lightweight calendar cache from a complete API response. */
+export const refreshHolidays = async () => {
+  const { holidays } = await holidaysApi.list();
+  if (!Array.isArray(holidays)) throw new Error('Invalid holiday response');
+  applyServerHolidays(holidays);
+  return holidays;
 };
 
-/**
- * Replace the per-year localStorage caches from the server holiday mirror
- * (the full db.holidays row set). Called by useSyncEngine after each pull so
- * isHoliday() reflects the host calendar across devices. Rows with deletedAt
- * are ignored. No-op-safe if rows is empty.
- */
 export const applyServerHolidays = (rows = []) => {
   const byYear = new Map();
   for (const r of rows) {
@@ -117,7 +77,12 @@ export const applyServerHolidays = (rows = []) => {
     if (!byYear.has(y)) byYear.set(y, new Set());
     byYear.get(y).add(key);
   }
-  if (!byYear.size) return;
+  // A full response also removes holidays/years removed by restore or import.
+  for (const year of loadedYears) {
+    if (!byYear.has(year) && !byYear.has(String(year))) {
+      try { localStorage.removeItem(cacheKey(year)); } catch { /* storage unavailable */ }
+    }
+  }
   for (const [y, set] of byYear) {
     try {
       localStorage.setItem(
@@ -128,7 +93,12 @@ export const applyServerHolidays = (rows = []) => {
       /* storage unavailable */
     }
   }
-  rebuildFromCache();
+  loadedKeys.clear();
+  loadedYears.clear();
+  for (const [year, keys] of byYear) {
+    loadedYears.add(Number(year));
+    keys.forEach((key) => loadedKeys.add(key));
+  }
   notify();
 };
 

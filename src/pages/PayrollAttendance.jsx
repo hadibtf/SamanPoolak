@@ -1,10 +1,12 @@
+import { peopleApi, attendanceApi } from '../api/client';
+import { useApiQuery, liveRows, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState, useMemo, useRef } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
 import DateObject from 'react-date-object';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
-import { db, jalaliDateKey, importAttendance, addManualScan, removeScan } from '../db';
+import { jalaliDateKey } from '../domain';
 import {
   groupByDay, computeDay, formatDuration, formatDateKey, formatBalance, toFa, toMinutes,
 } from '../utils/attendance';
@@ -51,11 +53,10 @@ const PayrollAttendance = () => {
   const [exitInputs, setExitInputs] = useState({}); // dateKey -> "HH:mm"
   const [expandedDays, setExpandedDays] = useState({});
 
-  const employees = useLiveQuery(
-    () => db.people.where('category').equals('EMPLOYEE').toArray(),
-    []
-  );
-  const scanCount = useLiveQuery(() => db.attendance.count(), []);
+  const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people).filter((p) => p.category === 'EMPLOYEE'));
+  const { data: employees } = peopleQuery;
+  const countQuery = useApiQuery(async () => (await attendanceApi.list({ countOnly: 1 })).count);
+  const scanCount = countQuery.data;
 
   // Card number now lives on the person (server-backed people.cardNo).
   const cardByPerson = useMemo(() => {
@@ -79,7 +80,10 @@ const PayrollAttendance = () => {
     try {
       const text = await file.text();
       const payload = JSON.parse(text);
-      const summary = await importAttendance(payload);
+      const records = Array.isArray(payload?.records) ? payload.records : [];
+      if (!records.length) throw new Error('فایل معتبر نیست یا رکوردی ندارد.');
+      const summary = await attendanceApi.import(payload);
+      await Promise.all([countQuery.refresh(), scansQuery.refresh()]);
       const range = summary.minDate && summary.maxDate
         ? ` از ${formatDateKey(summary.minDate)} تا ${formatDateKey(summary.maxDate)}`
         : '';
@@ -97,16 +101,21 @@ const PayrollAttendance = () => {
   const fromKey = useMemo(() => jalaliDateKey(fFrom), [fFrom]);
   const toKey = useMemo(() => jalaliDateKey(fTo), [fTo]);
 
-  const scans = useLiveQuery(
-    () => {
-      if (!selected?.cardNo || !fromKey || !toKey) return [];
-      return db.attendance
-        .where('cardNo').equals(selected.cardNo)
-        .filter((s) => !s.deletedAt && s.dateKey >= fromKey && s.dateKey <= toKey)
-        .toArray();
-    },
-    [selected?.cardNo, fromKey, toKey]
-  );
+  const scansQuery = useApiQuery(async () => {
+    if (!selected?.cardNo || !fromKey || !toKey || fromKey > toKey) return [];
+    return liveRows((await attendanceApi.list({ cardNo: selected.cardNo, from: fromKey, to: toKey })).attendance);
+  }, [selected?.cardNo, fromKey, toKey]);
+  const { data: scans } = scansQuery;
+
+  const removeScan = async (id) => {
+    try {
+      await attendanceApi.remove(id);
+      scansQuery.setData((rows) => (rows || []).filter((row) => row.id !== id));
+      await countQuery.refresh();
+    } catch (error) {
+      showToast('عملیات ناموفق بود. اتصال اینترنت را بررسی کنید.', 'error');
+    }
+  };
 
   // Holidays come from the manually-uploaded calendar (Settings); version bumps
   // on import so the day calcs below recompute.
@@ -207,20 +216,27 @@ const PayrollAttendance = () => {
       showToast('زمان نامعتبر است.', 'error');
       return;
     }
-    await addManualScan(selected.cardNo, dateKey, time);
-    setExitInputs((prev) => ({ ...prev, [dateKey]: '' }));
+    try {
+      const { attendance } = await attendanceApi.create({ cardNo: selected.cardNo, dateKey, time, source: 'manual' });
+      scansQuery.setData((rows) => upsertRow(rows, attendance));
+      setExitInputs((prev) => ({ ...prev, [dateKey]: '' }));
+      await countQuery.refresh();
+    } catch (error) {
+      showToast('عملیات ناموفق بود. اتصال اینترنت را بررسی کنید.', 'error');
+    }
   };
 
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
   return (
     <div className={styles.root}>
+      <ApiReadStatus queries={[peopleQuery, countQuery]} />
       <div className="card att-import-card">
         <div className="att-import-row">
           <div>
             <h2 className="att-h2">سوابق حضور و غیاب</h2>
             <p className="att-sub">
-              {scanCount ? `${toFa(scanCount)} رکورد` : 'هنوز رکوردی وارد نشده است'}
+              {countQuery.loading || countQuery.error ? '' : scanCount ? `${toFa(scanCount)} رکورد` : 'هنوز رکوردی وارد نشده است'}
             </p>
           </div>
           <button className="att-btn-primary" onClick={handleImportClick} disabled={importing}>
@@ -272,6 +288,7 @@ const PayrollAttendance = () => {
               <button className="att-close" onClick={closeModal}><i className="fa-solid fa-xmark" aria-hidden="true" /> بستن</button>
             </div>
 
+            <ApiReadStatus queries={[scansQuery]} />
             <div className="att-range">
               <div className="att-range-pickers">
                 <div className="att-date-field">
@@ -344,7 +361,7 @@ const PayrollAttendance = () => {
                   <span />
                 </div>
               )}
-              {days.length === 0 && <p className="att-hint">رکوردی در این بازه یافت نشد.</p>}
+              {!scansQuery.loading && !scansQuery.error && days.length === 0 && <p className="att-hint">رکوردی در این بازه یافت نشد.</p>}
               {days.map(({ dateKey, summary }) => {
                 const dupSecondIds = new Set(summary.flags.duplicates.map((d) => d.second.id));
                 const flagged = summary.flags.missingExit || summary.flags.duplicates.length > 0;

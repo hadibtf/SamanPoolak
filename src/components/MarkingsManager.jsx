@@ -1,13 +1,14 @@
+import { useApiQuery, liveRows, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db, getCustomerMarkings } from '../db';
 import { markingsApi, ApiError } from '../api/client';
 import { compressImage } from '../utils/image';
 
 // Per-customer marking directory. Markings are strictly owned by one customer
 // and can hold an unlimited number of mark images (compressed Base64).
 const MarkingsManager = ({ customer, onClose }) => {
-  const markings = useLiveQuery(() => getCustomerMarkings(customer.id), [customer.id]);
+  const markingsQuery = useApiQuery(async () => liveRows((await markingsApi.list({ customerId: customer.id })).markings), [customer.id]);
+  const { data: markings, setData: setMarkings } = markingsQuery;
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
@@ -46,7 +47,7 @@ const MarkingsManager = ({ customer, onClose }) => {
         location: location.trim(),
         imageData: src || undefined,
       });
-      await db.markings.put(marking); // update the local mirror immediately
+      setMarkings((rows) => upsertRow(rows, marking));
       setName('');
       setLocation('');
       setSrc('');
@@ -66,7 +67,7 @@ const MarkingsManager = ({ customer, onClose }) => {
     if (!window.confirm('حذف این مارک؟')) return;
     try {
       await markingsApi.remove(id);
-      await db.markings.delete(id);
+      setMarkings((rows) => rows.filter((row) => row.id !== id));
     } catch (err) {
       console.error('Failed to delete marking:', err);
       setError(
@@ -121,8 +122,9 @@ const MarkingsManager = ({ customer, onClose }) => {
 
         {error && <div className="inline-error">{error}</div>}
 
+        <ApiReadStatus queries={[markingsQuery]} />
         <div className="markings-grid">
-          {markings?.length ? (
+          {markingsQuery.loading || markingsQuery.error ? null : markings?.length ? (
             markings.map((m) => (
               <div key={m.id} className="marking-tile">
                 {m.src ? (

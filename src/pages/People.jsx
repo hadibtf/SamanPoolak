@@ -1,6 +1,6 @@
+import { useApiQuery, liveRows, upsertRow } from '../hooks/useApiQuery';
+import ApiReadStatus from '../components/ApiReadStatus';
 import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { peopleApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
 import MarkingsManager from '../components/MarkingsManager';
@@ -21,7 +21,8 @@ const People = () => {
   const [markingsCustomer, setMarkingsCustomer] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const people = useLiveQuery(() => db.people.toArray());
+  const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people));
+  const { data: people, setData: setPeople } = peopleQuery;
   const filteredPeople = people?.filter((person) => (
     activeCategory === 'ALL' || person.category === activeCategory
   ));
@@ -54,7 +55,7 @@ const People = () => {
     if (!window.confirm("آیا از حذف این مورد اطمینان دارید؟")) return;
     try {
       await peopleApi.remove(id);
-      await db.people.delete(id); // drop from the local mirror
+      setPeople((rows) => (rows || []).filter((row) => row.id !== id));
       showToast('حذف شد.');
     } catch (error) {
       reportError(error);
@@ -74,6 +75,7 @@ const People = () => {
 
       <SegmentedTabs className={styles.categoryTabs} label="دسته‌بندی افراد" items={PEOPLE_CATEGORY_TABS} value={activeCategory} onChange={setActiveCategory} />
 
+      <ApiReadStatus queries={[peopleQuery]} empty={filteredPeople?.length === 0} />
       <div className="people-list">
         {filteredPeople?.map(person => (
           <div key={person.id} className="person-card">
@@ -130,7 +132,7 @@ const People = () => {
           initialCategory={activeCategory === 'ALL' ? 'EMPLOYEE' : activeCategory}
           showCategorySelector={activeCategory === 'ALL'}
           onClose={handleCloseModal}
-          onSaved={(_person, wasEditing) => showToast(wasEditing ? 'ویرایش شد.' : 'ثبت شد.')}
+          onSaved={(person, wasEditing) => { setPeople((rows) => upsertRow(rows, person)); showToast(wasEditing ? 'ویرایش شد.' : 'ثبت شد.'); }}
           onError={reportError}
         />
       )}

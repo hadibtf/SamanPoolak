@@ -18,36 +18,25 @@ for the AI agent operational map see [MASTERCONTEXT.md](MASTERCONTEXT.md).
 | `useMemo` / `useCallback` | `remember(key) {}` | Memoize value / function identity. |
 | `useContext` (Auth, Settings) | A Hilt-provided singleton / `CompositionLocal` | App-wide state shared via providers. |
 | React Router | Navigation / `NavHost` | URL paths ↔ screens. |
-| Dexie.js | Room | ORM over a local DB (IndexedDB here). |
-| `useLiveQuery` | Room `Flow` + `collectAsState` | Re-renders when the queried table changes. |
 | `fetch` wrapper (`api/client.js`) | Retrofit + an `AuthInterceptor` | HTTP with the bearer token attached. |
 | Vite | Gradle + AGP | `npm start` ≈ run; `npm run build` ≈ release. |
 
 ### The big shift from MVVM
 There is **no ViewModel/Repository layer and no Redux**. The architecture is:
 
-```
-PHP + MySQL  ←──  src/api/client.js  ──→  Dexie mirror (IndexedDB)  ──→  useLiveQuery  ──→  UI
-  (source         (writes go here          (local read cache,            (auto re-render
-   of truth)       first, then mirror)      filled by the sync engine)    on change)
+```text
+React screen → src/api/client.js → authenticated PHP API → MySQL/MariaDB
 ```
 
-The **server** is the source of truth. The **Dexie mirror** is a local read
-cache the UI binds to. You almost never read the server directly in a component —
-you read the mirror with `useLiveQuery`, and a background **sync engine** keeps
-the mirror fresh. Writes call the API, then upsert the canonical row into the
-mirror so the UI updates instantly.
+The server is authoritative. Screen reads live only in React memory and refresh
+on entry/focus/reconnect; confirmed writes update that state from canonical API
+responses or refetch the affected query. There is no persistent browser database
+or background mirror. Offline reload does not restore business records.
+Production summaries use the same direct API model with narrowly scoped polling.
+See [employee production](MASTERCONTEXT.md#employee-production) for domain rules.
 
-Production screens are an exception: `productionApi` calls the server directly
-and stores responses in local React state. Employee logs are not mirrored through
-the management sync engine. Manager-entered item logs are also read directly and
-are kept separate from employee assignments. See
-[employee production](MASTERCONTEXT.md#employee-production) for units, ownership,
-dates, and aggregation rules.
-
-🤖 **Analogy:** like a Room cache fed by a Retrofit-backed repository with a
-WorkManager sync — except there's no explicit repository/VM; components call the
-API client and read Room (`useLiveQuery`) directly.
+🤖 **Analogy:** Retrofit requests updating Compose state, with lifecycle-aware
+refresh and no Room cache.
 
 ---
 
@@ -65,15 +54,15 @@ src/index.jsx
   └ <SettingsProvider>            theme + currency (also themes the login screen)
       └ <BrowserRouter>
           └ <AuthProvider>        validates a stored token, exposes user/login/logout
-              └ <App/>            if no user → <Login/>; else <AppShell/> (routes + nav + sync)
+              └ <App/>            if no user → <Login/>; else <AppShell/> (routes + nav)
 ```
 
 - [`src/auth/AuthContext.jsx`](src/auth/AuthContext.jsx): on mount, validates the
   saved token via `GET /auth/me`; exposes `{ user, loading, login, logout }`. A
   global 401 (from the API client) forces logout.
 - [`src/App.jsx`](src/App.jsx): shows a splash while validating, the **Login**
-  screen when unauthenticated, otherwise the routed app. `useSyncEngine()` runs
-  only inside the authenticated shell.
+  screen when unauthenticated, otherwise the routed app. Calendar refresh and the
+  temporary legacy-data cleanup run inside the authenticated management shell.
 
 🤖 **Analogy:** `AuthProvider` ≈ a session manager; the login gate ≈ an auth
 `NavGraph` start-destination guard.
@@ -92,34 +81,36 @@ listeners. It exports per-entity helpers: `authApi`, `usersApi`, `peopleApi`,
 🤖 **Analogy:** Retrofit interface + an OkHttp auth interceptor + a 401
 authenticator, in one file.
 
-### 3.2 Local mirror — [`src/db.js`](src/db.js) (Dexie)
-Stores: `people`, `orders`, `markings`, `expenses`, `counters`, mirrored from the
-server. Schema is versioned (currently **v10**); each `db.version(n)` is like a
-Room migration (the v5 upgrade wrapped legacy single-product orders into the
-`items[]` array). Also holds pure helpers: `jalaliDateKey`, `yymmPrefix`,
-`deriveOrderStatus`, `computeWeights`, `newUid`.
+### 3.2 Screen data — `src/hooks/useApiQuery.js`
+`useApiQuery(loader, [routeId, filter])` owns request state in each mounted screen.
+It exposes `data`, `loading`, `error`, `refresh` and `setData`, refreshes on
+entry/focus/reconnect, and ignores responses superseded by another route/filter,
+request, canonical write, or unmount. `ApiReadStatus` presents Persian loading,
+error and retry UI. Do not hide failed requests behind empty-state messages.
+Attendance reads are filtered by card/date on PHP; count-only reads avoid loading
+scan history for the list header. Markings can be scoped to a customer.
 
-> Records are stored as whole objects (NoSQL-ish). The schema string only lists
-> the **primary key + indexes**, not every field.
+### 3.3 Domain helpers — `src/domain.js`
+`jalaliDateKey`, `deriveOrderStatus`, `computeWeights`, and `newUid` are pure
+storage-neutral helpers. Person IDs and order numbers are assigned by the API;
+order edits preserve item UIDs and server-owned workflow/weight fields.
 
-### 3.3 Sync engine — [`src/hooks/useSyncEngine.js`](src/hooks/useSyncEngine.js)
-Defines a `RESOURCES` list (people / orders / markings / expenses). For each, it
-pulls `GET /<resource>?updatedAfter=<cursor>` and upserts changes into the Dexie
-mirror (and deletes rows whose `deletedAt` is set), advancing a per-resource
-cursor in `localStorage`. First run (no cursor) replaces the local set with the
-server's. Runs on mount, every ~15s, and on `online`/`focus`.
-
-🤖 **Analogy:** a periodic `WorkManager` job doing delta-pull into Room. Adding a
-new server-backed entity = add one line to `RESOURCES` + a Dexie store + an API
-helper.
-
-### 3.4 The write pattern (copy this)
+### 3.4 The write pattern
 ```js
-const { order } = await ordersApi.update(id, patch); // server is authoritative
-await db.orders.put(order);                           // mirror the canonical row
+const { order } = await ordersApi.update(id, patch);
+orderQuery.setData(order);
 ```
-Reads stay on `useLiveQuery(() => db.orders.toArray())`. Offline writes throw
-`ApiError(status:0)` — surface a "needs connection" message; don't fake success.
+For a list, update/remove its row only after API confirmation, or call `refresh()`.
+Surface failed writes; attendance has no local fallback. Keep calendar/theme/
+currency preferences in localStorage, never business record mirrors. Optional
+`updatedAfter` API support remains compatible with older deployed clients.
+
+### 3.5 Cleanup release
+The temporary `legacyDataCleanup.js` shim only inspects, exports, and deletes
+`BusinessPlatformDB`. Device-only attendance, employee names and card links require
+an exported backup acknowledged as saved before deletion. Counters are obsolete.
+Other tabs can block deletion; close them and reload/retry. Only known mirror
+cursor/revision preferences are removed. See [migration audit](docs/REMOVE-DEXIE-AUDIT.md).
 
 ---
 
@@ -147,7 +138,7 @@ use-case, provided app-wide.
   additions/deductions; copy-net (always Rial); A5 salary-slip PDF (plain
   download). Its tabs include attendance, payroll settings, and job applications.
   Currency comes from `SettingsContext`.
-- **People** (`People.jsx`) — CRUD via `peopleApi`, mirrored to Dexie; available
+- **People** (`People.jsx`) — CRUD via `peopleApi` and screen state; available
   from the People tab in Settings & Information; opens
   **MarkingsManager** for customers.
 - **MarkingsManager** (`components/`) — per-customer images; compresses
@@ -226,15 +217,13 @@ Add a "delivery note" entity:
 1. **Backend**: `server/schema.sql` table; `server/routes/notes.php` (copy
    `expenses.php`); register routes in `server/index.php`.
 2. **DB (live)**: run the new `CREATE TABLE` in phpMyAdmin.
-3. **Client**: `notesApi` in `api/client.js`; add a `notes` Dexie store (bump
-   `db.version`); add `notes` to `RESOURCES` in `useSyncEngine.js`.
-4. **UI**: a page reading `useLiveQuery(db.notes…)` and writing via `notesApi`
-   then `db.notes.put`.
-5. **Verify**: CI-mode build, deploy the relevant surfaces after the database
-   step, then test cross-device.
+3. **Client**: add `notesApi` in `api/client.js`.
+4. **UI**: read with `useApiQuery`, show loading/errors/empty state, write via
+   `notesApi`, then use canonical state or refresh.
+5. **Verify**: tests and both builds, followed by authorized deployment and
+   cross-device entry/focus refresh checks.
 
-🤖 **Analogy:** add a Room entity (+migration), a Retrofit endpoint, a sync step,
-and a screen — same shape, fewer layers.
+🤖 **Analogy:** add a Retrofit endpoint and a Compose screen with request state.
 
 ---
 
@@ -242,13 +231,13 @@ and a screen — same shape, fewer layers.
 | File | Responsibility |
 | --- | --- |
 | `src/index.jsx` | Mount + providers |
-| `src/App.jsx` | Routes, login gate, sync bootstrap |
-| `src/db.js` | Dexie schema/migrations + helpers |
+| `src/App.jsx` | Routes, login gate, calendar bootstrap |
+| `src/domain.js` | Pure date, weight and order helpers |
 | `src/constants.js` | Enums + Persian labels |
 | `src/api/client.js` | HTTP + per-entity API objects + token |
 | `src/auth/AuthContext.jsx` | Session/user, login/logout |
 | `src/context/SettingsContext.jsx` | Theme + currency + money helpers |
-| `src/hooks/useSyncEngine.js` | Delta-pull mirror sync |
+| `src/hooks/useApiQuery.js` | Memory-only screen API state and refresh |
 | `src/utils/image.js` | Image compression |
 | `src/components/` | BottomNav, MarkingsManager |
 | `src/pages/*` | One screen each (+ `.css`) |
