@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import ProductionBarChart from '../components/ProductionBarChart';
 import ProductionMonthChart from '../components/ProductionMonthChart';
 import ProductionYearChart from '../components/ProductionYearChart';
-import ProductionDayDetails from '../components/ProductionDayDetails';
+import { EmployeeProductionRecord } from '../components/ProductionDayDetails';
 import ProductionMonthControls from '../components/ProductionMonthControls';
 import { productionApi, ApiError } from '../api/client';
 import { currentProductionDate, currentProductionMonth, productionFa as fa, productionFaYear, productionMonthDays, PRODUCTION_CHART_YEARS, PRODUCTION_MONTHS } from '../productionStatistics';
@@ -22,6 +22,62 @@ const defaultProductionDay = (monthStats) => {
   return latestRecordedDay || productionMonthDays(monthStats.year, monthStats.month, monthStats.daily)[0]?.date || '';
 };
 
+const employeeIdentityKey = (employee) => {
+  if (employee.employeePersonId != null && employee.employeePersonId !== '') return `person:${employee.employeePersonId}`;
+  if (employee.employeeUserId != null) return `user:${employee.employeeUserId}`;
+  return `name:${employee.employeeName || '—'}`;
+};
+
+const productionEmployeeTotals = (employees = []) => {
+  const totals = new Map();
+  employees.forEach((employee) => {
+    const quantity = Number(employee.quantity) || 0;
+    if (quantity <= 0) return;
+    const employeeKey = employeeIdentityKey(employee);
+    const existing = totals.get(employeeKey);
+    if (existing) existing.quantity += quantity;
+    else totals.set(employeeKey, { ...employee, employeeKey, quantity });
+  });
+  return [...totals.values()].sort((a, b) => b.quantity - a.quantity);
+};
+
+const recordsForEmployee = (records, employeeKey) => (records || [])
+  .filter((record) => employeeIdentityKey(record) === employeeKey);
+
+function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded, onToggle }) {
+  const detailsId = `statistics-employee-details-${useId()}`;
+  const hasDetails = records.length > 0;
+  const content = <>
+    <span>{employee.employeeName}</span>
+    <span className="statistics-employee-meter"><span style={{ width: `${maxProduction ? employee.quantity / maxProduction * 100 : 0}%` }} /></span>
+    <strong>{fa(employee.quantity)}</strong>
+  </>;
+
+  return <div className="statistics-employee-entry">
+    {hasDetails ? <button
+      type="button"
+      className="statistics-employee-row"
+      aria-expanded={expanded}
+      aria-controls={detailsId}
+      onClick={onToggle}
+    >
+      {content}
+      <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+    </button> : <div className="statistics-employee-row statistics-employee-row-static">{content}</div>}
+    {hasDetails && <div
+      id={detailsId}
+      className={`statistics-employee-panel${expanded ? ' open' : ''}`}
+      aria-hidden={!expanded}
+    >
+      <div className="statistics-employee-panel-inner" inert={!expanded}>
+        <div className="statistics-details statistics-employee-records">
+          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} />)}
+        </div>
+      </div>
+    </div>}
+  </div>;
+}
+
 export default function ManagementStatistics() {
   const [{ year: initialYear, month: initialMonth }] = useState(currentProductionMonth);
   const [year, setYear] = useState(initialYear);
@@ -35,6 +91,7 @@ export default function ManagementStatistics() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [detailsError, setDetailsError] = useState('');
   const [detailsNavigationId, setDetailsNavigationId] = useState(0);
+  const [expandedEmployeeKey, setExpandedEmployeeKey] = useState(null);
   const initialLoadStarted = useRef(false);
   const monthRequestId = useRef(0);
   const detailsRequestId = useRef(0);
@@ -54,23 +111,11 @@ export default function ManagementStatistics() {
     const totals = new Map((stats?.yearly || []).map((row) => [Number(row.year), Number(row.quantity) || 0]));
     return PRODUCTION_CHART_YEARS.map((item) => ({ year: item, quantity: totals.get(item) || 0 }));
   }, [stats]);
-  const dailyEmployeeTotals = useMemo(() => {
-    const totalsByEmployee = new Map();
-    (details?.records || []).forEach((record) => {
-      const key = record.employeePersonId
-        ? `person:${record.employeePersonId}`
-        : String(record.employeeUserId ?? `name:${record.employeeName || '—'}`);
-      if (!totalsByEmployee.has(key)) {
-        totalsByEmployee.set(key, { employeeKey: key, employeeName: record.employeeName || '—', quantity: 0 });
-      }
-      totalsByEmployee.get(key).quantity += Number(record.quantity) || 0;
-    });
-    return [...totalsByEmployee.values()].sort((a, b) => b.quantity - a.quantity);
-  }, [details]);
+  const dailyEmployeeTotals = useMemo(() => productionEmployeeTotals(details?.records || []), [details]);
   const dailyMaxProduction = dailyEmployeeTotals.reduce((max, employee) => Math.max(max, employee.quantity), 0);
-  const monthlyEmployeeTotals = (stats?.byEmployee || []).filter((employee) => Number(employee.quantity) > 0);
+  const monthlyEmployeeTotals = useMemo(() => productionEmployeeTotals(stats?.byEmployee || []), [stats]);
   const monthlyMaxProduction = monthlyEmployeeTotals.reduce((max, employee) => Math.max(max, Number(employee.quantity) || 0), 0);
-  const yearlyEmployeeTotals = (stats?.yearByEmployee || []).filter((employee) => Number(employee.quantity) > 0);
+  const yearlyEmployeeTotals = useMemo(() => productionEmployeeTotals(stats?.yearByEmployee || []), [stats]);
   const yearlyMaxProduction = yearlyEmployeeTotals.reduce((max, employee) => Math.max(max, Number(employee.quantity) || 0), 0);
   const yearlyTotal = yearlyBars.find((item) => item.year === Number(stats?.year))?.quantity || 0;
   const statsMatchSelection = stats
@@ -92,6 +137,7 @@ export default function ManagementStatistics() {
 
   const loadMonth = useCallback(async (selectDefaultDay = false, requestedMonth = month, requestedYear = year) => {
     const requestId = ++monthRequestId.current;
+    setExpandedEmployeeKey(null);
     detailsRequestId.current += 1;
     setLoading(true); setError(''); setSelectedDate(''); setDetails(null); setDetailsLoading(false); setDetailsError(''); setStats(null);
     try {
@@ -117,28 +163,34 @@ export default function ManagementStatistics() {
   }, [loadMonth]);
 
   useEffect(() => {
-    if (detailsNavigationId > 0) detailsPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-  }, [detailsNavigationId]);
+    if (detailsNavigationId > 0 && (details || detailsError)) {
+      detailsPanelRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [detailsNavigationId, details, detailsError]);
 
   const selectDay = (day) => {
     setSelectedDate(day.date);
+    setExpandedEmployeeKey(null);
     setDetailsNavigationId((current) => current + 1);
     loadDayDetails(day.date);
   };
 
   const selectMonth = (monthBar) => {
+    setExpandedEmployeeKey(null);
     setMonth(monthBar.month);
     setView('month');
     loadMonth(false, monthBar.month);
   };
 
   const selectYear = (yearBar) => {
+    setExpandedEmployeeKey(null);
     setYear(yearBar.year);
     loadMonth(false, month, yearBar.year);
   };
 
   const changeView = (nextView) => {
     if (nextView === view) return;
+    setExpandedEmployeeKey(null);
     setView(nextView);
     const loadedMonthMatches = stats && Number(stats.year) === Number(year) && Number(stats.month) === Number(month);
     const loadedYearMatches = stats && Number(stats.year) === Number(year);
@@ -173,20 +225,24 @@ export default function ManagementStatistics() {
 
       {statsMatchSelection && view === 'day' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
-        {selectedDate && details && <>
+        {selectedDate && details &&
           <section className={`${styles.monthTotal} glass-card`}>
             <div><h2>تولید روز {fa(Number(selectedDate.slice(6, 8)))} {PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} {productionFaYear(selectedDate.slice(0, 4))}</h2></div>
             <strong>{fa(details.total)} <small>عدد</small></strong>
           </section>
-          <section className="statistics-comparison glass-card">
-            {dailyEmployeeTotals.length ? dailyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeeKey}>
-              <span>{row.employeeName}</span>
-              <div className="statistics-employee-meter"><span style={{ width: `${dailyMaxProduction ? row.quantity / dailyMaxProduction * 100 : 0}%` }} /></div>
-              <strong>{fa(row.quantity)}</strong>
-            </div>) : <p className="statistics-no-production">در این روز تولیدی ثبت نشده است.</p>}
-          </section>
-        </>}
-        <div ref={detailsPanelRef}><ProductionDayDetails date={selectedDate} details={details} loading={detailsLoading} error={detailsError} showEmployee /></div>
+        }
+        {selectedDate && <section ref={detailsPanelRef} className="statistics-comparison glass-card">
+          {detailsLoading && <div className="detail-state">در حال دریافت جزئیات تولید...</div>}
+          {detailsError && <div className="detail-state error">{detailsError}</div>}
+          {details && dailyEmployeeTotals.length ? dailyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+            key={employee.employeeKey}
+            employee={employee}
+            maxProduction={dailyMaxProduction}
+            records={recordsForEmployee(details.records, employee.employeeKey)}
+            expanded={expandedEmployeeKey === employee.employeeKey}
+            onToggle={() => setExpandedEmployeeKey((current) => current === employee.employeeKey ? null : employee.employeeKey)}
+          />) : details && <p className="statistics-no-production">در این روز تولیدی ثبت نشده است.</p>}
+        </section>}
       </>}
 
       {statsMatchSelection && view === 'month' && <>
@@ -196,18 +252,15 @@ export default function ManagementStatistics() {
           <strong>{fa(stats.total)} <small>عدد</small></strong>
         </section>
         <section className="statistics-comparison glass-card">
-          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeePersonId ? `person:${row.employeePersonId}` : `user:${row.employeeUserId ?? row.employeeName}`}>
-            <span>{row.employeeName}</span>
-            <div className="statistics-employee-meter"><span style={{ width: `${monthlyMaxProduction ? row.quantity / monthlyMaxProduction * 100 : 0}%` }} /></div>
-            <strong>{fa(row.quantity)}</strong>
-          </div>) : <p className="statistics-no-production">در این ماه تولیدی ثبت نشده است.</p>}
+          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+            key={employee.employeeKey}
+            employee={employee}
+            maxProduction={monthlyMaxProduction}
+            records={recordsForEmployee(stats.records, employee.employeeKey)}
+            expanded={expandedEmployeeKey === employee.employeeKey}
+            onToggle={() => setExpandedEmployeeKey((current) => current === employee.employeeKey ? null : employee.employeeKey)}
+          />) : <p className="statistics-no-production">در این ماه تولیدی ثبت نشده است.</p>}
         </section>
-        <ProductionDayDetails
-          date={`${stats.year}${String(stats.month).padStart(2, '0')}01`}
-          details={stats}
-          showEmployee
-          emptyMessage="در این ماه تولیدی ثبت نشده است."
-        />
       </>}
 
       {statsMatchSelection && view === 'year' && <>
@@ -217,11 +270,11 @@ export default function ManagementStatistics() {
           <strong>{fa(yearlyTotal)} <small>عدد</small></strong>
         </section>
         <section className="statistics-comparison glass-card">
-          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((row) => <div className="statistics-employee-row" key={row.employeePersonId ? `person:${row.employeePersonId}` : `user:${row.employeeUserId ?? row.employeeName}`}>
-            <span>{row.employeeName}</span>
-            <div className="statistics-employee-meter"><span style={{ width: `${yearlyMaxProduction ? row.quantity / yearlyMaxProduction * 100 : 0}%` }} /></div>
-            <strong>{fa(row.quantity)}</strong>
-          </div>) : <p className="statistics-no-production">در این سال تولیدی ثبت نشده است.</p>}
+          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+            key={employee.employeeKey}
+            employee={employee}
+            maxProduction={yearlyMaxProduction}
+          />) : <p className="statistics-no-production">در این سال تولیدی ثبت نشده است.</p>}
         </section>
       </>}
     </div>

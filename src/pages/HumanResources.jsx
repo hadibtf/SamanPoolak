@@ -118,6 +118,7 @@ const HumanResources = () => {
   };
 
   const slipRef = useRef(null);
+  const attendanceInputsKeyRef = useRef('');
   // True once the user has calculated; lets inputs/currency changes re-run the
   // calc without an effect that depends on `results` (which would loop forever).
   const hasCalculatedRef = useRef(false);
@@ -186,6 +187,7 @@ const HumanResources = () => {
   }, [attendanceScans, breakMin, shiftWindowMin, isHoliday, holidayVersion]);
 
   const handleSelectEmployee = (emp) => {
+    attendanceInputsKeyRef.current = '';
     setSelectedEmployee(emp);
     setSearchFullName(`${emp.firstName} ${emp.lastName}`);
     setShowDropdown(false);
@@ -194,6 +196,7 @@ const HumanResources = () => {
   };
 
   const handleClearSelection = () => {
+    attendanceInputsKeyRef.current = '';
     setSelectedEmployee(null);
     setSearchFullName('');
     setOvertime('');
@@ -293,6 +296,13 @@ const HumanResources = () => {
   useEffect(() => {
     if (!selectedEmployee || !startDate || !endDate || attendanceScans === undefined) return;
 
+    // Attendance is live, so its query can refresh after the user has edited
+    // these fields. Seed the inputs once for each employee/date range instead
+    // of overwriting manual values on every refresh.
+    const inputsKey = `${selectedEmployee.cardNo || ''}:${attendanceFromKey}:${attendanceToKey}`;
+    if (attendanceInputsKeyRef.current === inputsKey) return;
+    attendanceInputsKeyRef.current = inputsKey;
+
     if (!selectedEmployee.cardNo || attendanceAdjustments.completeDays === 0) {
       setOvertime('');
       setHourlyDeduction('');
@@ -302,7 +312,7 @@ const HumanResources = () => {
     const asHours = (minutes) => minutes === 0 ? '0' : String(Number((minutes / 60).toFixed(2)));
     setOvertime(asHours(attendanceAdjustments.overtimeMinutes));
     setHourlyDeduction(asHours(attendanceAdjustments.deductionMinutes));
-  }, [selectedEmployee, startDate, endDate, attendanceScans, attendanceAdjustments]);
+  }, [selectedEmployee, startDate, endDate, attendanceFromKey, attendanceToKey, attendanceScans, attendanceAdjustments]);
 
   // Re-run the calc when inputs or the currency change — but only after the
   // first manual calculation, and WITHOUT depending on `results` (the previous

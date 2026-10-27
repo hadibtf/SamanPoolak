@@ -20,7 +20,7 @@ const groupRecordsByEmployee = (records = []) => {
   return [...groups.values()];
 };
 
-function EmployeeProductionRecord({ record }) {
+export function EmployeeProductionRecord({ record }) {
   const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
   const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
   const dimension = [record.diameter, record.thickness]
