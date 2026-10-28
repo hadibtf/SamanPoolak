@@ -203,6 +203,32 @@
   box-shadow: inset 0 1px 0 #fff, 0 3px 8px rgba(38, 86, 150, .1);
 }
 .invoiceOrientationControl button i { font-size: 14px; }
+.invoiceDescriptionField {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 15px;
+  color: #274a73;
+  font-size: 14px;
+  font-weight: 750;
+}
+.invoiceDescriptionField textarea {
+  width: 100%;
+  min-height: 76px;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid rgba(185, 207, 235, .7);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .88), rgba(242, 248, 255, .72));
+  color: #1c416f;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.8;
+  box-shadow: inset 0 1px 2px rgba(50, 86, 136, .05), 0 4px 10px rgba(50, 93, 158, .05);
+}
+.invoiceDescriptionField textarea::placeholder { color: #8495ab; }
+.invoiceDescriptionField textarea:focus-visible { outline: 2px solid rgba(58, 125, 212, .35); border-color: #78a7e5; }
 .invoiceQuantityList { display: grid; gap: 10px; }
 .invoiceQuantityHeading {
   display: flex;
@@ -676,7 +702,8 @@
 [data-theme="dark"] .invoiceExportDialog { border-color: rgba(194, 217, 248, .22); background: linear-gradient(145deg, rgba(30, 45, 67, .94), rgba(24, 37, 56, .91)); color: #edf4ff; }
 [data-theme="dark"] .invoiceExportHeader h2,
 [data-theme="dark"] .invoiceQuantityHeading,
-[data-theme="dark"] .invoiceQuantityProduct strong { color: #e3efff; }
+[data-theme="dark"] .invoiceQuantityProduct strong,
+[data-theme="dark"] .invoiceDescriptionField { color: #e3efff; }
 [data-theme="dark"] .invoiceOrientationControl { color: #c8dcf6; }
 [data-theme="dark"] .invoiceOrientationControl > div { border-color: rgba(194, 217, 248, .14); background: rgba(0, 0, 0, .16); }
 [data-theme="dark"] .invoiceOrientationControl button { color: #a5b7ce; }
@@ -684,7 +711,9 @@
 [data-theme="dark"] .invoiceExportClose { border-color: rgba(194, 217, 248, .18); background: rgba(255, 255, 255, .07); color: #cad8ea; }
 [data-theme="dark"] .invoiceQuantityRow { border-color: rgba(194, 217, 248, .2); background: linear-gradient(130deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .035)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 5px 14px rgba(0, 0, 0, .12); }
 [data-theme="dark"] .invoiceQuantityInputWrap input,
-[data-theme="dark"] .invoicePriceInputWrap input { border-color: rgba(194, 217, 248, .22); background: linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(0, 0, 0, .12)); color: #e3efff; }
+[data-theme="dark"] .invoicePriceInputWrap input,
+[data-theme="dark"] .invoiceDescriptionField textarea { border-color: rgba(194, 217, 248, .22); background: linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(0, 0, 0, .12)); color: #e3efff; }
+[data-theme="dark"] .invoiceDescriptionField textarea::placeholder { color: #9fb1c9; }
 [data-theme="dark"] .invoiceExportActions { border-top-color: rgba(194, 217, 248, .14); background: rgba(0, 0, 0, .12); }
 [data-theme="dark"] .invoiceExportCancel { border-color: rgba(194, 217, 248, .18) !important; background: rgba(255, 255, 255, .06); color: #cad8ea; }
 [data-theme="dark"] .stack:global(.item-panel) :global(.order-section) { border-color: rgba(180, 208, 242, .19); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 10px 25px rgba(0, 0, 0, .2); }

@@ -2607,6 +2607,22 @@
 :local(.root) :global(.invoice-customer) span { color: #64748b; }
 :local(.root) :global(.invoice-customer) strong { color: #0f172a; }
 
+:local(.root) :global(.invoice-note) {
+  margin: -4px 0 22px;
+  padding: 13px 18px;
+  border: 1px solid #dbe5f1;
+  border-inline-start: 4px solid #1e40af;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+:local(.root) :global(.invoice-note) strong { color: #1e40af; }
+:local(.root) :global(.invoice-note) p { margin: 4px 0 0; }
+
 :local(.root) :global(.invoice-table) {
   width: 100%;
   border-collapse: collapse;

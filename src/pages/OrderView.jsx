@@ -840,6 +840,7 @@ const OrderView = () => {
   const [invoiceOrientation, setInvoiceOrientation] = useState('portrait');
   const [invoiceQuantities, setInvoiceQuantities] = useState({});
   const [invoicePrices, setInvoicePrices] = useState({});
+  const [invoiceNote, setInvoiceNote] = useState('');
   const [isInvoiceExportOpen, setIsInvoiceExportOpen] = useState(false);
   const [isExportingInvoice, setIsExportingInvoice] = useState(false);
   const orderId = Number(id);
@@ -974,6 +975,7 @@ const OrderView = () => {
 
   const openInvoiceExport = () => {
     setInvoiceOrientation('portrait');
+    setInvoiceNote('');
     setInvoiceQuantities(Object.fromEntries(items.map((item, index) => [
       invoiceItemKey(item, index),
       Math.max(0, Number(productionQuantities[item.uid]) || 0),
@@ -1173,6 +1175,13 @@ const OrderView = () => {
             {addresses.length > 0 && <div><span>نشانی:</span> {addresses.join(' — ')}</div>}
           </div>
 
+          {invoiceNote.trim() && (
+            <section className="invoice-note">
+              <strong>توضیحات</strong>
+              <p>{invoiceNote.trim()}</p>
+            </section>
+          )}
+
           <table className="invoice-table">
             <thead>
               <tr>
@@ -1240,6 +1249,17 @@ const OrderView = () => {
                   </button>
                 </div>
               </div>
+              <label className={glassStyles.invoiceDescriptionField} htmlFor="invoice-description">
+                <span>توضیحات فاکتور</span>
+                <textarea
+                  id="invoice-description"
+                  rows={3}
+                  value={invoiceNote}
+                  onChange={(event) => setInvoiceNote(event.target.value)}
+                  placeholder="توضیحی که در فاکتور درج می‌شود…"
+                  disabled={isExportingInvoice}
+                />
+              </label>
               <div className={glassStyles.invoiceQuantityList}>
                 <div className={glassStyles.invoiceQuantityHeading}><strong>تعداد و قیمت هر قلم</strong></div>
                 {items.map((item, index) => {
