@@ -234,13 +234,13 @@ const SettingsInfo = () => {
       </div>
 
       {/* Appearance: theme + currency (everyone) */}
-      <div className="settings-card glass-card">
+      <div className={`${styles.appearanceCard} settings-card glass-card`}>
         <h2 className="settings-section-title">
           <i className="fa-solid fa-sliders"></i> نمایش
         </h2>
 
         <div className="setting-row">
-          <span>حالت تیره</span>
+          <span><i className="fa-solid fa-moon" aria-hidden="true" />حالت تیره</span>
           <button
             type="button"
             role="switch"
@@ -253,7 +253,7 @@ const SettingsInfo = () => {
         </div>
 
         <div className="setting-row">
-          <span>واحد پول</span>
+          <span><i className="fa-solid fa-coins" aria-hidden="true" />واحد پول</span>
           <div className="segmented-control inline currency-seg">
             <button
               type="button"
@@ -273,7 +273,7 @@ const SettingsInfo = () => {
         </div>
       </div>
 
-      <div className="settings-card glass-card">
+      <div className={`${styles.utilityCard} settings-card glass-card`}>
         <h2 className="settings-section-title">
           <i className="fa-solid fa-rotate"></i> به‌روزرسانی اطلاعات
         </h2>
@@ -286,7 +286,7 @@ const SettingsInfo = () => {
       </div>
 
       {/* Holiday calendar: upload one YEAR.json per year (kept across launches). */}
-      <div className="settings-card glass-card">
+      <div className={`${styles.utilityCard} settings-card glass-card`}>
         <h2 className="settings-section-title">
           <i className="fa-solid fa-calendar-day"></i> تقویم تعطیلات
         </h2>
@@ -326,7 +326,7 @@ const SettingsInfo = () => {
       </div>
 
       {isAdmin && (
-        <div className="settings-card glass-card">
+        <div className={`${styles.utilityCard} settings-card glass-card`}>
           <h2 className="settings-section-title">
             <i className="fa-solid fa-database"></i> پشتیبان‌گیری
           </h2>
@@ -357,10 +357,13 @@ const SettingsInfo = () => {
       )}
 
       {isAdmin && (
-        <div className="settings-card glass-card">
-          <h2 className="settings-section-title">
-            <i className="fa-solid fa-users-gear"></i> مدیریت کاربران
-          </h2>
+        <div className={`${styles.userManagementCard} settings-card glass-card`}>
+          <div className={styles.userManagementHeading}>
+            <h2 className="settings-section-title">
+              <i className="fa-solid fa-users-gear"></i> مدیریت کاربران
+            </h2>
+            <p className={styles.userManagementHint}>مدیریت حساب‌های سیستم</p>
+          </div>
 
           <form className="user-form" onSubmit={handleAddUser}>
             <div className="user-form-grid">
@@ -388,7 +391,7 @@ const SettingsInfo = () => {
             </div>
             {error && <div className="inline-error">{error}</div>}
             <button type="submit" className="primary-btn" disabled={busy}>
-              {busy ? 'در حال افزودن...' : 'افزودن کاربر'}
+              <i className="fa-solid fa-plus" aria-hidden="true" /> {busy ? 'در حال افزودن...' : 'افزودن کاربر'}
             </button>
           </form>
 
@@ -396,6 +399,9 @@ const SettingsInfo = () => {
             {users.map((u) => (
               <div key={u.id} className="user-entry">
                 <div className="user-row">
+                  <div className={styles.userAvatar} aria-hidden="true">
+                    {String(u.displayName || u.username || '?').trim().charAt(0).toLocaleUpperCase() || '?'}
+                  </div>
                   <div className="user-row-info">
                     <strong>{u.displayName || u.username}</strong>
                     <span className="muted">

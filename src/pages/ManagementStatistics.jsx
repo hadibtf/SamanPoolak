@@ -96,6 +96,9 @@ export default function ManagementStatistics() {
   const monthRequestId = useRef(0);
   const detailsRequestId = useRef(0);
   const detailsPanelRef = useRef(null);
+  const monthTabsRef = useRef(null);
+  const monthTabsDragRef = useRef(null);
+  const suppressMonthClickRef = useRef(false);
 
   const days = useMemo(() => stats ? productionMonthDays(stats.year, stats.month, stats.daily) : [], [stats]);
   const monthlyBars = useMemo(() => {
@@ -168,11 +171,62 @@ export default function ManagementStatistics() {
     }
   }, [detailsNavigationId, details, detailsError]);
 
+  useEffect(() => {
+    if (view !== 'day') return;
+    monthTabsRef.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [view]);
+
   const selectDay = (day) => {
     setSelectedDate(day.date);
     setExpandedEmployeeKey(null);
     setDetailsNavigationId((current) => current + 1);
     loadDayDetails(day.date);
+  };
+
+  const selectDayMonth = (nextMonth) => {
+    const selectedMonth = Number(nextMonth);
+    if (selectedMonth === Number(month)) return;
+    setDetailsNavigationId(0);
+    setMonth(selectedMonth);
+    loadMonth(true, selectedMonth, year);
+  };
+
+  const startMonthTabsDrag = (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
+    suppressMonthClickRef.current = false;
+    monthTabsDragRef.current = { pointerId: event.pointerId, startX: event.clientX, lastX: event.clientX, moved: false };
+    event.target.setPointerCapture?.(event.pointerId);
+  };
+
+  const moveMonthTabsDrag = (event) => {
+    const drag = monthTabsDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const monthTabs = monthTabsRef.current?.querySelector('[role="group"]');
+    if (!monthTabs) return;
+    if (!drag.moved && Math.abs(event.clientX - drag.startX) <= 4) return;
+    drag.moved = true;
+    const deltaX = event.clientX - drag.lastX;
+    drag.lastX = event.clientX;
+    if (deltaX) monthTabs.scrollBy({ left: deltaX });
+    monthTabs.classList.add(styles.monthTabsDragging);
+    event.preventDefault();
+  };
+
+  const finishMonthTabsDrag = (event, suppressClick = true) => {
+    const drag = monthTabsDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag.moved && suppressClick) suppressMonthClickRef.current = true;
+    monthTabsDragRef.current = null;
+    monthTabsRef.current?.querySelector('[role="group"]')?.classList.remove(styles.monthTabsDragging);
+  };
+
+  const cancelMonthTabsDrag = (event) => finishMonthTabsDrag(event, false);
+
+  const suppressDraggedMonthClick = (event) => {
+    if (!suppressMonthClickRef.current) return;
+    suppressMonthClickRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   const selectMonth = (monthBar) => {
@@ -219,6 +273,23 @@ export default function ManagementStatistics() {
     <div id="management-statistics-panel" className={styles.panel} role="tabpanel" aria-labelledby={`management-statistics-${view}-tab`}>
       {view === 'month' && <ProductionMonthControls year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} onView={() => loadMonth(false)} loading={loading} />}
       {view === 'year' && <ProductionMonthControls year={year} month={month} onYearChange={setYear} onMonthChange={setMonth} onView={() => loadMonth(false)} loading={loading} yearOnly yearOptions={PRODUCTION_CHART_YEARS} />}
+      {view === 'day' && <div
+        ref={monthTabsRef}
+        onPointerDown={startMonthTabsDrag}
+        onPointerMove={moveMonthTabsDrag}
+        onPointerUp={finishMonthTabsDrag}
+        onPointerCancel={cancelMonthTabsDrag}
+        onClickCapture={suppressDraggedMonthClick}
+      >
+        <SegmentedTabs
+          className={styles.monthTabs}
+          role="group"
+          label="ماه آمار تولید"
+          value={month}
+          onChange={selectDayMonth}
+          items={PRODUCTION_MONTHS.map((name, index) => ({ value: index + 1, label: name }))}
+        />
+      </div>}
       {error && <div className="statistics-message error">{error}</div>}
       {!statsMatchSelection && !loading && !error && <div className="statistics-message"><i className="fa-solid fa-chart-column" /><p>برای نمایش آمار، بازه را انتخاب کنید.</p></div>}
       {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}

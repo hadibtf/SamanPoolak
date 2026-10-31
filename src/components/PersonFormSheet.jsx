@@ -383,7 +383,15 @@ const PersonFormSheet = ({
   return (
     <>
       <BottomSheet onClose={onClose}>
-      <h2 style={{ marginBottom: '20px' }}>{person ? 'ویرایش فرد' : 'افزودن فرد جدید'}</h2>
+      <div className={styles.sheetHeader}>
+        <span className={styles.sheetTitleIcon} aria-hidden="true">
+          <i className={`fa-solid ${person ? 'fa-user-pen' : 'fa-user-plus'}`} />
+        </span>
+        <h2 className={styles.sheetTitle}>{person ? 'ویرایش فرد' : 'افزودن فرد جدید'}</h2>
+        <button type="button" className={styles.sheetCloseButton} onClick={onClose} aria-label="بستن فرم">
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
+        </button>
+      </div>
       {loadingEmployeeAccount ? (
         <p className="hint-text">در حال دریافت اطلاعات حساب کارمند...</p>
       ) : (
@@ -416,7 +424,9 @@ const PersonFormSheet = ({
           )}
 
           <section className={styles.section} aria-labelledby="person-main-info-heading">
-            <h3 id="person-main-info-heading" className={styles.sectionTitle}>اطلاعات اصلی</h3>
+            <h3 id="person-main-info-heading" className={styles.sectionTitle}>
+              <i className="fa-solid fa-user" aria-hidden="true" /> اطلاعات اصلی
+            </h3>
             <div className={styles.fieldGrid}>
               <div className={styles.field}>
                 <label htmlFor="person-first-name">نام</label>
@@ -448,7 +458,9 @@ const PersonFormSheet = ({
           </section>
 
           <section className={styles.section} aria-labelledby="person-additional-info-heading">
-            <h3 id="person-additional-info-heading" className={styles.sectionTitle}>اطلاعات تکمیلی</h3>
+            <h3 id="person-additional-info-heading" className={styles.sectionTitle}>
+              <i className="fa-solid fa-file-lines" aria-hidden="true" /> اطلاعات تکمیلی
+            </h3>
             <div className={styles.field}>
               <span id="person-phone-numbers-label" className={styles.fieldLabel}>شماره‌های تماس</span>
               <div className={styles.arrayFields} role="group" aria-labelledby="person-phone-numbers-label">
@@ -484,7 +496,9 @@ const PersonFormSheet = ({
           </section>
 
           <section className={styles.section} aria-labelledby="person-optional-info-heading">
-            <h3 id="person-optional-info-heading" className={styles.sectionTitle}>اطلاعات اختیاری</h3>
+            <h3 id="person-optional-info-heading" className={styles.sectionTitle}>
+              <i className="fa-solid fa-ellipsis" aria-hidden="true" /> اطلاعات اختیاری
+            </h3>
             <div className={styles.fieldGrid}>
               <div className={styles.field}>
                 <label htmlFor="person-county">استان</label>
@@ -514,7 +528,11 @@ const PersonFormSheet = ({
             </div>
 
             <details className={styles.moreOptional}>
-              <summary>سایر اطلاعات اختیاری</summary>
+              <summary>
+                <span className={styles.optionalSummaryLabel}>
+                  <i className="fa-solid fa-plus" aria-hidden="true" /> سایر اطلاعات اختیاری
+                </span>
+              </summary>
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
                   <label htmlFor="person-father-name">نام پدر</label>

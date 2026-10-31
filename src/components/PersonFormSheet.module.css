@@ -1,7 +1,56 @@
+.sheetHeader {
+  display: flex;
+  min-height: 60px;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.sheetTitleIcon,
+.sheetCloseButton {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(222, 236, 255, 0.5));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.96), 0 4px 12px rgba(62, 102, 162, 0.1);
+  color: #0878ed;
+  font-size: 22px;
+}
+
+.sheetTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: #15243b;
+  font-size: clamp(21px, 2.4vw, 27px);
+  line-height: 1.45;
+}
+
+.sheetCloseButton {
+  color: #5c6d86;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.sheetCloseButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  color: #253c5c;
+  transform: translateY(-1px);
+}
+
+.sheetCloseButton:focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.42);
+  outline-offset: 3px;
+}
+
 .form {
   display: flex !important;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .categoryFieldset {
@@ -13,8 +62,8 @@
 
 .categoryFieldset legend {
   margin-bottom: 10px;
-  color: #3a3a3c;
-  font-size: 13px;
+  color: #50627e;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -39,23 +88,24 @@
 
 .categoryChip span {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 46px;
   align-items: center;
   justify-content: center;
-  padding: 8px 18px;
-  border: 1px solid #d9d9e0;
-  border-radius: 999px;
-  background: #f2f2f7;
-  color: #42424a;
+  padding: 9px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 15px;
+  background: rgba(239, 246, 255, 0.56);
+  color: #526681;
   font-size: 14px;
   font-weight: 600;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
 }
 
 .categoryChipSelected span {
-  border-color: var(--active-color);
-  background: color-mix(in srgb, var(--active-color) 12%, white);
-  color: var(--active-color);
+  border-color: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(218, 238, 255, 0.84));
+  box-shadow: inset 0 1px 0 #fff, 0 3px 10px rgba(33, 117, 217, 0.12);
+  color: #0874ed;
 }
 
 .categoryChip input:focus-visible + span {
@@ -67,15 +117,38 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: clamp(16px, 2.3vw, 24px);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 24px;
+  background: linear-gradient(138deg, rgba(255, 255, 255, 0.38), rgba(222, 236, 255, 0.3));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 5px 16px rgba(47, 88, 146, 0.045);
 }
 
 .sectionTitle {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 12px;
   margin: 0;
-  padding-bottom: 9px;
-  border-bottom: 1px solid #e5e5ea;
-  color: #25252a;
-  font-size: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.78);
+  color: #15243b;
+  font-size: 18px;
   font-weight: 700;
+}
+
+.sectionTitle i {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 13px;
+  background: rgba(220, 237, 255, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #0878ed;
+  font-size: 16px;
 }
 
 .fieldGrid {
@@ -88,13 +161,13 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .field label,
 .fieldLabel {
-  color: #3a3a3c;
-  font-size: 13px;
+  color: #586c89;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -104,25 +177,29 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid #e5e5ea;
-  border-radius: 10px;
-  background: #f2f2f7;
-  color: inherit;
+  min-height: 54px;
+  padding: 13px 16px;
+  border: 1px solid rgba(151, 172, 205, 0.34);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.54);
+  color: #243752;
   font: inherit;
   font-size: 15px;
   outline: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.68);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .field input:focus,
 .field textarea:focus,
 .form :global(.rmdp-input:focus) {
   border-color: var(--active-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--active-color) 16%, transparent);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.7);
 }
 
 .field textarea {
-  min-height: 90px;
+  min-height: 118px;
   resize: vertical;
 }
 
@@ -147,16 +224,25 @@
 }
 
 .addFieldButton {
-  align-self: flex-start;
-  margin-top: 9px;
-  padding: 4px 0;
-  border: 0;
-  background: none;
-  color: var(--active-color);
+  align-self: stretch;
+  min-height: 48px;
+  margin-top: 2px;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 13px;
+  background: rgba(213, 232, 255, 0.58);
+  color: #0874ed;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.addFieldButton:hover {
+  border-color: rgba(255, 255, 255, 0.98);
+  background: rgba(201, 225, 255, 0.82);
+  transform: translateY(-1px);
 }
 
 .removeFieldButton {
@@ -165,29 +251,30 @@
   flex: 0 0 42px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #f1cccc;
-  border-radius: 10px;
-  background: #fff5f5;
-  color: #c93434;
+  border: 1px solid rgba(255, 148, 156, 0.4);
+  border-radius: 13px;
+  background: rgba(255, 240, 241, 0.72);
+  color: #d92d3b;
   cursor: pointer;
 }
 
 .moreOptional {
-  margin-top: 2px;
-  padding: 0 14px 14px;
-  border: 1px solid #e5e5ea;
-  border-radius: 12px;
-  background: color-mix(in srgb, #f2f2f7 65%, white);
+  margin-top: 4px;
+  padding: 0 16px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(245, 249, 255, 0.62), rgba(223, 236, 255, 0.48));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .moreOptional summary {
   display: flex;
-  min-height: 48px;
+  min-height: 62px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #42424a;
-  font-size: 14px;
+  color: #263b59;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   list-style: none;
@@ -198,14 +285,33 @@
 }
 
 .moreOptional summary::after {
-  color: var(--active-color);
-  content: '+';
-  font-size: 20px;
+  color: #647895;
+  content: '⌄';
+  font-size: 22px;
   line-height: 1;
+  transition: transform 180ms ease;
 }
 
 .moreOptional[open] summary::after {
-  content: '−';
+  transform: rotate(180deg);
+}
+
+.optionalSummaryLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.optionalSummaryLabel i {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 12px;
+  background: rgba(217, 235, 255, 0.64);
+  color: #0878ed;
+  font-size: 16px;
 }
 
 .moreOptional summary:focus-visible {
@@ -215,36 +321,57 @@
 }
 
 .moreOptional .fieldGrid {
-  padding-top: 14px;
-  border-top: 1px solid #e5e5ea;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .form :global(.form-actions) {
+  position: sticky;
+  z-index: 3;
+  bottom: -1px;
   display: flex;
-  gap: 12px;
-  margin-top: 0;
+  gap: 14px;
+  margin-top: 2px;
+  padding-top: 12px;
+  background: transparent;
 }
 
 .form :global(.submit-btn),
 .form :global(.cancel-btn) {
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  min-height: 64px;
+  padding: 14px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 18px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .form :global(.submit-btn) {
   flex: 2;
-  background: var(--active-color);
+  background: linear-gradient(112deg, #1496ff, #087cf2 58%, #4db8ff);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.7), 0 8px 20px rgba(25, 118, 224, 0.2);
   color: white;
+}
+
+.form :global(.submit-btn):hover:not(:disabled) {
+  background: linear-gradient(112deg, #2aa3ff, #1388f9 58%, #70c8ff);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.84), 0 11px 24px rgba(25, 118, 224, 0.24);
+  transform: translateY(-1px);
 }
 
 .form :global(.cancel-btn) {
   flex: 1;
-  background: #e5e5ea;
-  color: #3a3a3c;
+  border-color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.82);
+  color: #263b59;
+}
+
+.form :global(.cancel-btn):hover {
+  background: rgba(255, 255, 255, 0.82);
+  transform: translateY(-1px);
 }
 
 .form :global(.submit-btn):disabled {
@@ -253,6 +380,61 @@
 }
 
 @media (max-width: 600px) {
+  .sheetHeader {
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .sheetTitleIcon,
+  .sheetCloseButton {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 19px;
+  }
+
+  .sheetTitle {
+    font-size: 20px;
+  }
+
+  .form {
+    gap: 15px;
+  }
+
+  .section {
+    gap: 12px;
+    padding: 16px;
+    border-radius: 19px;
+  }
+
+  .sectionTitle {
+    min-height: 44px;
+    gap: 10px;
+    font-size: 16px;
+  }
+
+  .sectionTitle i {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  .field input,
+  .field textarea,
+  .form :global(.rmdp-input) {
+    min-height: 50px;
+    padding: 11px 13px;
+  }
+
+  .form :global(.submit-btn),
+  .form :global(.cancel-btn) {
+    min-height: 58px;
+    padding: 12px;
+    border-radius: 15px;
+    font-size: 15px;
+  }
+
   .fieldGrid {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
@@ -260,6 +442,141 @@
 
   .fullWidth {
     grid-column: auto;
+  }
+}
+
+:global([data-theme="dark"]) .sheetTitle {
+  color: #edf4ff;
+}
+
+:global([data-theme="dark"]) .sheetTitleIcon,
+:global([data-theme="dark"]) .sheetCloseButton {
+  border-color: rgba(219, 235, 255, 0.18);
+  background: linear-gradient(145deg, rgba(198, 219, 248, 0.14), rgba(119, 151, 195, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: #c5d7f0;
+}
+
+:global([data-theme="dark"]) .sheetCloseButton:hover {
+  background: rgba(176, 207, 247, 0.2);
+  color: #fff;
+}
+
+:global([data-theme="dark"]) .categoryFieldset legend,
+:global([data-theme="dark"]) .field label,
+:global([data-theme="dark"]) .fieldLabel {
+  color: #c1cde0;
+}
+
+:global([data-theme="dark"]) .categoryChip span {
+  border-color: rgba(216, 231, 255, 0.16);
+  background: rgba(9, 19, 34, 0.36);
+  color: #d2def0;
+}
+
+:global([data-theme="dark"]) .categoryChipSelected span {
+  border-color: rgba(156, 204, 255, 0.38);
+  background: linear-gradient(145deg, rgba(76, 136, 205, 0.38), rgba(45, 97, 157, 0.32));
+  color: #c9e5ff;
+}
+
+:global([data-theme="dark"]) .section {
+  border-color: rgba(217, 233, 255, 0.15);
+  background: linear-gradient(138deg, rgba(33, 49, 70, 0.58), rgba(22, 37, 57, 0.5));
+  box-shadow: inset 0 1px 0 rgba(237, 245, 255, 0.08), 0 5px 16px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme="dark"]) .sectionTitle {
+  border-bottom-color: rgba(217, 233, 255, 0.14);
+  color: #edf4ff;
+}
+
+:global([data-theme="dark"]) .sectionTitle i {
+  border-color: rgba(219, 235, 255, 0.18);
+  background: rgba(83, 131, 190, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #8cc7ff;
+}
+
+:global([data-theme="dark"]) .field input,
+:global([data-theme="dark"]) .field textarea,
+:global([data-theme="dark"]) .form :global(.rmdp-input) {
+  border-color: rgba(204, 223, 250, 0.18);
+  background: rgba(8, 18, 32, 0.42);
+  color: #edf4ff;
+}
+
+:global([data-theme="dark"]) .field input:focus,
+:global([data-theme="dark"]) .field textarea:focus,
+:global([data-theme="dark"]) .form :global(.rmdp-input:focus) {
+  border-color: rgba(123, 183, 255, 0.68);
+  background: rgba(8, 18, 32, 0.58);
+}
+
+:global([data-theme="dark"]) .addFieldButton {
+  border-color: rgba(172, 210, 255, 0.16);
+  background: rgba(58, 107, 163, 0.22);
+  color: #91caff;
+}
+
+:global([data-theme="dark"]) .addFieldButton:hover {
+  background: rgba(75, 133, 198, 0.32);
+}
+
+:global([data-theme="dark"]) .removeFieldButton {
+  border-color: rgba(255, 133, 137, 0.24);
+  background: rgba(120, 48, 58, 0.3);
+  color: #ff9b9f;
+}
+
+:global([data-theme="dark"]) .moreOptional {
+  border-color: rgba(217, 233, 255, 0.15);
+  background: linear-gradient(135deg, rgba(20, 35, 54, 0.62), rgba(28, 43, 64, 0.54));
+  box-shadow: inset 0 1px 0 rgba(237, 245, 255, 0.08);
+}
+
+:global([data-theme="dark"]) .moreOptional summary {
+  color: #d9e6f7;
+}
+
+:global([data-theme="dark"]) .moreOptional summary::after {
+  color: #a7bdd8;
+}
+
+:global([data-theme="dark"]) .moreOptional .fieldGrid {
+  border-top-color: rgba(217, 233, 255, 0.14);
+}
+
+:global([data-theme="dark"]) .optionalSummaryLabel i {
+  border-color: rgba(219, 235, 255, 0.16);
+  background: rgba(83, 131, 190, 0.24);
+  color: #8cc7ff;
+}
+
+:global([data-theme="dark"]) .form :global(.form-actions) {
+  background: transparent;
+}
+
+:global([data-theme="dark"]) .form :global(.cancel-btn) {
+  border-color: rgba(218, 233, 255, 0.18);
+  background: rgba(220, 234, 255, 0.08);
+  color: #e4efff;
+}
+
+:global([data-theme="dark"]) .form :global(.cancel-btn):hover {
+  background: rgba(220, 234, 255, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheetCloseButton,
+  .categoryChip span,
+  .field input,
+  .field textarea,
+  .addFieldButton,
+  .moreOptional summary::after,
+  .form :global(.submit-btn),
+  .form :global(.cancel-btn) {
+    transition: none;
   }
 }
 

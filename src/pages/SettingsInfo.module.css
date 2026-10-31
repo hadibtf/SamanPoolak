@@ -1,170 +1,441 @@
 :local(.root) {
+  --settings-ink: #15243b;
+  --settings-muted: #64748b;
+  --settings-blue: #0878ed;
+  --settings-glass: rgba(245, 249, 255, 0.88);
+  --settings-edge: rgba(255, 255, 255, 0.84);
   width: 100%;
-  max-width: 560px;
+  max-width: 1740px;
   margin: 0 auto;
-  padding: 28px 16px 110px;
+  padding: clamp(22px, 3vw, 36px) 16px 120px;
+  color: var(--settings-ink);
 }
 
 :local(.root):global(.settings-page-wide) {
-  max-width: 1100px;
+  max-width: 1160px;
 }
 
 :local(.root) h1 {
+  margin: 0 0 22px;
+  color: var(--settings-ink);
   font-size: 26px;
   font-weight: 700;
-  color: #1c1c1e;
-  text-align: center;
-  margin: 0 0 22px;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.35px;
+  text-align: start;
 }
 
-:local(.settingsTabs) { --tabs-width: 360px; --tabs-margin: 0 auto 22px; }
+:local(.settingsTabs) {
+  --tabs-width: 400px;
+  --tabs-margin: 0 auto 24px;
+}
 
 :local(.root) :global(.settings-card) {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow: hidden;
+  padding: clamp(20px, 3vw, 30px);
+  border: 1px solid var(--settings-edge);
+  border-radius: 24px;
+  background: linear-gradient(138deg, rgba(255, 255, 255, 0.9), var(--settings-glass) 54%, rgba(229, 239, 255, 0.82));
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.48),
+    0 18px 44px -30px rgba(46, 82, 143, 0.46),
+    0 7px 22px rgba(47, 87, 151, 0.1);
+  color: var(--settings-ink);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
 }
 
-:local(.root) :global(.settings-user) {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+:local(.root) :global(.settings-card)::before {
+  content: none;
 }
 
-:local(.root) :global(.settings-avatar) {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  color: #fff;
-  background: linear-gradient(135deg, #0a84ff, #007aff);
-  flex-shrink: 0;
+:local(.root) :global(.settings-card)::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(128deg, rgba(255, 255, 255, 0.34), transparent 30% 72%, rgba(255, 255, 255, 0.16));
+  content: '';
+  pointer-events: none;
 }
 
-:local(.root) :global(.settings-user-info) {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+:local(.root) :global(.settings-card) > * {
+  position: relative;
+  z-index: 1;
 }
 
-:local(.root) :global(.settings-user-info) strong {
-  font-size: 17px;
-  color: #1c1c1e;
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :local(.root) :global(.settings-card) {
+    background: linear-gradient(138deg, rgba(255, 255, 255, 0.76), rgba(241, 247, 255, 0.58) 54%, rgba(222, 235, 255, 0.58));
+    backdrop-filter: blur(22px) saturate(155%);
+    -webkit-backdrop-filter: blur(22px) saturate(155%);
+  }
 }
 
-:local(.root) :global(.logout-btn) {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 14px;
-  background: rgba(255, 59, 48, 0.1);
-  color: #ff3b30;
-  font-size: 16px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background 0.2s ease;
-}
-
-:local(.root) :global(.logout-btn):hover {
-  background: rgba(255, 59, 48, 0.18);
-}
-
-/* Spacing between stacked settings cards */
 :local(.root) :global(.settings-card) + :global(.settings-card) {
   margin-top: 18px;
 }
 
-:local(.root) :global(.settings-section-title) {
+:local(.root) :global(.settings-user) {
+  display: flex;
+  min-height: 104px;
+  align-items: center;
+  gap: 18px;
+  padding-inline: 6px;
+}
+
+:local(.root) :global(.settings-avatar) {
+  display: flex;
+  width: 82px;
+  height: 82px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #47b8ff 0%, #1688fa 54%, #0765dc 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.52),
+    inset 0 -3px 7px rgba(0, 55, 150, 0.2),
+    0 8px 20px rgba(21, 117, 228, 0.26),
+    0 0 0 4px rgba(255, 255, 255, 0.26);
+  color: #fff;
+  font-size: 32px;
+}
+
+:local(.root) :global(.settings-user-info) {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+:local(.root) :global(.settings-user-info) strong {
+  color: var(--settings-ink);
+  font-size: clamp(19px, 2.6vw, 24px);
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+:local(.root) :global(.settings-user-info) :global(.muted) {
+  color: var(--settings-muted);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+:local(.root) :global(.logout-btn) {
+  display: flex;
+  width: 100%;
+  min-height: 68px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 18px;
+  border: 1px solid rgba(255, 116, 128, 0.34);
+  border-radius: 20px;
+  background: linear-gradient(112deg, rgba(241, 232, 255, 0.58), rgba(255, 236, 239, 0.82) 52%, rgba(255, 222, 226, 0.64));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.9), 0 7px 18px rgba(177, 73, 96, 0.08);
+  color: #e32735;
+  font-family: inherit;
   font-size: 17px;
   font-weight: 700;
-  color: #1c1c1e;
-  margin: 0;
+  cursor: pointer;
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+:local(.root) :global(.logout-btn) i {
+  font-size: 19px;
+}
+
+:local(.root) :global(.logout-btn):hover {
+  border-color: rgba(255, 92, 108, 0.48);
+  background: linear-gradient(112deg, rgba(244, 231, 255, 0.76), rgba(255, 225, 230, 0.94) 52%, rgba(255, 211, 218, 0.82));
+  box-shadow: inset 0 1.5px 0 #fff, 0 10px 22px rgba(177, 73, 96, 0.13);
+  transform: translateY(-1px);
+}
+
+:local(.root) :global(.logout-btn):active {
+  transform: translateY(0);
+}
+
+:local(.root) :global(.logout-btn):focus-visible,
+:local(.root) :global(.restore-btn):focus-visible,
+:local(.root) :global(.user-password-cancel):focus-visible,
+:local(.root) :global(.user-password-visibility):focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.4);
+  outline-offset: 3px;
+}
+
+:local(.root) :global(.settings-section-title) {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
+  margin: 0;
+  color: var(--settings-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+:local(.root) :global(.settings-section-title) i {
+  color: var(--settings-blue);
+  filter: drop-shadow(0 2px 5px rgba(24, 126, 237, 0.18));
+}
+
+:local(.root) :local(.appearanceCard) {
+  gap: 0;
+  padding: clamp(24px, 3.4vw, 42px) clamp(22px, 3.2vw, 48px);
+}
+
+:local(.root) :local(.appearanceCard) :global(.settings-section-title) {
+  min-height: 74px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+  color: var(--settings-ink);
+  font-size: clamp(21px, 2.2vw, 28px);
+}
+
+:local(.root) :local(.appearanceCard) :global(.settings-section-title) i,
+:local(.root) :local(.appearanceCard) :global(.setting-row) > span i {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.62), rgba(225, 237, 255, 0.4));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.92), 0 4px 12px rgba(62, 102, 162, 0.08);
+  color: #536783;
+  font-size: 23px;
+  filter: none;
+}
+
+:local(.root) :local(.appearanceCard) :global(.settings-section-title) i {
+  margin-inline-start: 2px;
+}
+
+:local(.root) :local(.appearanceCard) :global(.setting-row) {
+  min-height: 112px;
+  padding-block: 15px;
+  gap: 20px;
+  font-size: clamp(18px, 2vw, 23px);
+}
+
+:local(.root) :local(.appearanceCard) :global(.setting-row) + :global(.setting-row) {
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.76);
+}
+
+:local(.root) :local(.appearanceCard) :global(.setting-row) > span {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+:local(.root) :local(.appearanceCard) :global(.ios-switch) {
+  width: 88px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 26px;
+  background: rgba(105, 125, 157, 0.26);
+  box-shadow: inset 0 2px 5px rgba(50, 72, 107, 0.12), 0 3px 10px rgba(54, 92, 148, 0.08);
+  transition: background 200ms ease, box-shadow 200ms ease;
+}
+
+:local(.root) :local(.appearanceCard) :global(.ios-switch.on) {
+  background: linear-gradient(110deg, #64a4f7, #287ff0);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 5px 14px rgba(33, 119, 233, 0.24);
+}
+
+:local(.root) :local(.appearanceCard) :global(.ios-switch) :global(.knob) {
+  top: 3px;
+  right: 3px;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(150deg, #fff, #f5f8ff);
+  box-shadow: 0 3px 8px rgba(45, 74, 117, 0.22), inset 0 1px 1px #fff;
+  transform: translateX(-38px);
+}
+
+:local(.root) :local(.appearanceCard) :global(.ios-switch.on) :global(.knob) {
+  transform: translateX(0);
+}
+
+:local(.root) :local(.appearanceCard) :global(.ios-switch):focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.36);
+  outline-offset: 4px;
+}
+
+:local(.root) :local(.appearanceCard) :global(.currency-seg) {
+  width: min(100%, 280px);
+  max-width: 280px;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  background: rgba(113, 150, 202, 0.12);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3), 0 5px 14px rgba(56, 94, 151, 0.08);
+}
+
+:local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment) {
+  min-height: 54px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  color: #243751;
+  font-size: 18px;
+  transition: color 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+:local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment.active) {
+  border-color: rgba(255, 255, 255, 0.94);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(224, 241, 255, 0.84));
+  color: #0874ed;
+  box-shadow: inset 0 1.5px 0 #fff, inset 0 -1px 0 rgba(93, 177, 255, 0.22), 0 3px 10px rgba(26, 108, 209, 0.18);
+}
+
+:local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment):hover:not(.active) {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+:local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment):focus-visible {
+  outline: 2px solid rgba(0, 122, 255, 0.52);
+  outline-offset: 2px;
+}
+
+:local(.root) :global(.setting-row) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--settings-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+:local(.root) :global(.setting-row) + :global(.setting-row) {
+  padding-top: 17px;
+  border-top: 1px solid rgba(108, 137, 179, 0.14);
+}
+
+:local(.root) :global(.currency-seg) {
+  max-width: 210px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(121, 151, 193, 0.12);
+}
+
+:local(.root) :global(.currency-seg) :global(.segment) {
+  color: #51647f;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+:local(.root) :global(.currency-seg) :global(.segment.active) {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0868dc;
+  box-shadow: inset 0 1px 0 #fff, 0 2px 7px rgba(44, 85, 145, 0.12);
 }
 
 :local(.root) :global(.user-form-grid) {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-@media (max-width: 480px) {
-  :local(.root) :global(.user-form-grid) { grid-template-columns: 1fr; }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 :local(.root) :global(.user-form) :global(.form-group) {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 :local(.root) :global(.user-form) label {
+  color: #52647d;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
 }
 
-:local(.root) :global(.user-form) input {
+:local(.root) :global(.user-form) input,
+:local(.root) :global(.user-password-reset-form) input {
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  font-size: 15px;
-  background: rgba(255, 255, 255, 0.7);
-  outline: none;
+  min-height: 46px;
   box-sizing: border-box;
+  padding: 11px 14px;
+  border: 1px solid rgba(112, 142, 183, 0.2);
+  border-radius: 13px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: inset 0 1px 2px rgba(65, 91, 129, 0.04);
+  color: var(--settings-ink);
   font-family: inherit;
+  font-size: 15px;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
-:local(.root) :global(.user-form) input:focus {
-  border-color: var(--active-color);
-  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+:local(.root) :global(.user-form) input:focus,
+:local(.root) :global(.user-password-reset-form) input:focus {
+  border-color: rgba(0, 122, 255, 0.58);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12), inset 0 1px 2px rgba(65, 91, 129, 0.04);
 }
 
 :local(.root) :global(.user-password-input) {
   position: relative;
   width: 100%;
 }
-:local(.root) :global(.user-password-input) input { padding-inline-end: 44px; }
+
+:local(.root) :global(.user-password-input) input {
+  padding-inline-end: 46px;
+}
+
+:local(.root) :global(.user-password-reset-form) input {
+  direction: ltr;
+}
+
 :local(.root) :global(.user-password-visibility) {
   position: absolute;
-  inset-inline-end: 8px;
   top: 50%;
+  inset-inline-end: 8px;
+  display: inline-grid;
   width: 30px;
   height: 30px;
-  transform: translateY(-50%);
-  display: inline-grid;
   place-items: center;
+  transform: translateY(-50%);
   border: 0;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
-  color: var(--sp-text-muted);
+  color: var(--settings-muted);
   cursor: pointer;
 }
-:local(.root) :global(.user-password-visibility):hover:not(:disabled) { background: rgba(0, 122, 255, 0.08); color: var(--active-color); }
-:local(.root) :global(.user-password-visibility):disabled { opacity: .55; cursor: wait; }
+
+:local(.root) :global(.user-password-visibility):hover:not(:disabled) {
+  background: rgba(0, 122, 255, 0.09);
+  color: var(--settings-blue);
+}
+
+:local(.root) :global(.user-password-visibility):disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
 
 :local(.root) :global(.user-form) :global(.primary-btn) {
-  margin-top: 14px;
+  margin-top: 4px;
 }
 
 :local(.root) :global(.inline-error) {
-  margin-top: 12px;
-  background: rgba(255, 59, 48, 0.1);
-  color: #c1121f;
-  border-radius: 10px;
-  padding: 10px 14px;
+  margin-top: 4px;
+  padding: 11px 14px;
+  border: 1px solid rgba(226, 69, 81, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 94, 107, 0.09);
+  color: #b42332;
   font-size: 13px;
   font-weight: 600;
 }
@@ -185,106 +456,354 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: rgba(118, 118, 128, 0.08);
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 14px;
+  background: rgba(235, 242, 252, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+:local(.root) :global(.user-row):hover {
+  border-color: rgba(134, 174, 229, 0.4);
+  background: rgba(239, 246, 255, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 4px 12px rgba(44, 85, 145, 0.06);
 }
 
 :local(.root) :global(.user-row-info) {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 2px;
 }
 
 :local(.root) :global(.user-row-info) strong {
+  color: var(--settings-ink);
   font-size: 15px;
-  color: #1c1c1e;
+  overflow-wrap: anywhere;
 }
 
 :local(.root) :global(.user-row-actions) {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
+}
+
+:local(.root) :local(.userManagementCard) {
+  gap: 20px;
+  padding: clamp(26px, 3.2vw, 42px);
+}
+
+:local(.root) :local(.userManagementHeading) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+:local(.root) :local(.userManagementHeading) :global(.settings-section-title) {
+  gap: 16px;
+  color: var(--settings-ink);
+  font-size: clamp(21px, 2.2vw, 27px);
+}
+
+:local(.root) :local(.userManagementHeading) :global(.settings-section-title) i {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-inline-start: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(222, 236, 255, 0.46));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.94), 0 4px 12px rgba(62, 102, 162, 0.1);
+  color: #174d8c;
+  font-size: 23px;
+  filter: none;
+}
+
+:local(.root) :local(.userManagementHint) {
+  margin: 0 74px 0 0;
+  color: var(--settings-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(18px, 2.4vw, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 24px;
+  background: linear-gradient(138deg, rgba(244, 249, 255, 0.62), rgba(218, 232, 253, 0.42));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.8), 0 6px 18px rgba(49, 91, 152, 0.06);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form-grid) {
+  gap: 18px 20px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) :global(.form-group) {
+  gap: 8px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) label {
+  color: #4e6382;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) input {
+  min-height: 58px;
+  padding: 14px 17px;
+  border-color: rgba(255, 255, 255, 0.86);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 3px 10px rgba(52, 88, 140, 0.04);
+  font-size: 17px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) input::placeholder {
+  color: #8495b2;
+  opacity: 1;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) input:focus {
+  border-color: rgba(19, 128, 240, 0.52);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 0 0 4px rgba(25, 131, 240, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn) {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  background: linear-gradient(112deg, #1598ff 0%, #087cf2 54%, #51b9ff 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.68), 0 0 22px rgba(51, 156, 255, 0.2), 0 10px 24px rgba(21, 111, 218, 0.2);
+  color: #fff;
+  font-size: 20px;
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn) i {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 20px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn):hover:not(:disabled) {
+  border-color: #fff;
+  background: linear-gradient(112deg, #28a3ff 0%, #1186f8 54%, #70c8ff 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.82), 0 0 28px rgba(51, 156, 255, 0.28), 0 13px 28px rgba(21, 111, 218, 0.24);
+  transform: translateY(-1px);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn):disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+:local(.root) :local(.userManagementCard) :global(.users-list) {
+  gap: 10px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row) {
+  min-height: 88px;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 13px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 21px;
+  background: linear-gradient(130deg, rgba(244, 249, 255, 0.58), rgba(224, 237, 255, 0.46));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.82), 0 4px 13px rgba(45, 85, 143, 0.05);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row):hover {
+  border-color: rgba(255, 255, 255, 0.98);
+  background: linear-gradient(130deg, rgba(250, 252, 255, 0.74), rgba(231, 242, 255, 0.66));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.94), 0 7px 17px rgba(45, 85, 143, 0.09);
+}
+
+:local(.root) :local(.userAvatar) {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(109, 176, 249, 0.34);
+  color: #14589e;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-entry:nth-child(6n + 2)) :local(.userAvatar) {
+  background: rgba(120, 207, 157, 0.3);
+  color: #1c7548;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-entry:nth-child(6n + 3)) :local(.userAvatar) {
+  background: rgba(255, 191, 102, 0.35);
+  color: #99550b;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-entry:nth-child(6n + 4)) :local(.userAvatar) {
+  background: rgba(186, 137, 244, 0.32);
+  color: #7041a9;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-entry:nth-child(6n + 5)) :local(.userAvatar) {
+  background: rgba(255, 139, 157, 0.3);
+  color: #a43d50;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-entry:nth-child(6n + 6)) :local(.userAvatar) {
+  background: rgba(99, 196, 226, 0.32);
+  color: #12647f;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-info) {
+  flex: 1 1 auto;
+  gap: 3px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-info) strong {
+  color: var(--settings-ink);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-info) :global(.muted) {
+  color: var(--settings-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) {
+  gap: 10px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn) {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.66), rgba(221, 236, 255, 0.42));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.88), 0 3px 10px rgba(48, 84, 139, 0.07);
+  color: #0878ed;
+  font-size: 20px;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn):hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: inset 0 1.5px 0 #fff, 0 5px 13px rgba(40, 105, 187, 0.12);
+  transform: translateY(-1px);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn.delete) {
+  color: #ee3843;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn.delete):hover:not(:disabled) {
+  border-color: rgba(255, 116, 128, 0.46);
+  background: rgba(255, 235, 237, 0.86);
+  box-shadow: inset 0 1.5px 0 #fff, 0 5px 13px rgba(187, 59, 75, 0.12);
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn):focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.4);
+  outline-offset: 3px;
+}
+
+:local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn):disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 :local(.root) :global(.user-password-reset-form) {
   display: grid;
-  gap: 8px;
-  padding: 13px 14px;
-  border: 1px solid var(--sp-border);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--sp-surface) 94%, var(--sp-primary) 6%);
+  gap: 9px;
+  padding: 15px;
+  border: 1px solid rgba(126, 157, 199, 0.2);
+  border-radius: 15px;
+  background: rgba(236, 244, 255, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
 }
+
 :local(.root) :global(.user-password-reset-hint) {
   margin: 0;
-  color: var(--sp-text-muted);
+  color: var(--settings-muted);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
+
 :local(.root) :global(.user-password-reset-form) label {
-  color: var(--sp-text);
+  color: #52647d;
   font-size: 13px;
   font-weight: 700;
 }
-:local(.root) :global(.user-password-reset-form) input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 44px 10px 12px;
-  border: 1px solid var(--sp-border);
-  border-radius: 10px;
-  background: var(--sp-surface);
-  color: var(--sp-text);
-  font: inherit;
-  direction: ltr;
-}
-:local(.root) :global(.user-password-reset-form) input:focus {
-  border-color: var(--active-color);
-  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
-  outline: 0;
-}
+
 :local(.root) :global(.user-password-reset-actions) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 9px;
 }
+
 :local(.root) :global(.user-password-reset-actions) :global(.primary-btn) {
   width: auto;
   margin: 0;
-  padding: 9px 14px;
+  padding: 10px 15px;
   font-size: 13px;
 }
+
 :local(.root) :global(.user-password-cancel) {
-  border: 1px solid var(--sp-border);
-  border-radius: 10px;
   padding: 9px 14px;
-  background: transparent;
-  color: var(--sp-text);
+  border: 1px solid rgba(103, 127, 160, 0.22);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--settings-ink);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
-}
-:local(.root) :global(.user-password-cancel):disabled { opacity: .55; cursor: wait; }
-
-/* Appearance rows (theme / currency) */
-:local(.root) :global(.setting-row) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1c1c1e;
+  transition: background 180ms ease, border-color 180ms ease;
 }
 
-:local(.root) :global(.currency-seg) {
-  max-width: 200px;
+:local(.root) :global(.user-password-cancel):hover:not(:disabled) {
+  border-color: rgba(71, 132, 212, 0.34);
+  background: rgba(255, 255, 255, 0.7);
 }
 
-/* Backup / restore */
+:local(.root) :global(.user-password-cancel):disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 :local(.root) :global(.settings-hint) {
+  margin: -7px 0 0;
+  color: var(--settings-muted);
   font-size: 13px;
-  margin: -6px 0 0;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 :local(.root) :global(.backup-actions) {
@@ -298,22 +817,652 @@
 }
 
 :local(.root) :global(.restore-btn) {
-  width: 100%;
-  padding: 14px;
-  border: 1.5px solid rgba(255, 149, 0, 0.5);
-  background: rgba(255, 149, 0, 0.08);
-  color: #c2700a;
-  border-radius: 14px;
-  font-family: inherit;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
   display: flex;
+  width: 100%;
+  min-height: 50px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 9px;
+  padding: 12px 16px;
+  border: 1px solid rgba(218, 155, 57, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(255, 250, 232, 0.72), rgba(255, 241, 212, 0.56));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  color: #8a5b00;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
 }
 
-:local(.root) :global(.restore-btn):disabled { opacity: 0.6; cursor: default; }
+:local(.root) :global(.restore-btn):hover:not(:disabled) {
+  border-color: rgba(218, 155, 57, 0.48);
+  background: linear-gradient(120deg, rgba(255, 251, 237, 0.94), rgba(255, 235, 195, 0.78));
+  transform: translateY(-1px);
+}
 
-[data-theme="dark"] :local(.root) :global(.setting-row) { color: #f5f5f7; }
+:local(.root) :global(.restore-btn):disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+:local(.root) :local(.utilityCard) {
+  gap: 16px;
+  padding: clamp(24px, 3.2vw, 40px);
+}
+
+:local(.root) :local(.utilityCard) :global(.settings-section-title) {
+  min-height: 64px;
+  gap: 16px;
+  color: var(--settings-ink);
+  font-size: clamp(20px, 2.1vw, 26px);
+}
+
+:local(.root) :local(.utilityCard) :global(.settings-section-title) i {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-inline-start: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(222, 236, 255, 0.46));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.92), 0 4px 12px rgba(62, 102, 162, 0.09);
+  color: #174d8c;
+  font-size: 23px;
+  filter: none;
+}
+
+:local(.root) :local(.utilityCard) :global(.settings-hint) {
+  margin: -7px 0 2px;
+  color: var(--settings-muted);
+  font-size: clamp(14px, 1.3vw, 17px);
+  line-height: 1.85;
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn) {
+  min-height: 72px;
+  margin: 0;
+  padding: 17px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 20px;
+  background: linear-gradient(112deg, #1598ff 0%, #087cf2 54%, #51b9ff 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.64),
+    inset 0 -2px 3px rgba(0, 70, 180, 0.16),
+    0 0 22px rgba(51, 156, 255, 0.2),
+    0 10px 24px rgba(21, 111, 218, 0.2);
+  color: #fff;
+  font-size: clamp(16px, 1.55vw, 20px);
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn) i {
+  margin-inline-start: 7px;
+  font-size: 21px;
+  filter: drop-shadow(0 1px 2px rgba(0, 52, 123, 0.24));
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn):hover:not(:disabled) {
+  border-color: #fff;
+  background: linear-gradient(112deg, #28a3ff 0%, #1186f8 54%, #70c8ff 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -2px 3px rgba(0, 70, 180, 0.12),
+    0 0 28px rgba(51, 156, 255, 0.28),
+    0 13px 28px rgba(21, 111, 218, 0.24);
+  transform: translateY(-1px);
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn):active:not(:disabled) {
+  transform: translateY(0) scale(0.995);
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn):disabled {
+  opacity: 0.68;
+  cursor: wait;
+}
+
+:local(.root) :local(.utilityCard) :global(.backup-actions) {
+  gap: 12px;
+}
+
+:local(.root) :local(.utilityCard) :global(.backup-actions) :global(.primary-btn) {
+  margin: 0;
+}
+
+:local(.root) :local(.utilityCard) :global(.restore-btn) {
+  min-height: 72px;
+  border: 1.5px solid rgba(247, 145, 35, 0.78);
+  border-radius: 20px;
+  background: linear-gradient(115deg, rgba(255, 248, 239, 0.9), rgba(255, 235, 218, 0.7));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.94), 0 5px 14px rgba(202, 116, 37, 0.08);
+  color: #b85d0b;
+  font-size: clamp(16px, 1.55vw, 20px);
+}
+
+:local(.root) :local(.utilityCard) :global(.restore-btn) i {
+  font-size: 21px;
+}
+
+:local(.root) :local(.utilityCard) :global(.restore-btn):hover:not(:disabled) {
+  border-color: rgba(255, 140, 20, 0.96);
+  background: linear-gradient(115deg, rgba(255, 251, 246, 0.98), rgba(255, 228, 204, 0.84));
+  box-shadow: inset 0 1.5px 0 #fff, 0 8px 18px rgba(202, 116, 37, 0.13);
+  transform: translateY(-1px);
+}
+
+:local(.root) :local(.utilityCard) :global(.primary-btn):focus-visible,
+:local(.root) :local(.utilityCard) :global(.restore-btn):focus-visible {
+  outline: 3px solid rgba(0, 122, 255, 0.42);
+  outline-offset: 4px;
+}
+
+@media (max-width: 600px) {
+  :local(.root) {
+    padding: 22px 14px 124px;
+  }
+
+  :local(.root) h1 {
+    margin-bottom: 18px;
+    font-size: 23px;
+  }
+
+  :local(.root) :global(.settings-card) {
+    gap: 17px;
+    padding: 19px;
+    border-radius: 20px;
+  }
+
+  :local(.root) :global(.settings-card) + :global(.settings-card) {
+    margin-top: 14px;
+  }
+
+  :local(.root) :global(.settings-user) {
+    min-height: 78px;
+    gap: 14px;
+    padding-inline: 2px;
+  }
+
+  :local(.root) :global(.settings-avatar) {
+    width: 64px;
+    height: 64px;
+    font-size: 25px;
+  }
+
+  :local(.root) :global(.settings-user-info) :global(.muted) {
+    font-size: 14px;
+  }
+
+  :local(.root) :global(.logout-btn) {
+    min-height: 58px;
+    border-radius: 16px;
+    font-size: 15px;
+  }
+
+  :local(.root) :local(.appearanceCard) {
+    padding: 20px 18px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.settings-section-title) {
+    min-height: 62px;
+    padding-bottom: 14px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.settings-section-title) i,
+  :local(.root) :local(.appearanceCard) :global(.setting-row) > span i {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 19px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.setting-row) {
+    min-height: 88px;
+    gap: 12px;
+    font-size: 17px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.setting-row) > span {
+    gap: 10px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.ios-switch) {
+    width: 76px;
+    height: 42px;
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.ios-switch) :global(.knob) {
+    width: 34px;
+    height: 34px;
+    transform: translateX(-32px);
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.ios-switch.on) :global(.knob) {
+    transform: translateX(0);
+  }
+
+  :local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment) {
+    min-height: 48px;
+    padding-inline: 10px;
+    font-size: 16px;
+  }
+
+  :local(.root) :local(.utilityCard) {
+    gap: 14px;
+    padding: 21px 18px;
+  }
+
+  :local(.root) :local(.utilityCard) :global(.settings-section-title) {
+    min-height: 54px;
+    gap: 12px;
+    font-size: 19px;
+  }
+
+  :local(.root) :local(.utilityCard) :global(.settings-section-title) i {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 19px;
+  }
+
+  :local(.root) :local(.utilityCard) :global(.primary-btn),
+  :local(.root) :local(.utilityCard) :global(.restore-btn) {
+    min-height: 60px;
+    padding: 13px 14px;
+    border-radius: 16px;
+  }
+
+  :local(.root) :local(.userManagementCard) {
+    gap: 15px;
+    padding: 21px 18px;
+  }
+
+  :local(.root) :local(.userManagementHeading) :global(.settings-section-title) {
+    gap: 12px;
+    font-size: 19px;
+  }
+
+  :local(.root) :local(.userManagementHeading) :global(.settings-section-title) i {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 19px;
+  }
+
+  :local(.root) :local(.userManagementHint) {
+    margin-inline-start: 60px;
+    font-size: 13px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-form) {
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-form-grid) {
+    gap: 12px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-form) input {
+    min-height: 50px;
+    padding: 11px 13px;
+    font-size: 15px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn) {
+    min-height: 60px;
+    border-radius: 16px;
+    font-size: 17px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn) i {
+    width: 36px;
+    height: 36px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-row) {
+    min-height: 70px;
+    gap: 9px;
+    padding: 9px 10px;
+    border-radius: 17px;
+  }
+
+  :local(.root) :local(.userAvatar) {
+    width: 46px;
+    height: 46px;
+    font-size: 17px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-row-info) strong {
+    font-size: 15px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-row-info) :global(.muted) {
+    font-size: 12px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-row-actions) {
+    gap: 6px;
+  }
+
+  :local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn) {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  :local(.root) :global(.user-form-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :local(.root) :global(.setting-row) {
+    flex-wrap: wrap;
+  }
+
+  :local(.root) :global(.currency-seg) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+:global([data-theme="dark"]) :local(.root) {
+  --settings-ink: #edf4ff;
+  --settings-muted: #b4c2d5;
+  --settings-blue: #86c3ff;
+  --settings-glass: rgba(28, 40, 57, 0.94);
+  --settings-edge: rgba(221, 235, 255, 0.17);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.settings-card) {
+  border-color: var(--settings-edge);
+  background: linear-gradient(138deg, rgba(37, 52, 72, 0.94), rgba(26, 38, 55, 0.91) 54%, rgba(33, 47, 69, 0.94));
+  box-shadow:
+    inset 0 1.5px 0 rgba(235, 244, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 18px 44px -30px rgba(0, 0, 0, 0.7),
+    0 7px 22px rgba(0, 0, 0, 0.26);
+  color: var(--settings-ink);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.settings-card)::after {
+  background: linear-gradient(128deg, rgba(255, 255, 255, 0.12), transparent 30% 72%, rgba(139, 184, 245, 0.08));
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :global([data-theme="dark"]) :local(.root) :global(.settings-card) {
+    background: linear-gradient(138deg, rgba(37, 52, 72, 0.72), rgba(26, 38, 55, 0.68) 54%, rgba(33, 47, 69, 0.72));
+  }
+}
+
+:global([data-theme="dark"]) :local(.root) h1,
+:global([data-theme="dark"]) :local(.root) :global(.settings-section-title),
+:global([data-theme="dark"]) :local(.root) :global(.settings-user-info) strong,
+:global([data-theme="dark"]) :local(.root) :global(.user-row-info) strong,
+:global([data-theme="dark"]) :local(.root) :global(.setting-row) {
+  color: var(--settings-ink);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.settings-user-info) :global(.muted),
+:global([data-theme="dark"]) :local(.root) :global(.settings-hint),
+:global([data-theme="dark"]) :local(.root) :global(.user-password-reset-hint) {
+  color: var(--settings-muted);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.setting-row) + :global(.setting-row) {
+  border-top-color: rgba(216, 231, 255, 0.12);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.currency-seg) {
+  border-color: rgba(219, 235, 255, 0.12);
+  background: rgba(8, 17, 30, 0.28);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.currency-seg) :global(.segment) {
+  color: #c1cde0;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.currency-seg) :global(.segment.active) {
+  background: rgba(149, 195, 255, 0.2);
+  color: #d8eaff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 2px 7px rgba(0, 0, 0, 0.16);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-form) label,
+:global([data-theme="dark"]) :local(.root) :global(.user-password-reset-form) label {
+  color: #c4d0e1;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-form) input,
+:global([data-theme="dark"]) :local(.root) :global(.user-password-reset-form) input {
+  border-color: rgba(204, 223, 250, 0.17) !important;
+  background: rgba(9, 18, 31, 0.36) !important;
+  color: #edf4ff !important;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-form) input:focus,
+:global([data-theme="dark"]) :local(.root) :global(.user-password-reset-form) input:focus {
+  border-color: rgba(123, 183, 255, 0.72) !important;
+  background: rgba(9, 18, 31, 0.5) !important;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-row) {
+  border-color: rgba(214, 231, 255, 0.1);
+  background: rgba(10, 20, 34, 0.24);
+  box-shadow: inset 0 1px 0 rgba(237, 245, 255, 0.08);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-row):hover {
+  border-color: rgba(134, 189, 255, 0.3);
+  background: rgba(72, 106, 150, 0.24);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-password-reset-form) {
+  border-color: rgba(204, 223, 250, 0.13);
+  background: rgba(10, 20, 34, 0.28);
+  box-shadow: inset 0 1px 0 rgba(237, 245, 255, 0.08);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-password-cancel) {
+  border-color: rgba(204, 223, 250, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e7f0ff;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.user-password-cancel):hover:not(:disabled) {
+  border-color: rgba(134, 189, 255, 0.36);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.logout-btn) {
+  border-color: rgba(255, 137, 148, 0.2);
+  background: linear-gradient(112deg, rgba(103, 75, 112, 0.36), rgba(120, 56, 69, 0.42) 52%, rgba(96, 43, 56, 0.4));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.13), 0 7px 18px rgba(0, 0, 0, 0.12);
+  color: #ff969b;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.logout-btn):hover {
+  border-color: rgba(255, 137, 148, 0.35);
+  background: linear-gradient(112deg, rgba(123, 83, 128, 0.5), rgba(148, 62, 77, 0.58) 52%, rgba(121, 49, 66, 0.54));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.18), 0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.restore-btn) {
+  border-color: rgba(241, 195, 106, 0.24);
+  background: linear-gradient(120deg, rgba(114, 90, 45, 0.26), rgba(107, 76, 32, 0.34));
+  color: #f1c36a;
+}
+
+:global([data-theme="dark"]) :local(.root) :global(.restore-btn):hover:not(:disabled) {
+  border-color: rgba(241, 195, 106, 0.4);
+  background: linear-gradient(120deg, rgba(133, 104, 52, 0.36), rgba(130, 88, 35, 0.44));
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.settings-section-title),
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.setting-row) {
+  color: var(--settings-ink);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.settings-section-title),
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.setting-row) + :global(.setting-row) {
+  border-color: rgba(219, 235, 255, 0.14);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.settings-section-title) i,
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.setting-row) > span i {
+  border-color: rgba(219, 235, 255, 0.18);
+  background: linear-gradient(145deg, rgba(198, 219, 248, 0.14), rgba(119, 151, 195, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: #bdcce1;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.ios-switch) {
+  border-color: rgba(222, 237, 255, 0.16);
+  background: rgba(199, 216, 239, 0.18);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.16);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.ios-switch.on) {
+  background: linear-gradient(110deg, #5b9df2, #2478e9);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.16), 0 5px 14px rgba(26, 111, 224, 0.25);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.currency-seg) {
+  border-color: rgba(220, 236, 255, 0.14);
+  background: rgba(8, 17, 30, 0.26);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12), 0 5px 14px rgba(0, 0, 0, 0.12);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment) {
+  color: #e0eaff;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.appearanceCard) :global(.currency-seg) :global(.segment.active) {
+  border-color: rgba(193, 223, 255, 0.34);
+  background: linear-gradient(150deg, rgba(93, 145, 210, 0.46), rgba(54, 111, 184, 0.34));
+  color: #e3f1ff;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.2), 0 3px 10px rgba(0, 0, 0, 0.16);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.utilityCard) :global(.settings-section-title) {
+  color: var(--settings-ink);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.utilityCard) :global(.settings-section-title) i {
+  border-color: rgba(219, 235, 255, 0.18);
+  background: linear-gradient(145deg, rgba(198, 219, 248, 0.14), rgba(119, 151, 195, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: #bdcce1;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.utilityCard) :global(.settings-hint) {
+  color: var(--settings-muted);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.utilityCard) :global(.restore-btn) {
+  border-color: rgba(255, 167, 79, 0.5);
+  background: linear-gradient(115deg, rgba(96, 64, 35, 0.42), rgba(84, 52, 29, 0.54));
+  color: #ffc17a;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.utilityCard) :global(.restore-btn):hover:not(:disabled) {
+  border-color: rgba(255, 181, 102, 0.72);
+  background: linear-gradient(115deg, rgba(116, 75, 40, 0.54), rgba(105, 61, 32, 0.64));
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :local(.userManagementHeading) :global(.settings-section-title) {
+  color: var(--settings-ink);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :local(.userManagementHeading) :global(.settings-section-title) i {
+  border-color: rgba(219, 235, 255, 0.18);
+  background: linear-gradient(145deg, rgba(198, 219, 248, 0.14), rgba(119, 151, 195, 0.12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: #bdcce1;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementHint) {
+  color: var(--settings-muted);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-form) {
+  border-color: rgba(214, 231, 255, 0.12);
+  background: linear-gradient(138deg, rgba(13, 24, 39, 0.34), rgba(9, 19, 34, 0.26));
+  box-shadow: inset 0 1px 0 rgba(237, 245, 255, 0.08), 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-form) label {
+  color: #c4d0e1;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-form) input {
+  border-color: rgba(204, 223, 250, 0.17) !important;
+  background: rgba(9, 18, 31, 0.36) !important;
+  color: #edf4ff !important;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-form) input:focus {
+  border-color: rgba(123, 183, 255, 0.72) !important;
+  background: rgba(9, 18, 31, 0.5) !important;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row) {
+  border-color: rgba(214, 231, 255, 0.14);
+  background: linear-gradient(130deg, rgba(31, 48, 68, 0.8), rgba(24, 38, 57, 0.76));
+  box-shadow: inset 0 1.5px 0 rgba(237, 245, 255, 0.1), 0 4px 13px rgba(0, 0, 0, 0.12);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row):hover {
+  border-color: rgba(167, 202, 250, 0.26);
+  background: linear-gradient(130deg, rgba(39, 60, 84, 0.92), rgba(29, 47, 71, 0.88));
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :local(.userAvatar) {
+  border-color: rgba(229, 241, 255, 0.18);
+  background: rgba(57, 106, 163, 0.62);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.14), 0 4px 12px rgba(0, 0, 0, 0.14);
+  color: #edf6ff;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn) {
+  border-color: rgba(219, 235, 255, 0.16);
+  background: linear-gradient(145deg, rgba(198, 219, 248, 0.14), rgba(119, 151, 195, 0.12));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.12), 0 3px 10px rgba(0, 0, 0, 0.12);
+  color: #8cc7ff;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn):hover:not(:disabled) {
+  border-color: rgba(155, 202, 255, 0.32);
+  background: rgba(139, 183, 235, 0.18);
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn.delete) {
+  color: #ff8589;
+}
+
+:global([data-theme="dark"]) :local(.root) :local(.userManagementCard) :global(.user-row-actions) :global(.action-btn.delete):hover:not(:disabled) {
+  border-color: rgba(255, 133, 137, 0.34);
+  background: rgba(255, 133, 137, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :local(.root) :global(.settings-card),
+  :local(.root) :global(.logout-btn),
+  :local(.root) :global(.user-row),
+  :local(.root) :global(.user-form) input,
+  :local(.root) :global(.user-password-cancel),
+  :local(.root) :global(.restore-btn),
+  :local(.root) :global(.ios-switch),
+  :local(.root) :global(.currency-seg) :global(.segment),
+  :local(.root) :local(.utilityCard) :global(.primary-btn),
+  :local(.root) :local(.userManagementCard) :global(.user-form) :global(.primary-btn),
+  :local(.root) :local(.userManagementCard) :global(.action-btn) {
+    transition: none;
+  }
+}

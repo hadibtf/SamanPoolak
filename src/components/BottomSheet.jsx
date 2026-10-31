@@ -1,6 +1,7 @@
+import { createPortal } from 'react-dom';
 import styles from './BottomSheet.module.css';
 
-const BottomSheet = ({ children, className = '', onClose }) => (
+const BottomSheet = ({ children, className = '', onClose }) => createPortal(
   <div
     className={`${styles.overlay} modal-overlay`}
     onClick={(event) => {
@@ -10,7 +11,8 @@ const BottomSheet = ({ children, className = '', onClose }) => (
     <div className={`${styles.sheet} modal-content ${className}`.trim()}>
       {children}
     </div>
-  </div>
+  </div>,
+  document.body,
 );
 
 export default BottomSheet;
