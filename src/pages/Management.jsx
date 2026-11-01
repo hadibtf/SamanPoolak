@@ -1,11 +1,14 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import SegmentedTabs from '../components/SegmentedTabs';
 import styles from './Management.module.css';
 
 const Management = () => {
+  const { pathname } = useLocation();
+  const isOrderList = pathname === '/orders/list';
+
   return (
-    <div className={`${styles.root} orders-container`}>
+    <div className={`${styles.root} orders-container ${isOrderList ? styles.wideOrderList : ''}`}>
       <div className="orders-header">
         <h1>مدیریت</h1>
         <SegmentedTabs className={styles.mainTabs} role="navigation" label="بخش‌های مدیریت" items={[

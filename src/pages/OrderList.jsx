@@ -325,59 +325,72 @@ const OrderList = () => {
               <div className={styles.advancedGrid}>
                 <div className={`${styles.advancedField} ${styles.dateField}`} role="group" aria-label="تاریخ">
                   <label className={styles.visuallyHidden} htmlFor="order-search-date">تاریخ</label>
-                  <JalaliDatePicker
-                    id="order-search-date"
-                    value={fDate}
-                    onChange={handleExactDateChange}
-                    calendar={persian}
-                    locale={persian_fa}
-                    weekDays={weekDays}
-                    placeholder="انتخاب تاریخ"
-                    calendarPosition="bottom-right"
-                    portal
-                    zIndex={1200}
-                    inputClass="rmdp-input"
-                  />
-                </div>
-
-                <div className={`${styles.advancedField} ${styles.dateRangeField}`} role="group" aria-label="بازه تاریخ">
-                  <div className={styles.dateRangeInputs}>
-                    <div className={styles.dateRangeControl}>
-                      <label className={styles.visuallyHidden} htmlFor="order-search-date-from">از تاریخ</label>
-                      <JalaliDatePicker
-                        id="order-search-date-from"
-                        value={fFrom}
-                        onChange={handleRangeStartChange}
-                        calendar={persian}
-                        locale={persian_fa}
-                        weekDays={weekDays}
-                        placeholder="از تاریخ"
-                        calendarPosition="bottom-right"
-                        portal
-                        zIndex={1200}
-                        inputClass="rmdp-input"
-                      />
-                    </div>
-                    <div className={styles.dateRangeControl}>
-                      <label className={styles.visuallyHidden} htmlFor="order-search-date-to">تا تاریخ</label>
-                      <JalaliDatePicker
-                        id="order-search-date-to"
-                        value={fTo}
-                        onChange={handleRangeEndChange}
-                        calendar={persian}
-                        locale={persian_fa}
-                        weekDays={weekDays}
-                        placeholder="تا تاریخ"
-                        calendarPosition="bottom-right"
-                        portal
-                        zIndex={1200}
-                        inputClass="rmdp-input"
-                      />
-                    </div>
+                  <div className={styles.datePickerControl}>
+                    <JalaliDatePicker
+                      id="order-search-date"
+                      value={fDate}
+                      onChange={handleExactDateChange}
+                      calendar={persian}
+                      locale={persian_fa}
+                      weekDays={weekDays}
+                      placeholder="انتخاب تاریخ"
+                      calendarPosition="bottom-right"
+                      portal
+                      zIndex={1200}
+                      inputClass="rmdp-input"
+                    />
+                    <i className={`fa-regular fa-calendar ${styles.dateCalendarIcon}`} aria-hidden="true"></i>
+                    <i className={`fa-solid fa-chevron-down ${styles.dateChevron}`} aria-hidden="true"></i>
                   </div>
                 </div>
 
-                <div className={`${styles.advancedField} ${styles.customerField}`} role="group" aria-label="مشتری">
+                <div className={`${styles.advancedField} ${styles.dateRangeControl} ${styles.dateFromField}`} role="group" aria-label="از تاریخ">
+                  <label className={styles.visuallyHidden} htmlFor="order-search-date-from">از تاریخ</label>
+                  <div className={styles.datePickerControl}>
+                    <JalaliDatePicker
+                      id="order-search-date-from"
+                      value={fFrom}
+                      onChange={handleRangeStartChange}
+                      calendar={persian}
+                      locale={persian_fa}
+                      weekDays={weekDays}
+                      placeholder="از تاریخ"
+                      calendarPosition="bottom-right"
+                      portal
+                      zIndex={1200}
+                      inputClass="rmdp-input"
+                    />
+                    <i className={`fa-regular fa-calendar ${styles.dateCalendarIcon}`} aria-hidden="true"></i>
+                    <i className={`fa-solid fa-chevron-down ${styles.dateChevron}`} aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div className={`${styles.advancedField} ${styles.dateRangeControl} ${styles.dateToField}`} role="group" aria-label="تا تاریخ">
+                  <label className={styles.visuallyHidden} htmlFor="order-search-date-to">تا تاریخ</label>
+                  <div className={styles.datePickerControl}>
+                    <JalaliDatePicker
+                      id="order-search-date-to"
+                      value={fTo}
+                      onChange={handleRangeEndChange}
+                      calendar={persian}
+                      locale={persian_fa}
+                      weekDays={weekDays}
+                      placeholder="تا تاریخ"
+                      calendarPosition="bottom-right"
+                      portal
+                      zIndex={1200}
+                      inputClass="rmdp-input"
+                    />
+                    <i className={`fa-regular fa-calendar ${styles.dateCalendarIcon}`} aria-hidden="true"></i>
+                    <i className={`fa-solid fa-chevron-down ${styles.dateChevron}`} aria-hidden="true"></i>
+                  </div>
+                </div>
+
+                <div className={`${styles.advancedField} ${styles.customerField}`} role="group" aria-label="برند خودرو">
+                  <div className={styles.filterGroupHeading}>
+                    <span className={styles.filterGroupIcon} aria-hidden="true"><i className="fa-solid fa-car-side"></i></span>
+                    <h3>برند خودرو</h3>
+                  </div>
                   <div className={styles.optionList}>
                     {customerOptions.length ? customerOptions.map((option) => (
                       <label className={styles.optionRow} key={option.value}>
@@ -397,7 +410,11 @@ const OrderList = () => {
                   </div>
                 </div>
 
-                <div className={`${styles.advancedField} ${styles.productSizeField}`} role="group" aria-label="ابعاد محصول">
+                <div className={`${styles.advancedField} ${styles.productSizeField}`} role="group" aria-label="ابعاد ورق">
+                  <div className={styles.filterGroupHeading}>
+                    <span className={styles.filterGroupIcon} aria-hidden="true"><i className="fa-solid fa-ruler-combined"></i></span>
+                    <h3>ابعاد ورق</h3>
+                  </div>
                   <div className={styles.optionList}>
                     {sizeOptions.length ? sizeOptions.map((option) => (
                       <label className={styles.optionRow} key={option.key}>
@@ -414,15 +431,18 @@ const OrderList = () => {
 
                 <div className={`${styles.advancedField} ${styles.orderNumberField}`} role="group" aria-label="شماره سفارش">
                   <label className={styles.visuallyHidden} htmlFor="order-search-number">شماره سفارش</label>
-                  <input
-                    id="order-search-number"
-                    value={fAdvancedOrderNumber}
-                    onChange={(event) => setFAdvancedOrderNumber(event.target.value)}
-                    placeholder="مثال: ۰۵۰۳"
-                    inputMode="numeric"
-                    dir="rtl"
-                    className={styles.orderNumberInput}
-                  />
+                  <div className={styles.orderNumberControl}>
+                    <input
+                      id="order-search-number"
+                      value={fAdvancedOrderNumber}
+                      onChange={(event) => setFAdvancedOrderNumber(event.target.value)}
+                      placeholder="مثال: ۰۵۰۳"
+                      inputMode="numeric"
+                      dir="rtl"
+                      className={styles.orderNumberInput}
+                    />
+                    <i className={`fa-regular fa-file-lines ${styles.orderNumberIcon}`} aria-hidden="true"></i>
+                  </div>
                 </div>
               </div>
             </div>

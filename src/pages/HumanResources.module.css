@@ -1113,6 +1113,12 @@
     box-shadow: 0 0 0 4px rgba(45, 132, 239, 0.09), 0 8px 20px rgba(49, 111, 187, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
+/* Keep the date popover above following glass fields after its input loses focus. */
+:local(.root) .payrollForm :global(.date-picker-wrapper) {
+    position: relative;
+    z-index: 20;
+}
+
 :local(.root) .payrollForm .fieldShell input,
 :local(.root) .payrollForm .fieldShell :global(.rmdp-input) {
     color: #1e2d44;
