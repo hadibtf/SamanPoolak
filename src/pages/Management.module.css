@@ -8,6 +8,7 @@
 }
 
 :local(.root):global(.orders-container):local(.wideOrderList) { max-width: none; }
+:local(.root):global(.orders-container):local(.wideOrderSubmit) { max-width: none; }
 
 :local(.root) :global(.orders-header) {
   margin-bottom: 22px;
@@ -101,7 +102,7 @@
 /* Keep order creation and editing aligned with the centered order detail view. */
 :local(.root):global(.submit-order) {
   width: 100%;
-  max-width: 852px;
+  max-width: none;
   margin-inline: auto;
   padding: 28px 16px 110px;
 }
@@ -3137,7 +3138,7 @@
 
 /* Compact CSS glass treatment for the order entry form. */
 :local(.root):global(.submit-order) {
-  max-width: 1400px;
+  max-width: none;
 }
 :local(.root):global(.submit-order) form { gap: 18px; }
 :local(.root):global(.submit-order) :global(.order-item-card) {
