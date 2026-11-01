@@ -21,25 +21,36 @@ const groupRecordsByEmployee = (records = []) => {
   return [...groups.values()];
 };
 
-export function EmployeeProductionRecord({ record, linkToOrder = false }) {
+export function EmployeeProductionRecord({ record, linkToOrder = false, showStatus = false, showItemIcon = false }) {
   const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
   const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
   const dimension = [record.diameter, record.thickness]
     .map((value) => value == null || value === '' ? '—' : productionFa(value))
     .join(' × ');
 
-  const content = <p className="statistics-production-sentence">
-        <span className="statistics-production-item-title">
-          <span className="statistics-production-name-row">
-            <strong className="statistics-production-product">{record.productName || '—'}</strong>
-          </span>
-          <small className="statistics-production-customer">{record.customerName || '—'}</small>
-        </span>
-      <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
+  const itemDetails = <span className="statistics-production-item-title">
+    <span className="statistics-production-name-row">
+      <strong className="statistics-production-product">{record.productName || '—'}</strong>
+    </span>
+    <small className="statistics-production-customer">{record.customerName || '—'}</small>
+    {showItemIcon && <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>}
+  </span>;
+
+  const content = <p className={`statistics-production-sentence${showItemIcon ? ' has-item-icon' : ''}`}>
+      {showItemIcon ? <span className="statistics-production-item-identity">
+        <span className="statistics-production-image" aria-hidden="true"><i className="fa-solid fa-cube" /></span>
+        {itemDetails}
+      </span> : itemDetails}
+      {!showItemIcon && <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>}
       <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
       <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
-      {record.productionComplete && <span className="statistics-production-complete" role="img" aria-label="تولید این قلم تکمیل شده" title="تولید تکمیل شده">
-        <i className="fa-solid fa-check" aria-hidden="true" />
+      {(record.productionComplete || showStatus) && <span
+        className={`statistics-production-status ${record.productionComplete ? 'statistics-production-complete' : 'statistics-production-pending'}`}
+        role="img"
+        aria-label={record.productionComplete ? 'تولید این قلم تکمیل شده' : 'تولید این قلم در حال انجام است'}
+        title={record.productionComplete ? 'تولید تکمیل شده' : 'تولید در حال انجام'}
+      >
+        <i className={`fa-solid ${record.productionComplete ? 'fa-check' : 'fa-ellipsis'}`} aria-hidden="true" />
       </span>}
     </p>;
   return <article className="statistics-production-record" dir="rtl">

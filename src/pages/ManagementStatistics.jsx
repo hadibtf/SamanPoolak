@@ -44,13 +44,37 @@ const productionEmployeeTotals = (employees = []) => {
 const recordsForEmployee = (records, employeeKey) => (records || [])
   .filter((record) => employeeIdentityKey(record) === employeeKey);
 
-function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded, onToggle }) {
+function StatisticsSummaryCard({ title, total }) {
+  return <section className={`${styles.monthTotal} glass-card`} aria-label="خلاصه تولید">
+    <div className={styles.summaryPeriod}>
+      <span className={styles.summaryIcon} aria-hidden="true"><i className="fa-regular fa-calendar" /></span>
+      <h2>{title}</h2>
+    </div>
+    <div className={styles.summaryQuantity}>
+      <span className={styles.summaryIcon} aria-hidden="true"><i className="fa-solid fa-cube" /></span>
+      <span className={styles.summaryValue}>
+        <small>تعداد کل</small>
+        <strong>{fa(total)} <small>عدد</small></strong>
+      </span>
+    </div>
+  </section>;
+}
+
+function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded, onToggle, rank = 0 }) {
   const detailsId = `statistics-employee-details-${useId()}`;
   const hasDetails = records.length > 0;
+  const percentage = maxProduction ? Math.min(100, Math.round(employee.quantity / maxProduction * 100)) : 0;
   const content = <>
-    <span>{employee.employeeName}</span>
-    <span className="statistics-employee-meter"><span style={{ width: `${maxProduction ? employee.quantity / maxProduction * 100 : 0}%` }} /></span>
-    <strong>{fa(employee.quantity)}</strong>
+    <span className={styles.employeeIdentity}>
+      <span className={styles.employeeIcon} aria-hidden="true"><i className={rank === 0 ? 'fa-solid fa-bullseye' : 'fa-regular fa-user'} /></span>
+      <span className={styles.employeeName}>{employee.employeeName}</span>
+    </span>
+    <span className={styles.employeeProgress}>
+      <span className="statistics-employee-meter" role="progressbar" aria-label={`تولید ${employee.employeeName} نسبت به بیشترین تولید این بازه`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={percentage}>
+        <span style={{ width: `${percentage}%` }} />
+      </span>
+    </span>
+    <span className={styles.employeeCount}><strong>{fa(employee.quantity)}</strong><small>عدد</small></span>
   </>;
 
   return <div className="statistics-employee-entry">
@@ -62,7 +86,7 @@ function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded
       onClick={onToggle}
     >
       {content}
-      <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+      <span className={styles.employeeToggle} aria-hidden="true"><i className="fa-solid fa-chevron-down" /></span>
     </button> : <div className="statistics-employee-row statistics-employee-row-static">{content}</div>}
     {hasDetails && <div
       id={detailsId}
@@ -71,7 +95,7 @@ function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded
     >
       <div className="statistics-employee-panel-inner" inert={!expanded}>
         <div className="statistics-details statistics-employee-records">
-          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} linkToOrder />)}
+          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} linkToOrder showStatus showItemIcon />)}
         </div>
       </div>
     </div>}
@@ -297,16 +321,14 @@ export default function ManagementStatistics() {
       {statsMatchSelection && view === 'day' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
         {selectedDate && details &&
-          <section className={`${styles.monthTotal} glass-card`}>
-            <div><h2>تولید روز {fa(Number(selectedDate.slice(6, 8)))} {PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} {productionFaYear(selectedDate.slice(0, 4))}</h2></div>
-            <strong>{fa(details.total)} <small>عدد</small></strong>
-          </section>
+          <StatisticsSummaryCard title={`تولید روز ${fa(Number(selectedDate.slice(6, 8)))} ${PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} ${productionFaYear(selectedDate.slice(0, 4))}`} total={details.total} />
         }
         {selectedDate && <section ref={detailsPanelRef} className="statistics-comparison glass-card">
           {detailsLoading && <div className="detail-state">در حال دریافت جزئیات تولید...</div>}
           {detailsError && <div className="detail-state error">{detailsError}</div>}
-          {details && dailyEmployeeTotals.length ? dailyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+          {details && dailyEmployeeTotals.length ? dailyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
             key={employee.employeeKey}
+            rank={index}
             employee={employee}
             maxProduction={dailyMaxProduction}
             records={recordsForEmployee(details.records, employee.employeeKey)}
@@ -318,13 +340,11 @@ export default function ManagementStatistics() {
 
       {statsMatchSelection && view === 'month' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionMonthChart months={monthlyBars} selectedMonth={stats.month} onSelect={selectMonth} /></section>
-        <section className={`${styles.monthTotal} glass-card`}>
-          <div><h2>تولید {PRODUCTION_MONTHS[stats.month - 1]} {productionFaYear(stats.year)}</h2></div>
-          <strong>{fa(stats.total)} <small>عدد</small></strong>
-        </section>
+        <StatisticsSummaryCard title={`تولید ${PRODUCTION_MONTHS[stats.month - 1]} ${productionFaYear(stats.year)}`} total={stats.total} />
         <section className="statistics-comparison glass-card">
-          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
             key={employee.employeeKey}
+            rank={index}
             employee={employee}
             maxProduction={monthlyMaxProduction}
             records={recordsForEmployee(stats.records, employee.employeeKey)}
@@ -336,13 +356,11 @@ export default function ManagementStatistics() {
 
       {statsMatchSelection && view === 'year' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionYearChart years={yearlyBars} selectedYear={stats.year} onSelect={selectYear} /></section>
-        <section className={`${styles.monthTotal} glass-card`}>
-          <div><h2>تولید سال {productionFaYear(stats.year)}</h2></div>
-          <strong>{fa(yearlyTotal)} <small>عدد</small></strong>
-        </section>
+        <StatisticsSummaryCard title={`تولید سال ${productionFaYear(stats.year)}`} total={yearlyTotal} />
         <section className="statistics-comparison glass-card">
-          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
+          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
             key={employee.employeeKey}
+            rank={index}
             employee={employee}
             maxProduction={yearlyMaxProduction}
           />) : <p className="statistics-no-production">در این سال تولیدی ثبت نشده است.</p>}
