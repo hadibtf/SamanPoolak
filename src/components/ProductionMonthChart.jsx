@@ -6,15 +6,12 @@ export default function ProductionMonthChart({ months, selectedMonth, onSelect }
   const [hoveredMonth, setHoveredMonth] = useState(null);
   const selectedBarRef = useRef(null);
   const max = Math.max(1, ...months.map((month) => Number(month.quantity || 0)));
-
   useEffect(() => {
     selectedBarRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [months, selectedMonth]);
 
   return <div className={`${styles['production-chart']} ${styles['glass-chart']}`} aria-label="نمودار تولید ماهانه">
-    <div className={styles['chart-y-label']}>تعداد</div>
     <div className={styles['chart-viewport']}>
-      <div className={styles['chart-scale']} aria-hidden="true"><span>{productionFa(max)}</span><span>{productionFa(max / 2)}</span></div>
       <div className={styles['chart-scroll']}>
         <div className={`${styles['chart-grid']} ${styles['month-chart-grid']}`} style={{ '--month-count': months.length }}>
           <div className={`${styles['chart-guide']} ${styles['chart-guide-top']}`} />

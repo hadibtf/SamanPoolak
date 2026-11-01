@@ -8,16 +8,13 @@ export default function ProductionBarChart({ days, selectedDate, onSelect }) {
   const [hovered, setHovered] = useState(null);
   const selectedBarRef = useRef(null);
   const max = Math.max(1, ...days.map((day) => Number(day.quantity || 0)));
-
   useEffect(() => {
     if (!selectedDate) return;
     selectedBarRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [days, selectedDate]);
 
   return <div className={`${styles["production-chart"]} ${styles["glass-chart"]}`} aria-label="نمودار تولید روزانه">
-    <div className={styles["chart-y-label"]}>تعداد</div>
     <div className={styles["chart-viewport"]}>
-      <div className={styles["chart-scale"]} aria-hidden="true"><span>{fa(max)}</span><span>{fa(max / 2)}</span></div>
       <div className={styles["chart-scroll"]}>
         <div className={styles["chart-grid"]} style={{ '--day-count': days.length }}>
           <div className={`${styles["chart-guide"]} ${styles["chart-guide-top"]}`} />
@@ -38,6 +35,5 @@ export default function ProductionBarChart({ days, selectedDate, onSelect }) {
         </div>
       </div>
     </div>
-    <div className={styles["chart-x-label"]}>روز ماه</div>
   </div>;
 }

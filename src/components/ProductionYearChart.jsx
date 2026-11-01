@@ -6,15 +6,12 @@ export default function ProductionYearChart({ years, selectedYear, onSelect }) {
   const [hoveredYear, setHoveredYear] = useState(null);
   const selectedBarRef = useRef(null);
   const max = Math.max(1, ...years.map((year) => Number(year.quantity) || 0));
-
   useEffect(() => {
     selectedBarRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [years, selectedYear]);
 
   return <div className={`${styles['production-chart']} ${styles['glass-chart']}`} aria-label="نمودار تولید سالانه">
-    <div className={styles['chart-y-label']}>تعداد</div>
     <div className={styles['chart-viewport']}>
-      <div className={styles['chart-scale']} aria-hidden="true"><span>{productionFa(max)}</span><span>{productionFa(max / 2)}</span></div>
       <div className={styles['chart-scroll']}>
         <div className={`${styles['chart-grid']} ${styles['year-chart-grid']}`} style={{ '--year-count': years.length }}>
           <div className={`${styles['chart-guide']} ${styles['chart-guide-top']}`} />

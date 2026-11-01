@@ -1,4 +1,4 @@
-:local(.root) { max-width: 900px; }
+:local(.root):global(.employee-statistics) { width: 100%; max-width: none; box-sizing: border-box; }
 :local(.panel) { min-width: 0; }
 :local(.root) > :local(.pageHeader) { display: block; width: 100%; margin: 0 0 12px; padding: 0; text-align: center; }
 :local(.root) > :local(.pageHeader) h1 { margin: 0; color: #1c1c1e; font-size: 25px; font-weight: 800; }
