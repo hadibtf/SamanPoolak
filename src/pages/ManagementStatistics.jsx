@@ -65,13 +65,13 @@ function StatisticsSummaryCard({ title, total }) {
   </section>;
 }
 
-function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded, onToggle, rank = 0 }) {
+function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded, onToggle }) {
   const detailsId = `statistics-employee-details-${useId()}`;
   const hasDetails = records.length > 0;
   const percentage = maxProduction ? Math.min(100, Math.round(employee.quantity / maxProduction * 100)) : 0;
   const content = <>
     <span className={styles.employeeIdentity}>
-      <span className={styles.employeeIcon} aria-hidden="true"><i className={rank === 0 ? 'fa-solid fa-bullseye' : 'fa-regular fa-user'} /></span>
+      <span className={styles.employeeIcon} aria-hidden="true"><i className="fa-regular fa-user" /></span>
       <span className={styles.employeeName}>{employee.employeeName}</span>
     </span>
     <span className={styles.employeeProgress}>
@@ -340,9 +340,8 @@ export default function ManagementStatistics() {
         {selectedDate && <section ref={detailsPanelRef} className="statistics-comparison glass-card">
           {detailsLoading && <div className="detail-state">در حال دریافت جزئیات تولید...</div>}
           {detailsError && <div className="detail-state error">{detailsError}</div>}
-          {details && dailyEmployeeTotals.length ? dailyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
+          {details && dailyEmployeeTotals.length ? dailyEmployeeTotals.map((employee) => <ManagementEmployeeRow
             key={employee.employeeKey}
-            rank={index}
             employee={employee}
             maxProduction={dailyMaxProduction}
             records={recordsForEmployee(details.records, employee.employeeKey)}
@@ -359,9 +358,8 @@ export default function ManagementStatistics() {
           total={stats.total}
         />
         <section className="statistics-comparison glass-card">
-          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
+          {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
             key={employee.employeeKey}
-            rank={index}
             employee={employee}
             maxProduction={monthlyMaxProduction}
             records={recordsForEmployee(stats.records, employee.employeeKey)}
@@ -378,9 +376,8 @@ export default function ManagementStatistics() {
           total={yearlyTotal}
         />
         <section className="statistics-comparison glass-card">
-          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
+          {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee) => <ManagementEmployeeRow
             key={employee.employeeKey}
-            rank={index}
             employee={employee}
             maxProduction={yearlyMaxProduction}
           />) : <p className="statistics-no-production">در این سال تولیدی ثبت نشده است.</p>}
