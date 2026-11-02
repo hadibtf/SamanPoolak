@@ -254,22 +254,17 @@ const SettingsInfo = () => {
 
         <div className="setting-row">
           <span><i className="fa-solid fa-coins" aria-hidden="true" />واحد پول</span>
-          <div className="segmented-control inline currency-seg">
-            <button
-              type="button"
-              className={`segment ${currency === 'RIAL' ? 'active' : ''}`}
-              onClick={() => setCurrency('RIAL')}
-            >
-              ریال
-            </button>
-            <button
-              type="button"
-              className={`segment ${currency === 'TOMAN' ? 'active' : ''}`}
-              onClick={() => setCurrency('TOMAN')}
-            >
-              تومان
-            </button>
-          </div>
+          <SegmentedTabs
+            role="group"
+            label="واحد پول"
+            value={currency}
+            onChange={setCurrency}
+            items={[
+              { value: 'RIAL', label: 'ریال' },
+              { value: 'TOMAN', label: 'تومان' },
+            ]}
+            style={{ '--tabs-width': '280px', '--tabs-margin': '0' }}
+          />
         </div>
       </div>
 
