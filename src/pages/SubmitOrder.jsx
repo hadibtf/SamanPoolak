@@ -432,9 +432,12 @@ const SubmitOrder = () => {
     return () => { cancelled = true; };
   }, [isEdit, prefilled, existingOrder, fromRial, peopleQuery.data]);
 
-  const matchedCustomers = customers.filter((p) => {
-    const term = customerSearch.trim();
-    return term && p.category === 'CUSTOMER' && (`${p.firstName} ${p.lastName}`.includes(term) || p.companyName?.includes(term));
+  const normalizedCustomerSearch = customerSearch.trim().toLowerCase();
+  const matchedCustomers = customers.filter((person) => {
+    if (!normalizedCustomerSearch || person.category !== 'CUSTOMER') return false;
+    const fullName = `${person.firstName || ''} ${person.lastName || ''}`.toLowerCase();
+    const companyName = (person.companyName || '').toLowerCase();
+    return fullName.includes(normalizedCustomerSearch) || companyName.includes(normalizedCustomerSearch);
   });
 
   const dateKey = useMemo(() => jalaliDateKey(orderDate), [orderDate]);
