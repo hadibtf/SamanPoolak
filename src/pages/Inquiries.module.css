@@ -1,8 +1,8 @@
 :local(.root) {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 28px 16px 110px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 :local(.root) :global(.inquiries-header) {

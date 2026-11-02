@@ -1,8 +1,8 @@
 :local(.expenses-page) {
   width: 100%;
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 28px 16px 110px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 :local(.expenses-page) .expenses-header {
@@ -255,7 +255,6 @@
 }
 
 @media (max-width: 520px) {
-  :local(.expenses-page) { padding: 20px 12px 100px; }
   :local(.expenses-page) .expenses-header h1 { font-size: 22px; }
   :local(.expenses-page) .expenses-header .add-btn { padding-inline: 12px; }
   :local(.expenses-page) .filterCard { padding: 16px; }

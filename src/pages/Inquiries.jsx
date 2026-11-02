@@ -77,7 +77,7 @@ const Inquiries = () => {
   };
 
   return (
-    <div className={styles.root}>
+    <div className={`${styles.root} page-content-fit`}>
       <div className="inquiries-header">
         <div>
           <h1>درخواست‌ها</h1>

@@ -209,7 +209,7 @@ const SettingsInfo = () => {
   };
 
   return (
-    <div className={`${styles.root} settings-page ${activeTab === 'people' ? 'settings-page-wide' : ''}`}>
+    <div className={`${styles.root} settings-page`}>
       <h1>تنظیمات و اطلاعات</h1>
 
       <SegmentedTabs className={styles.settingsTabs} label="بخش‌های تنظیمات" value={activeTab} onChange={setActiveTab} items={[

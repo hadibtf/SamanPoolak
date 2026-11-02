@@ -1,5 +1,5 @@
 .page:global(.order-view) {
-  max-width: 1320px;
+  max-width: none;
   background: radial-gradient(ellipse at 10% 38%, rgba(132, 183, 246, .2), transparent 48%),
     radial-gradient(ellipse at 88% 82%, rgba(172, 190, 249, .2), transparent 48%),
     linear-gradient(180deg, rgba(231, 243, 255, .72), rgba(219, 236, 254, .48));

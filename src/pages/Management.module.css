@@ -2,13 +2,10 @@
 
 :local(.root):global(.orders-container) {
   width: 100%;
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 28px 16px 110px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
-
-:local(.root):global(.orders-container):local(.wideOrderList) { max-width: none; }
-:local(.root):global(.orders-container):local(.wideOrderSubmit) { max-width: none; }
 
 :local(.root) :global(.orders-header) {
   margin-bottom: 22px;
@@ -103,8 +100,8 @@
 :local(.root):global(.submit-order) {
   width: 100%;
   max-width: none;
-  margin-inline: auto;
-  padding: 28px 16px 110px;
+  margin: 0;
+  padding: 0;
 }
 
 /* Form layout (scoped to order views) */
@@ -1412,9 +1409,9 @@
 
 :local(.root):global(.order-view) {
   width: 100%;
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 28px 16px 110px;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;

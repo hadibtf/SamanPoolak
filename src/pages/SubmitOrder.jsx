@@ -470,7 +470,7 @@ const SubmitOrder = () => {
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
   return (
-    <div className={`${managementRootClass} submit-order`}>
+    <div className={`${managementRootClass} submit-order page-content-fit`}>
       <ApiReadStatus queries={[orderQuery, peopleQuery]} />
       {isEdit && (
         <div className="page-back">

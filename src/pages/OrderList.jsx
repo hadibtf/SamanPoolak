@@ -285,7 +285,7 @@ const OrderList = () => {
   const weekDays = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
 
   return (
-    <div className={`${styles.root} order-list`}>
+    <div className={`${styles.root} order-list page-content-fit`}>
       <ApiReadStatus queries={[ordersQuery, peopleQuery]} />
       <div className="glass-card filter-card">
         <div className={styles.searchToolbar}>

@@ -28,25 +28,27 @@ function AppShell() {
       <main className="app-container management-content">
         <LegacyDataCleanup />
         {holidaysQuery.error && <ApiReadStatus queries={[holidaysQuery]} />}
-        <Routes>
-          <Route path="/" element={<Navigate to="/payroll" replace />} />
-          <Route path="/payroll" element={<HumanResources />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/orders" element={<Management />}>
-            <Route index element={<SubmitOrder />} />
-            <Route path="list" element={<OrderList />} />
-            <Route path="inquiries" element={<Inquiries />} />
-            <Route path="issue-notes" element={<IssueNotes />} />
-          </Route>
-          <Route path="/orders/edit/:id" element={<SubmitOrder />} />
-          <Route path="/orders/view/:id" element={<OrderView />} />
-          <Route path="/people" element={<Navigate to="/settings" replace />} />
-          <Route path="/inquiries" element={<Navigate to="/orders/inquiries" replace />} />
-          <Route path="/job-applications" element={<Navigate to="/payroll" replace />} />
-          <Route path="/settings" element={<SettingsInfo />} />
-          {user.role === 'admin' && <Route path="/statistics" element={<ManagementStatistics />} />}
-          <Route path="*" element={<Navigate to="/payroll" replace />} />
-        </Routes>
+        <div className="page-frame">
+          <Routes>
+            <Route path="/" element={<Navigate to="/payroll" replace />} />
+            <Route path="/payroll" element={<HumanResources />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/orders" element={<Management />}>
+              <Route index element={<SubmitOrder />} />
+              <Route path="list" element={<OrderList />} />
+              <Route path="inquiries" element={<Inquiries />} />
+              <Route path="issue-notes" element={<IssueNotes />} />
+            </Route>
+            <Route path="/orders/edit/:id" element={<SubmitOrder />} />
+            <Route path="/orders/view/:id" element={<OrderView />} />
+            <Route path="/people" element={<Navigate to="/settings" replace />} />
+            <Route path="/inquiries" element={<Navigate to="/orders/inquiries" replace />} />
+            <Route path="/job-applications" element={<Navigate to="/payroll" replace />} />
+            <Route path="/settings" element={<SettingsInfo />} />
+            {user.role === 'admin' && <Route path="/statistics" element={<ManagementStatistics />} />}
+            <Route path="*" element={<Navigate to="/payroll" replace />} />
+          </Routes>
+        </div>
       </main>
       <BottomNav />
     </div>

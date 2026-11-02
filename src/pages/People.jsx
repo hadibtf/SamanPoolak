@@ -64,7 +64,7 @@ const People = () => {
 
 
   return (
-    <div className={`${styles.root} people-container`}>
+    <div className={`${styles.root} people-container page-content-fit`}>
       <div className="header-section">
         <h1>لیست افراد</h1>
         <button className="add-btn" onClick={() => handleOpenModal()}>

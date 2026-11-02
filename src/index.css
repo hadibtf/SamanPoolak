@@ -52,7 +52,10 @@
     --sp-on-danger: #ffffff;
     --sp-warning: #8a5b00;
     --sp-success: #247044;
-    --sp-focus: #1677c8;
+
+    --sp-page-gutter: clamp(16px, 2vw, 28px);
+    --sp-page-top-space: 28px;
+    --sp-page-bottom-space: calc(110px + env(safe-area-inset-bottom, 0px));
     --bg-color: #f2f2f7; /* iOS System Gray/White */
     --nav-bg: rgba(255, 255, 255, 0.6); /* Glass opacity */
     --active-color: #007aff; /* iOS Blue */
@@ -187,11 +190,36 @@ body::before {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Shared page frame: all screens use the available width and the same gutters. */
+.page-frame {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 100%;
+    margin-inline: auto;
+    padding: var(--sp-page-top-space) var(--sp-page-gutter) var(--sp-page-bottom-space);
+}
+@media (max-width: 600px) {
+    .page-frame {
+        --sp-page-gutter: 16px;
+        --sp-page-top-space: 22px;
+        --sp-page-bottom-space: calc(100px + env(safe-area-inset-bottom, 0px));
+    }
+}
+.page-frame > *,
+.page-content-fit {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 /* Let management content pass behind its floating glass nav while keeping the
    last controls scrollable above it. */
 .management-content {
     flex: 1 1 auto;
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
 }
 
 /* 1. Force global inheritance on all form controls */

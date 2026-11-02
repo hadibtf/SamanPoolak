@@ -196,7 +196,7 @@ const JobApplications = () => {
   };
 
   return (
-    <div className={styles.root}>
+    <div className={`${styles.root} page-content-fit`}>
       <div className="jobs-admin-header">
         <div>
           <h1>درخواست‌های استخدام</h1>

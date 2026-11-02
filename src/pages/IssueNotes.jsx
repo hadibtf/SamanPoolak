@@ -81,7 +81,7 @@ export default function IssueNotes() {
     return () => { window.removeEventListener('resize', fitSlip); window.removeEventListener('orientationchange', fitSlip); document.removeEventListener('gesturestart', stopGesture); document.removeEventListener('gesturechange', stopGesture); };
   }, [open]);
 
-  return <div className={styles.root}>
+  return <div className={`${styles.root} page-content-fit`}>
     <ApiReadStatus queries={[notesQuery]} />
     <div className="glass-card"><h2>{editing ? 'ویرایش برگه خروج' : 'ثبت برگه خروج'}</h2><form onSubmit={save}>
       <div className="issue-grid issue-header-grid"><label>تاریخ<JalaliDatePicker value={date} onChange={setDate} calendar={persian} locale={persian_fa} inputClass="rmdp-input" /></label><label>ساعت<input className="issue-time-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} /></label><label>نام کامل تحویل‌گیرنده<input value={receiverName} onChange={(e) => setReceiverName(e.target.value)} placeholder="نام و نام خانوادگی" /></label><label>مشتری / شرکت مقصد<input required value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="نام شخص یا شرکت" /></label></div>

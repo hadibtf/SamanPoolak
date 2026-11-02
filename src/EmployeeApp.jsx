@@ -8,7 +8,25 @@ import navStyles from './components/FloatingNav.module.css';
 
 function EmployeeShell() {
   const { logout } = useAuth();
-  return <div className="app-shell"><main className="app-container"><Routes><Route path="/" element={<Navigate to="/tasks" replace />} /><Route path="/tasks" element={<EmployeeTasks />} /><Route path="/statistics" element={<EmployeeStatistics />} /><Route path="*" element={<Navigate to="/tasks" replace />} /></Routes></main><nav className={navStyles['floating-nav']} style={{ '--nav-count': 3, '--nav-max-width': '420px' }}><NavLink className={navStyles["floating-nav-item"]} to="/tasks"><i className="fa-solid fa-list-check" /><span>وظایف</span></NavLink><NavLink className={navStyles["floating-nav-item"]} to="/statistics"><i className="fa-solid fa-chart-column" /><span>آمار تولید</span></NavLink><button className={`${navStyles["floating-nav-item"]} ${navStyles.danger}`} type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" /><span>خروج</span></button></nav></div>;
+  return (
+    <div className="app-shell">
+      <main className="app-container">
+        <div className="page-frame">
+          <Routes>
+            <Route path="/" element={<Navigate to="/tasks" replace />} />
+            <Route path="/tasks" element={<EmployeeTasks />} />
+            <Route path="/statistics" element={<EmployeeStatistics />} />
+            <Route path="*" element={<Navigate to="/tasks" replace />} />
+          </Routes>
+        </div>
+      </main>
+      <nav className={navStyles['floating-nav']} style={{ '--nav-count': 3, '--nav-max-width': '420px' }}>
+        <NavLink className={navStyles["floating-nav-item"]} to="/tasks"><i className="fa-solid fa-list-check" /><span>وظایف</span></NavLink>
+        <NavLink className={navStyles["floating-nav-item"]} to="/statistics"><i className="fa-solid fa-chart-column" /><span>آمار تولید</span></NavLink>
+        <button className={`${navStyles["floating-nav-item"]} ${navStyles.danger}`} type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" /><span>خروج</span></button>
+      </nav>
+    </div>
+  );
 }
 
 export default function EmployeeApp() {

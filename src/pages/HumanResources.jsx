@@ -367,7 +367,7 @@ const HumanResources = () => {
   };
 
   return (
-    <div className={`${styles.root} payroll-container ${activeTab === 'jobs' ? 'payroll-container-wide' : ''} ${activeTab === 'calc' ? 'payroll-container-calc' : ''}`}>
+    <div className={`${styles.root} payroll-container`}>
       <ApiReadStatus queries={[peopleQuery, attendanceQuery]} />
       <div className="payroll-tabs">
         <SegmentedTabs className={styles.payrollTabs} label="بخش‌های منابع انسانی" value={activeTab} onChange={setActiveTab} items={[
