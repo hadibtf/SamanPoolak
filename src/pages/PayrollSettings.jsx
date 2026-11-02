@@ -31,6 +31,7 @@ const PayrollSettings = () => {
       <label>{label}{suffix ? ` (${suffix})` : ''}</label>
       <input
         type="number"
+        inputMode={name === 'shiftHours' || name === 'overtimeFactor' ? 'decimal' : 'numeric'}
         value={form[name]}
         onChange={(e) => setField(name, e.target.value)}
         dir="ltr"

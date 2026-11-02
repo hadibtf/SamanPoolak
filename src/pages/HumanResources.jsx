@@ -454,32 +454,33 @@ const HumanResources = () => {
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={sanavat} onChange={(e) => setSanavat(e.target.value)} placeholder="سنواتی روزانه" aria-label={`مبلغ سنواتی روزانه (${currText})`} /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar-plus" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="numeric" value={sanavat} onChange={(e) => setSanavat(e.target.value)} placeholder="سنواتی روزانه" aria-label={`مبلغ سنواتی روزانه (${currText})`} /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar-plus" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={children} onChange={(e) => setChildren(e.target.value)} min="0" placeholder="تعداد فرزند" aria-label="تعداد فرزند (زیر ۱۸ سال/محصل)" /><span className={`${styles.fieldIcon} ${styles.greenIcon}`} aria-hidden="true"><i className="fa-solid fa-users" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="numeric" value={children} onChange={(e) => setChildren(e.target.value)} min="0" placeholder="تعداد فرزند" aria-label="تعداد فرزند (زیر ۱۸ سال/محصل)" /><span className={`${styles.fieldIcon} ${styles.greenIcon}`} aria-hidden="true"><i className="fa-solid fa-users" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={overtime} onChange={(e) => setOvertime(e.target.value)} min="0" step="0.01" placeholder="اضافه کار" aria-label="ساعت اضافه‌کاری" /><span className={`${styles.fieldIcon} ${styles.orangeIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={overtime} onChange={(e) => setOvertime(e.target.value)} min="0" step="0.01" placeholder="اضافه کار" aria-label="ساعت اضافه‌کاری" /><span className={`${styles.fieldIcon} ${styles.orangeIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={hourlyDeduction} onChange={(e) => setHourlyDeduction(e.target.value)} min="0" step="0.01" placeholder="کسر کار" aria-label="ساعت کسری کار" /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={hourlyDeduction} onChange={(e) => setHourlyDeduction(e.target.value)} min="0" step="0.01" placeholder="کسر کار" aria-label="ساعت کسری کار" /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={unusedLeave} onChange={(e) => setUnusedLeave(e.target.value)} min="0" placeholder="مانده مرخصی" aria-label="مرخصی استفاده نشده (روز)" /><span className={`${styles.fieldIcon} ${styles.tealIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="numeric" value={unusedLeave} onChange={(e) => setUnusedLeave(e.target.value)} min="0" placeholder="مانده مرخصی" aria-label="مرخصی استفاده نشده (روز)" /><span className={`${styles.fieldIcon} ${styles.tealIcon}`} aria-hidden="true"><i className="fa-regular fa-calendar" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" value={absentDays} onChange={(e) => setAbsentDays(e.target.value)} min="0" placeholder="غیبت" aria-label="روزهای غیبت" /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-solid fa-circle-minus" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="numeric" value={absentDays} onChange={(e) => setAbsentDays(e.target.value)} min="0" placeholder="غیبت" aria-label="روزهای غیبت" /><span className={`${styles.fieldIcon} ${styles.purpleIcon}`} aria-hidden="true"><i className="fa-solid fa-circle-minus" /></span></div>
           </div>
 
           <div className={`form-group ${styles.rewardGroup}`}>
             <div className={`${styles.fieldShell} ${styles.inputField} ${styles.rewardField}`}><input
               type="number"
+              inputMode="numeric"
               value={reward}
               onChange={(e) => setReward(e.target.value)}
               placeholder="پاداش"

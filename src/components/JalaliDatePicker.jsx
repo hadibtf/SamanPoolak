@@ -3,8 +3,9 @@
 // `mapDays` (className "rmdp-holiday", styled in index.css). Holiday data loads
 // lazily and the picker re-highlights once it arrives.
 //
-// Drop-in for <DatePicker …>: every prop is forwarded unchanged. A caller's own
-// `mapDays` is composed with (not replaced by) the holiday highlighter.
+// Drop-in for <DatePicker …>: caller props are forwarded, and the mobile
+// keyboard is suppressed by default so date entry stays in the calendar. A
+// caller's own `mapDays` is composed with the holiday highlighter.
 
 import React from 'react';
 import DatePicker from 'react-multi-date-picker';
@@ -25,6 +26,7 @@ const JalaliDatePicker = ({
   calendar = persian,
   locale = persian_fa,
   mapDays: callerMapDays,
+  inputMode = 'none',
   ...rest
 }) => {
   // Re-renders when a calendar file is imported, so highlighting updates live.
@@ -38,7 +40,7 @@ const JalaliDatePicker = ({
   };
 
   return (
-    <DatePicker calendar={calendar} locale={locale} mapDays={mapDays} {...rest} />
+    <DatePicker calendar={calendar} locale={locale} mapDays={mapDays} inputMode={inputMode} {...rest} />
   );
 };
 

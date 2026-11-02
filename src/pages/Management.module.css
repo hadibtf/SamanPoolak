@@ -3344,3 +3344,25 @@
   :local(.root):global(.submit-order) :global(.item-editor) button,
   :local(.root):global(.submit-order) :global(.customer-add-btn) { transition-duration: .01ms; }
 }
+
+:local(.root):global(.submit-order) :global(.order-price-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+:local(.root):global(.submit-order) :global(.order-price-row.with-currency) {
+  direction: ltr;
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+:local(.root):global(.submit-order) :global(.order-price-row) :global(.form-group) {
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  :local(.root):global(.submit-order) :global(.order-price-row) { gap: 6px; }
+  :local(.root):global(.submit-order) :global(.order-price-row.with-currency) {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+  :local(.root):global(.submit-order) :global(.order-price-row) input { padding-inline: 8px; }
+}

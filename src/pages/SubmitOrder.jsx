@@ -9,6 +9,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import { jalaliDateKey, newUid } from '../domain';
 import { peopleApi, ordersApi, ApiError } from '../api/client';
 import PersonFormSheet from '../components/PersonFormSheet';
+import SegmentedTabs from '../components/SegmentedTabs';
 import { useSettings } from '../context/SettingsContext';
 import { MATERIAL_LABELS, PLATING_OPTIONS, INITIAL_ORDER_STATE } from '../constants';
 import styles from './Management.module.css';
@@ -44,6 +45,37 @@ const getCustomerDisplayName = (customer) => (
 
 const todayJalaliDate = () => new DateObject({ calendar: persian, locale: persian_fa });
 
+const normalizeLocalizedDigits = (value) => String(value ?? '')
+  .replace(/[\u06F0-\u06F9]/g, (digit) => String(digit.charCodeAt(0) - 0x06F0))
+  .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
+
+const normalizeQuantityDigits = (value) => normalizeLocalizedDigits(value).replace(/\D/g, '');
+
+const formatQuantityInput = (value) => normalizeQuantityDigits(value)
+  .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+const normalizePriceInput = (value) => {
+  const normalized = normalizeLocalizedDigits(value)
+    .replace(/\u066B/g, '.')
+    .replace(/\u066C/g, ',')
+    .replace(/,/g, '')
+    .replace(/[^\d.]/g, '');
+  const decimalIndex = normalized.indexOf('.');
+  if (decimalIndex === -1) return normalized;
+
+  const integer = normalized.slice(0, decimalIndex).replace(/\D/g, '') || '0';
+  const fraction = normalized.slice(decimalIndex + 1).replace(/\D/g, '');
+  return `${integer}.${fraction}`;
+};
+
+const formatPriceInput = (value) => {
+  const normalized = normalizePriceInput(value);
+  if (!normalized) return '';
+  const [integer, fraction] = normalized.split('.');
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return fraction === undefined ? groupedInteger : `${groupedInteger}.${fraction}`;
+};
+
 const COMMON_DIMENSION_PRESETS = [
   { diameter: '32.5', thickness: '2.5', label: '32.5 × 2.5' },
   { diameter: '32.5', thickness: '2', label: '32.5 × 2' },
@@ -60,6 +92,7 @@ const DimensionInput = ({ label, value, onChange }) => (
   <input
     aria-label={`${label} (میلی‌متر)`}
     type="number"
+    inputMode="decimal"
     step="0.1"
     dir="ltr"
     className="ltr-num"
@@ -70,17 +103,53 @@ const DimensionInput = ({ label, value, onChange }) => (
 );
 
 // One editable product block.
-const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
+const ItemEditor = ({ item, index, canRemove, onChange, onRemove, currency, onCurrencyChange }) => {
   const { currencyLabel } = useSettings();
   const [isAdditionalOpen, setIsAdditionalOpen] = useState(() => Boolean(
     (item.salePrice !== '' && item.salePrice != null)
-    || (item.unitCost !== '' && item.unitCost != null)
     || item.description
     || item.isHardened
     || item.material === 'STEEL'
   ));
   const additionalId = `item-additional-${item.uid}`;
   const set = (patch) => onChange(index, patch);
+  const handleQuantityChange = (event) => {
+    const input = event.currentTarget;
+    const cursor = input.selectionStart ?? input.value.length;
+    const digitsBeforeCursor = normalizeQuantityDigits(input.value.slice(0, cursor)).length;
+    const quantity = formatQuantityInput(input.value);
+    set({ quantity });
+
+    window.requestAnimationFrame(() => {
+      if (!input.isConnected || document.activeElement !== input) return;
+      let nextCursor = 0;
+      let digitsPlaced = 0;
+      while (nextCursor < quantity.length && digitsPlaced < digitsBeforeCursor) {
+        if (quantity[nextCursor] >= '0' && quantity[nextCursor] <= '9') digitsPlaced += 1;
+        nextCursor += 1;
+      }
+      input.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
+  const handlePriceChange = (field, event) => {
+    const input = event.currentTarget;
+    const cursor = input.selectionStart ?? input.value.length;
+    const tokensBeforeCursor = normalizePriceInput(input.value.slice(0, cursor)).length;
+    const value = formatPriceInput(input.value);
+    set({ [field]: value });
+
+    window.requestAnimationFrame(() => {
+      if (!input.isConnected || document.activeElement !== input) return;
+      let nextCursor = 0;
+      let tokensPlaced = 0;
+      while (nextCursor < value.length && tokensPlaced < tokensBeforeCursor) {
+        const character = value[nextCursor];
+        if ((character >= '0' && character <= '9') || character === '.') tokensPlaced += 1;
+        nextCursor += 1;
+      }
+      input.setSelectionRange(nextCursor, nextCursor);
+    });
+  };
   const hasSelectedPreset = COMMON_DIMENSION_PRESETS.some((preset) => (
     Number(item.diameter) === Number(preset.diameter)
       && Number(item.thickness) === Number(preset.thickness)
@@ -154,12 +223,12 @@ const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
           <div className="form-group">
             <input
               aria-label="تعداد"
-              type="number"
-              min="0"
+              type="text"
+              inputMode="numeric"
               dir="ltr"
               className="ltr-num"
               value={item.quantity}
-              onChange={(e) => set({ quantity: e.target.value })}
+              onChange={handleQuantityChange}
               placeholder="تعداد"
               required
             />
@@ -201,27 +270,32 @@ const ItemEditor = ({ item, index, canRemove, onChange, onRemove }) => {
         aria-hidden={!isAdditionalOpen}
       >
         <div className="order-additional-inner" inert={!isAdditionalOpen}>
-          <div className="form-grid">
+          <div className={`order-price-row ${index === 0 ? 'with-currency' : ''}`}>
+            {index === 0 && (
+              <SegmentedTabs
+                role="group"
+                label="واحد ورود قیمت"
+                value={currency}
+                onChange={onCurrencyChange}
+                items={[
+                  { value: 'RIAL', label: 'ریال' },
+                  { value: 'TOMAN', label: 'تومان' },
+                ]}
+                style={{ '--tabs-width': '260px', '--tabs-margin': '0' }}
+              />
+            )}
             <div className="form-group">
               <input
-                aria-label="قیمت فروش هر عدد"
-                type="number" min="0" dir="ltr" className="ltr-num"
+                aria-label={`قیمت فروش هر عدد (${currencyLabel})`}
+                type="text" inputMode="numeric" dir="ltr" className="ltr-num"
                 value={item.salePrice}
-                onChange={(e) => set({ salePrice: e.target.value })}
-                placeholder="قیمت"
+                onChange={(event) => handlePriceChange('salePrice', event)}
+                placeholder={`قیمت (${currencyLabel})`}
               />
             </div>
+          </div>
 
-            <div className="form-group">
-              <input
-                aria-label="بهای تمام‌شده هر عدد"
-                type="number" min="0" dir="ltr" className="ltr-num"
-                value={item.unitCost}
-                onChange={(e) => set({ unitCost: e.target.value })}
-                placeholder="بهای تمام شده"
-              />
-            </div>
-
+          <div className="form-grid">
             <div className="form-group span-2">
               <textarea
                 aria-label="توضیحات"
@@ -286,7 +360,7 @@ const SubmitOrder = () => {
   const isEdit = Boolean(id);
   const editId = id ? Number(id) : null;
 
-  const { toRial, fromRial } = useSettings();
+  const { currency, setCurrency, toRial, fromRial } = useSettings();
 
   const orderQuery = useApiQuery(async () => editId == null ? null : (await ordersApi.get(editId)).order, [editId]);
   const { data: existingOrder } = orderQuery;
@@ -317,7 +391,7 @@ const SubmitOrder = () => {
         setItems(o.items.map((it) => ({
           uid: it.uid || newUid(),
           productName: it.productName || '',
-          quantity: it.quantity ?? '',
+          quantity: formatQuantityInput(it.quantity),
           material: it.material === 'STEEL' ? 'STEEL' : 'IRON',
           thickness: it.thickness ?? '',
           diameter: it.diameter ?? '',
@@ -326,8 +400,8 @@ const SubmitOrder = () => {
           isHardened: !!it.isHardened,
           hardeningIntensity: it.hardeningIntensity || '',
           description: it.description || '',
-          salePrice: it.salePrice != null ? fromRial(it.salePrice) : '',
-          unitCost: it.unitCost != null ? fromRial(it.unitCost) : '',
+          salePrice: it.salePrice != null ? formatPriceInput(fromRial(it.salePrice)) : '',
+          unitCost: it.unitCost != null ? formatPriceInput(fromRial(it.unitCost)) : '',
           // carried through unchanged
           state: it.state || null,
           stateHistory: it.stateHistory || null,
@@ -389,6 +463,20 @@ const SubmitOrder = () => {
   const updateItem = (index, patch) => {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
   };
+  const handleCurrencyChange = (nextCurrency) => {
+    if (nextCurrency === currency) return;
+    const toNextCurrency = (value) => {
+      if (value === '' || value == null) return '';
+      const rialAmount = toRial(Number(normalizePriceInput(value)) || 0);
+      return formatPriceInput(nextCurrency === 'TOMAN' ? rialAmount / 10 : rialAmount);
+    };
+    setItems((prev) => prev.map((item) => ({
+      ...item,
+      salePrice: toNextCurrency(item.salePrice),
+      unitCost: toNextCurrency(item.unitCost),
+    })));
+    setCurrency(nextCurrency);
+  };
   const addItem = () => setItems((prev) => [...prev, blankItem()]);
   const removeItem = (index) => setItems((prev) => prev.filter((_, i) => i !== index));
 
@@ -419,7 +507,7 @@ const SubmitOrder = () => {
       return {
         uid: it.uid || newUid(),
         productName: it.productName.trim(),
-        quantity: Number(it.quantity) || 0,
+        quantity: Number(normalizeQuantityDigits(it.quantity)) || 0,
         material: it.material === 'STEEL' ? 'STEEL' : 'IRON',
         thickness: num(it.thickness),
         diameter: num(it.diameter),
@@ -427,8 +515,8 @@ const SubmitOrder = () => {
         isHardened: it.isHardened,
         hardeningIntensity: it.isHardened ? it.hardeningIntensity.trim() : '',
         description: it.description.trim(),
-        salePrice: it.salePrice === '' || it.salePrice == null ? null : toRial(it.salePrice),
-        unitCost: it.unitCost === '' || it.unitCost == null ? null : toRial(it.unitCost),
+        salePrice: it.salePrice === '' || it.salePrice == null ? null : toRial(Number(normalizePriceInput(it.salePrice)) || 0),
+        unitCost: it.unitCost === '' || it.unitCost == null ? null : toRial(Number(normalizePriceInput(it.unitCost)) || 0),
         state: isNew ? initialState : it.state,
         stateHistory: isNew
           ? [{ state: initialState, date: Date.now(), totalWeight: null }]
@@ -559,6 +647,8 @@ const SubmitOrder = () => {
               canRemove={items.length > 1}
               onChange={updateItem}
               onRemove={removeItem}
+              currency={currency}
+              onCurrencyChange={handleCurrencyChange}
             />
           </div>
         ))}
