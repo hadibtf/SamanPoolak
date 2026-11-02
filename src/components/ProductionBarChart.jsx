@@ -24,8 +24,10 @@ export default function ProductionBarChart({ days, selectedDate, onSelect }) {
               const active = day.date === selectedDate;
               const showTip = hovered === day.date || (!hovered && active);
               const height = productionBarHeight(day.quantity, max);
+              const hasPending = Number(day.pendingCount) > 0;
               return <button key={day.date} ref={active ? selectedBarRef : null} type="button" className={`${styles["chart-bar"]} ${active ? styles.selected : ""}`} style={{ '--bar-height': `${height}px` }} onClick={() => onSelect(day)} onMouseEnter={() => setHovered(day.date)} onMouseLeave={() => setHovered(null)} onFocus={() => setHovered(day.date)} onBlur={() => setHovered(null)} aria-label={`${day.label}، ${day.weekday}: ${fa(day.quantity)} عدد`}>
                 {showTip && <span className={styles["chart-tooltip"]} aria-hidden="true">{fa(day.quantity)} عدد</span>}
+                {hasPending && <span className={styles["pending-marker"]} aria-hidden="true" />}
                 <span className={styles["chart-bar-fill"]} />
                 <span className={styles["chart-day"]}>{fa(day.day)}</span>
                 <span className={`${styles["chart-weekday"]} ${day.weekday === 'جمعه' ? styles["chart-friday"] : ''}`}>{day.weekday}</span>

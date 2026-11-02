@@ -12,14 +12,17 @@ import SegmentedTabs from '../components/SegmentedTabs';
 
 const defaultProductionDay = (monthStats) => {
   const today = currentProductionDate();
-  if (Number(today.slice(0, 4)) === Number(monthStats.year) && Number(today.slice(4, 6)) === Number(monthStats.month)) return today;
+  const isCurrentMonth = Number(today.slice(0, 4)) === Number(monthStats.year)
+    && Number(today.slice(4, 6)) === Number(monthStats.month);
+  const todayStats = (monthStats.daily || []).find((day) => day.date === today);
+  if (isCurrentMonth && (Number(todayStats?.quantity) > 0 || Number(todayStats?.pendingCount) > 0)) return today;
 
   const latestRecordedDay = (monthStats.daily || [])
-    .filter((day) => Number(day.quantity) > 0)
+    .filter((day) => Number(day.quantity) > 0 || Number(day.pendingCount) > 0)
     .map((day) => day.date)
     .sort()
     .slice(-1)[0];
-  return latestRecordedDay || productionMonthDays(monthStats.year, monthStats.month, monthStats.daily)[0]?.date || '';
+  return latestRecordedDay || (isCurrentMonth ? today : productionMonthDays(monthStats.year, monthStats.month, monthStats.daily)[0]?.date || '');
 };
 
 const employeeIdentityKey = (employee) => {
@@ -31,12 +34,15 @@ const employeeIdentityKey = (employee) => {
 const productionEmployeeTotals = (employees = []) => {
   const totals = new Map();
   employees.forEach((employee) => {
-    const quantity = Number(employee.quantity) || 0;
-    if (quantity <= 0) return;
+    const quantity = employee.quantityPending ? 0 : Number(employee.quantity) || 0;
+    const pendingCount = Number(employee.pendingCount) || (employee.quantityPending ? 1 : 0);
+    if (quantity <= 0 && pendingCount <= 0) return;
     const employeeKey = employeeIdentityKey(employee);
     const existing = totals.get(employeeKey);
-    if (existing) existing.quantity += quantity;
-    else totals.set(employeeKey, { ...employee, employeeKey, quantity });
+    if (existing) {
+      existing.quantity += quantity;
+      existing.pendingCount += pendingCount;
+    } else totals.set(employeeKey, { ...employee, employeeKey, quantity, pendingCount });
   });
   return [...totals.values()].sort((a, b) => b.quantity - a.quantity);
 };
@@ -53,7 +59,6 @@ function StatisticsSummaryCard({ title, total }) {
     <div className={styles.summaryQuantity}>
       <span className={styles.summaryIcon} aria-hidden="true"><i className="fa-solid fa-cube" /></span>
       <span className={styles.summaryValue}>
-        <small>تعداد کل</small>
         <strong>{fa(total)} <small>عدد</small></strong>
       </span>
     </div>
@@ -74,7 +79,10 @@ function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded
         <span style={{ width: `${percentage}%` }} />
       </span>
     </span>
-    <span className={styles.employeeCount}><strong>{fa(employee.quantity)}</strong><small>عدد</small></span>
+    <span className={styles.employeeCount}>
+      <strong>{fa(employee.quantity)}</strong>
+      <small>عدد</small>
+    </span>
   </>;
 
   return <div className="statistics-employee-entry">
@@ -125,6 +133,7 @@ export default function ManagementStatistics() {
   const suppressMonthClickRef = useRef(false);
 
   const days = useMemo(() => stats ? productionMonthDays(stats.year, stats.month, stats.daily) : [], [stats]);
+  const selectedProductionDay = days.find((day) => day.date === selectedDate);
   const monthlyBars = useMemo(() => {
     const totals = new Map((stats?.monthly || []).map((row) => [Number(row.month), Number(row.quantity) || 0]));
     return PRODUCTION_MONTHS.map((name, index) => ({
@@ -319,9 +328,14 @@ export default function ManagementStatistics() {
       {loading && <div className="statistics-message"><i className="fa-solid fa-spinner fa-spin" /><p>در حال محاسبه آمار...</p></div>}
 
       {statsMatchSelection && view === 'day' && <>
-        <section className="statistics-chart-card glass-chart-card glass-card"><ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} /></section>
+        <section className="statistics-chart-card glass-chart-card glass-card">
+          <ProductionBarChart days={days} selectedDate={selectedDate} onSelect={selectDay} />
+        </section>
         {selectedDate && details &&
-          <StatisticsSummaryCard title={`تولید روز ${fa(Number(selectedDate.slice(6, 8)))} ${PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} ${productionFaYear(selectedDate.slice(0, 4))}`} total={details.total} />
+          <StatisticsSummaryCard
+            title={`${selectedProductionDay?.weekday ? `${selectedProductionDay.weekday} ` : ''}${fa(Number(selectedDate.slice(6, 8)))} ${PRODUCTION_MONTHS[Number(selectedDate.slice(4, 6)) - 1]} ${productionFaYear(selectedDate.slice(0, 4))}`}
+            total={details.total}
+          />
         }
         {selectedDate && <section ref={detailsPanelRef} className="statistics-comparison glass-card">
           {detailsLoading && <div className="detail-state">در حال دریافت جزئیات تولید...</div>}
@@ -340,7 +354,10 @@ export default function ManagementStatistics() {
 
       {statsMatchSelection && view === 'month' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionMonthChart months={monthlyBars} selectedMonth={stats.month} onSelect={selectMonth} /></section>
-        <StatisticsSummaryCard title={`تولید ${PRODUCTION_MONTHS[stats.month - 1]} ${productionFaYear(stats.year)}`} total={stats.total} />
+        <StatisticsSummaryCard
+          title={`تولید ${PRODUCTION_MONTHS[stats.month - 1]} ${productionFaYear(stats.year)}`}
+          total={stats.total}
+        />
         <section className="statistics-comparison glass-card">
           {monthlyEmployeeTotals.length ? monthlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
             key={employee.employeeKey}
@@ -356,7 +373,10 @@ export default function ManagementStatistics() {
 
       {statsMatchSelection && view === 'year' && <>
         <section className="statistics-chart-card glass-chart-card glass-card"><ProductionYearChart years={yearlyBars} selectedYear={stats.year} onSelect={selectYear} /></section>
-        <StatisticsSummaryCard title={`تولید سال ${productionFaYear(stats.year)}`} total={yearlyTotal} />
+        <StatisticsSummaryCard
+          title={`تولید سال ${productionFaYear(stats.year)}`}
+          total={yearlyTotal}
+        />
         <section className="statistics-comparison glass-card">
           {yearlyEmployeeTotals.length ? yearlyEmployeeTotals.map((employee, index) => <ManagementEmployeeRow
             key={employee.employeeKey}

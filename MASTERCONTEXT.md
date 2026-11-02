@@ -143,8 +143,9 @@ cleanup, providers for auth/settings, and React Router for navigation.
   production complete, hardening sent/returned, plating sent/returned, ready. A state change appends
   `{state, date, totalWeight}`; an order is done when all items are READY.
 - `computeWeights()` derives unit grams = 10-piece grams / 10 and expected
-  weight = unit × quantity. The order view derives actual produced weight and
-  quantity from active production logs rather than the legacy manual weight field.
+  weight = unit × quantity. The order view derives produced quantity and measured
+  weight from active production logs; manager log quantities are calculated from
+  batch weight when the item's sample weight becomes available.
 - Payroll calculation results are not persisted. Keep insured-base insurance,
   non-insured additions/deductions, and Jalali working-day calculations intact.
 - Images are compressed before upload; marking records belong to customers.
@@ -205,15 +206,18 @@ IN_PROGRESS, or COMPLETED status. Management order summaries show assignments,
 per-employee production, log dates and audit times. Admin statistics support
 individual/all employees; employee statistics expose only the caller's records.
 
-Admins can also enter a dated production log for an order item and employee.
-These entries live in `manager_production_logs`, record the entering admin, and
-derive piece quantity from the order item's saved 10-piece weight. They do not
-create or change an assignment and have no order-quantity cap. Active manager
-entries count in order progress and employee/management statistics, but do not
-change assignment status and cannot be edited through employee task endpoints.
-Admins can correct the date, weight, and employee through dedicated manager-log
-endpoints; corrections recalculate piece quantity from the saved 10-piece weight,
-and deletions are soft-deleted so they remain recoverable in the database.
+Admins can enter a dated production log for an order item and employee by batch
+weight even before the item's 10-piece sample weight is known. The entry's
+quantity remains uncalculated until the sample weight is added; updating that
+weight recalculates manager log quantities from their measured batch weights.
+These entries live in `manager_production_logs`, record the entering admin, do
+not create or change an assignment, and have no order-quantity cap. Active
+manager entries remain visible in statistics by their measured weight while
+their quantities are pending; they count in order progress and quantity
+statistics once calculated. They do not change assignment status and cannot be
+edited through employee task endpoints. Admins can correct the date, batch
+weight, and employee through dedicated manager-log endpoints; deletions are
+soft-deleted so they remain recoverable in the database.
 The order progress bar caps visually at 100% while the produced totals retain any
 overproduction. When an item's produced quantity reaches or exceeds its order
 quantity, an admin can confirm production completion; admins can also manually

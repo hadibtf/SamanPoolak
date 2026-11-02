@@ -119,23 +119,35 @@ function orders_update($params, $body, $user)
 {
     require_management($user);
     $id = $params['id'];
-    $stmt = db()->prepare('SELECT id FROM orders WHERE id = :id LIMIT 1');
-    $stmt->execute([':id' => $id]);
-    if (!$stmt->fetch()) {
-        json_error('Order not found', 404);
-    }
+    db()->beginTransaction();
+    try {
+        $stmt = db()->prepare('SELECT id FROM orders WHERE id = :id LIMIT 1 FOR UPDATE');
+        $stmt->execute([':id' => $id]);
+        if (!$stmt->fetch()) {
+            db()->rollBack();
+            json_error('Order not found', 404);
+        }
 
-    $cols = orders_from_wire($body);
-    $cols['updated_by'] = $user['id'];
-    $cols['updated_at'] = now_utc();
+        $cols = orders_from_wire($body);
+        $cols['updated_by'] = $user['id'];
+        $cols['updated_at'] = now_utc();
 
-    $set = implode(', ', array_map(fn ($f) => "$f = :$f", array_keys($cols)));
-    $stmt = db()->prepare("UPDATE orders SET $set WHERE id = :id");
-    foreach ($cols as $k => $v) {
-        $stmt->bindValue(':' . $k, $v);
+        $set = implode(', ', array_map(fn ($f) => "$f = :$f", array_keys($cols)));
+        $stmt = db()->prepare("UPDATE orders SET $set WHERE id = :id");
+        foreach ($cols as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':id', $id);
+        $stmt->execute();
+
+        if (array_key_exists('items', $body)) {
+            production_recalculate_manager_log_quantities((int) $id, $body['items']);
+        }
+        db()->commit();
+    } catch (Throwable $e) {
+        if (db()->inTransaction()) db()->rollBack();
+        json_error('Failed to update order', 500, $e->getMessage());
     }
-    $stmt->bindValue(':id', $id);
-    $stmt->execute();
 
     $stmt = db()->prepare(ORDERS_SELECT . ' WHERE o.id = :id');
     $stmt->execute([':id' => $id]);

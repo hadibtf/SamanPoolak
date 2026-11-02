@@ -37,10 +37,11 @@ export function currentProductionDate() {
 export function productionMonthDays(year, month, daily = []) {
   const length = new DateObject({ calendar: persian, locale: persian_fa, year: Number(year), month: Number(month), day: 1 }).month.length;
   const totals = new Map(daily.map((row) => [row.date, Number(row.quantity || 0)]));
+  const pendingTotals = new Map(daily.map((row) => [row.date, Number(row.pendingCount || 0)]));
   return Array.from({ length }, (_, index) => {
     const day = index + 1;
     const date = `${year}${String(month).padStart(2, '0')}${String(day).padStart(2, '0')}`;
     const calendarDay = new DateObject({ calendar: persian, locale: persian_fa, year: Number(year), month: Number(month), day });
-    return { day, date, quantity: totals.get(date) || 0, label: `${productionFa(day)} ${PRODUCTION_MONTHS[month - 1]} ${productionFaYear(year)}`, weekday: calendarDay.weekDay?.name || '' };
+    return { day, date, quantity: totals.get(date) || 0, pendingCount: pendingTotals.get(date) || 0, label: `${productionFa(day)} ${PRODUCTION_MONTHS[month - 1]} ${productionFaYear(year)}`, weekday: calendarDay.weekDay?.name || '' };
   });
 }

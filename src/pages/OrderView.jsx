@@ -219,6 +219,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       if (saved) {
         setEditingWeightOf10(false);
         setWeightOf10Input('');
+        await loadSummary();
         onToast(measuredWeightOf10 > 0 ? 'وزن نمونه به‌روزرسانی شد.' : 'وزن نمونه ثبت شد.');
       }
     } finally { setSavingWeightOf10(false); }
@@ -272,7 +273,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     const weightKg = Number(managerLogEditWeightKg);
     const employee = employees.find((candidate) => candidate.employeeKey === managerLogEditEmployeeKey);
     if (!managerLogEditDate || !employee || !Number.isFinite(weightKg) || weightKg <= 0) {
-      onToast('تاریخ، وزن و کارمند را کامل کنید.', 'error');
+      onToast('تاریخ، وزن تولید و کارمند را کامل کنید.', 'error');
       return;
     }
     setMutatingManagerLogId(log.id);
@@ -309,22 +310,27 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const unitWeight = measuredWeightOf10 > 0 ? measuredWeightOf10 / 10 : 0;
   const expectedTotalWeight = unitWeight * (Number(item.quantity) || 0);
   const productionLogs = productionSummary?.logs || [];
-  const totalProducedWeight = productionLogs.reduce((sum, log) => sum + (Number(log.totalWeightGrams) || 0), 0);
+  const measuredProducedWeight = productionLogs.reduce((sum, log) => sum + (Number(log.totalWeightGrams) || 0), 0);
   const hasUnknownProducedWeight = productionLogs.some((log) => !(Number(log.totalWeightGrams) > 0));
   const producedWeightLabel = !productionSummary ? '—'
     : productionLogs.length === 0 ? '۰ گرم'
-      : totalProducedWeight <= 0 ? 'وزن ثبت نشده'
-        : `${hasUnknownProducedWeight ? 'حداقل ' : ''}${formatWeight(totalProducedWeight)}`;
+      : measuredProducedWeight <= 0 ? 'وزن ثبت نشده'
+        : `${hasUnknownProducedWeight ? 'حداقل ' : ''}${formatWeight(measuredProducedWeight)}`;
   const compactProducedWeightLabel = producedWeightLabel.replace(/ کیلوگرم/g, ' کیلو');
   const totalProducedQuantity = Number(productionSummary?.totalProduced) || 0;
   const orderQuantity = Number(item.quantity) || 0;
-  const productionReachedTarget = Boolean(productionSummary) && totalProducedQuantity >= orderQuantity;
+  const hasUncalculatedManagerLogs = measuredWeightOf10 <= 0
+    && productionLogs.some((log) => log.isManagerEntry && !(Number(log.quantity) > 0));
+  const producedQuantityLabel = !productionSummary ? '—'
+    : hasUncalculatedManagerLogs ? 'در انتظار محاسبه'
+      : `${fa(totalProducedQuantity)} عدد`;
+  const productionReachedTarget = Boolean(productionSummary) && !hasUncalculatedManagerLogs && totalProducedQuantity >= orderQuantity;
   const productionStopped = Boolean(item.productionStopped) || item.state === 'PRODUCTION_COMPLETE';
   const productionCompleteStateIndex = ORDER_STATES.findIndex((state) => state.value === 'PRODUCTION_COMPLETE');
   const itemStateIndex = ORDER_STATES.findIndex((state) => state.value === item.state);
   const workflowAdvancedPastProduction = item.state !== INITIAL_ORDER_STATE
     && itemStateIndex > productionCompleteStateIndex;
-  const remainingQuantity = productionSummary ? Math.max(0, orderQuantity - totalProducedQuantity) : null;
+  const remainingQuantity = productionSummary && !hasUncalculatedManagerLogs ? Math.max(0, orderQuantity - totalProducedQuantity) : null;
   const remainingWeight = remainingQuantity == null ? null : unitWeight * remainingQuantity;
   const orderedProductionLogs = [...productionLogs].sort((a, b) => {
     const dateOrder = String(a.productionDate || '').localeCompare(String(b.productionDate || ''));
@@ -337,6 +343,10 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
   const confirmProductionStop = async () => {
     if (confirmingProductionStop) return;
+    if (hasUncalculatedManagerLogs) {
+      onToast('ابتدا وزن ۱۰ عدد را ثبت کنید تا تعداد تولید محاسبه شود.', 'error');
+      return;
+    }
     if (totalProducedQuantity < orderQuantity
       && !window.confirm(`تولید ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش کمتر است. با تأیید، تولید همین مقدار نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد. ادامه می‌دهید؟`)) return;
     setConfirmingProductionStop(true);
@@ -564,7 +574,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           </div>
           <div className="order-weight-fact" data-kind="produced">
             <MetallicText as="small" tone="green">تولید</MetallicText>
-            <strong><MetallicText tone="green">{productionSummary ? `${fa(totalProducedQuantity)} عدد` : '—'}</MetallicText></strong>
+            <strong><MetallicText tone="green">{producedQuantityLabel}</MetallicText></strong>
             <MetallicText as="span" tone="green">{compactProducedWeightLabel}</MetallicText>
           </div>
           <div className="order-weight-fact" data-kind="dimensions">
@@ -586,7 +596,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
       <section className="order-section order-production-section" aria-label="رکورد">
         <h4 className="order-section-title">رکورد</h4>
-        {canAssign && !productionStopped && measuredWeightOf10 > 0 && (
+        {canAssign && !productionStopped && (
           <section className="manager-production-log-section" aria-label="ثبت دستی تولید توسط مدیر">
             <form className="manager-production-log-form" onSubmit={saveManualProduction}>
               <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={manualWeightKg} onChange={(event) => setManualWeightKg(event.target.value)} placeholder="وزن" required />
@@ -610,9 +620,18 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                 containerClassName="manager-production-date"
                 portal
               />
-              <button type="submit" className="manager-production-submit-btn" aria-label={savingManualLog ? 'در حال ثبت...' : 'ثبت'} disabled={savingManualLog || employees.length === 0}>
-                <i className="fa-solid fa-arrow-left" aria-hidden="true" />
-              </button>
+              {(remainingQuantity === null || remainingQuantity > 0) && (
+                <div className="manager-production-actions">
+                  {remainingQuantity > 0 && (
+                    <button type="button" className="manager-production-short-completion-btn" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
+                      {confirmingProductionStop ? 'در حال ذخیره...' : `تأیید اتمام تولید با ${fa(remainingQuantity)} کسری`}
+                    </button>
+                  )}
+                  <button type="submit" className="manager-production-submit-btn" aria-label={savingManualLog ? 'در حال ثبت...' : 'ثبت'} disabled={savingManualLog || employees.length === 0}>
+                    <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+                  </button>
+                </div>
+              )}
               {employees.length === 0 && <small>فهرست کارمندان در دسترس نیست.</small>}
             </form>
           </section>
@@ -654,7 +673,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                             inputClass="rmdp-input"
                             containerClassName="manager-production-date"
                           />
-                          <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} placeholder="وزن" required />
+                          <input aria-label="وزن تولید (کیلوگرم)" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={managerLogEditWeightKg} onChange={(event) => setManagerLogEditWeightKg(event.target.value)} placeholder="وزن تولید (کیلوگرم)" required />
                           <select aria-label="انتخاب کارمند" value={managerLogEditEmployeeKey} onChange={(event) => setManagerLogEditEmployeeKey(event.target.value)} required>
                             <option value="">انتخاب کارمند...</option>
                             {employees.map((employee) => <option key={employee.employeeKey} value={employee.employeeKey}>{employee.name}</option>)}
@@ -670,8 +689,8 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                     <tr key={log.id}>
                       <td>{fa(displayedProductionLogs.length - index)}</td>
                       <td>{log.employeeName || '—'}</td>
-                      <td>{log.totalWeightGrams ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم` : '—'}</td>
-                      <td>{fa(log.quantity)}</td>
+                      <td>{Number(log.totalWeightGrams) > 0 ? `${fa(log.totalWeightGrams / 1000)} کیلوگرم` : '—'}</td>
+                      <td>{Number(log.quantity) > 0 || measuredWeightOf10 > 0 ? fa(log.quantity) : log.isManagerEntry ? '—' : fa(log.quantity)}</td>
                       <td>{formatJalali(log.productionDate)}</td>
                       <td>{log.isManagerEntry && <div className="manager-production-log-actions">
                         <button type="button" className="manager-log-edit-btn" onClick={() => beginManagerLogEdit(log)} disabled={mutatingManagerLogId === log.id}>ویرایش</button>
@@ -704,15 +723,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
             )}
           </section>
         )}
-        {canAssign && productionSummary && !productionReachedTarget && !productionStopped && !workflowAdvancedPastProduction && (
-          <section className="production-short-completion" aria-label="پایان دستی تولید با کسری">
-            <button type="button" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
-              {confirmingProductionStop ? 'در حال ذخیره...' : `تأیید اتمام تولید با ${fa(remainingQuantity)} کسری`}
-            </button>
-            <small>تولید شده {fa(totalProducedQuantity)}</small>
-          </section>
-        )}
-
         {summaryError && <p className="production-summary-error" role="status">{summaryError}</p>}
       </section>
 

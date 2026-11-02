@@ -118,7 +118,7 @@
  * @typedef {Object} ManagerProductionLogRequest
  * @property {PersonId} [employeePersonId] Preferred identity for linked employee profiles.
  * @property {UserId} [employeeUserId] Used for legacy employee logins without a People profile.
- * @property {Kilograms} weightKg
+ * @property {Kilograms} weightKg Measured batch weight; piece quantity is calculated from the item's sample weight when available.
  * @property {JalaliDateKey} productionDate
  * @property {string} submissionKey
  *

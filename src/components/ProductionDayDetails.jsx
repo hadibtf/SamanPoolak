@@ -28,31 +28,40 @@ export function EmployeeProductionRecord({ record, linkToOrder = false, showStat
     .map((value) => value == null || value === '' ? '—' : productionFa(value))
     .join(' × ');
 
+  const quantity = Number(record.quantity) || 0;
+  const hasMeasuredWeight = Number(record.totalWeightGrams) > 0;
+  const hasQuantity = quantity > 0 && !record.quantityPending;
+  const showProductionStatus = record.productionComplete || showStatus;
+  const hasProductionValues = hasMeasuredWeight || hasQuantity || record.quantityPending;
+
   const itemDetails = <span className="statistics-production-item-title">
-    <span className="statistics-production-name-row">
-      <strong className="statistics-production-product">{record.productName || '—'}</strong>
+    <strong className="statistics-production-product">{record.productName || '—'}</strong>
+    <strong className="statistics-production-customer">{record.customerName || '—'}</strong>
+    <span className="statistics-production-spec-row">
+      <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>
+      <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
     </span>
-    <small className="statistics-production-customer">{record.customerName || '—'}</small>
-    {showItemIcon && <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>}
   </span>;
 
-  const content = <p className={`statistics-production-sentence${showItemIcon ? ' has-item-icon' : ''}`}>
-      {showItemIcon ? <span className="statistics-production-item-identity">
-        <span className="statistics-production-image" aria-hidden="true"><i className="fa-solid fa-cube" /></span>
+  const content = <div className="statistics-production-sentence has-report-columns">
+      <span className="statistics-production-item-identity">
+        {showItemIcon && <span className="statistics-production-image" aria-hidden="true"><i className="fa-solid fa-cube" /></span>}
         {itemDetails}
-      </span> : itemDetails}
-      {!showItemIcon && <bdi className="statistics-production-dimensions" dir="ltr">{dimension}</bdi>}
-      <span className="statistics-production-color" data-tone={tone}>{platingLabels[colorKey]}</span>
-      <strong className="statistics-production-quantity">{productionFa(record.quantity)} عدد</strong>
-      {(record.productionComplete || showStatus) && <span
-        className={`statistics-production-status ${record.productionComplete ? 'statistics-production-complete' : 'statistics-production-pending'}`}
-        role="img"
-        aria-label={record.productionComplete ? 'تولید این قلم تکمیل شده' : 'تولید این قلم در حال انجام است'}
-        title={record.productionComplete ? 'تولید تکمیل شده' : 'تولید در حال انجام'}
-      >
-        <i className={`fa-solid ${record.productionComplete ? 'fa-check' : 'fa-ellipsis'}`} aria-hidden="true" />
-      </span>}
-    </p>;
+      </span>
+      {(hasProductionValues || showProductionStatus) && <div className="statistics-production-values">
+        {hasQuantity && <span className="statistics-production-value statistics-production-quantity"><strong>{productionFa(quantity)} عدد</strong></span>}
+        {record.quantityPending && <strong className="statistics-production-unit-unknown statistics-production-quantity">۰ عدد</strong>}
+        {hasMeasuredWeight && <span className="statistics-production-value statistics-production-weight"><strong>{productionFa(Number(record.totalWeightGrams) / 1000)} کیلو</strong></span>}
+        {showProductionStatus && <span
+          className={`statistics-production-status ${record.productionComplete ? 'statistics-production-complete' : 'statistics-production-pending'}`}
+          role="img"
+          aria-label={record.productionComplete ? 'تولید این قلم تکمیل شده' : 'تولید این قلم در حال انجام است'}
+          title={record.productionComplete ? 'تولید تکمیل شده' : 'تولید در حال انجام'}
+        >
+          <i className={`fa-solid ${record.productionComplete ? 'fa-check' : 'fa-ellipsis'}`} aria-hidden="true" />
+        </span>}
+      </div>}
+    </div>;
   return <article className="statistics-production-record" dir="rtl">
     {linkToOrder && record.orderId ? <Link
       className="statistics-production-link"
@@ -95,7 +104,7 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
             <div><dt>وضعیت وظیفه</dt><dd>{productionStatusLabel(record.taskStatus)}</dd></div>
             <div><dt>مقدار تخصیص</dt><dd>{productionFa(record.taskRequiredQuantity)}</dd></div>
           </>}
-          <div><dt>وزن تولید</dt><dd>{record.totalWeightGrams ? `${productionFa(record.totalWeightGrams / 1000)} کیلوگرم` : '—'}</dd></div>
+          <div><dd>{record.totalWeightGrams ? `${productionFa(record.totalWeightGrams / 1000)} کیلو` : '—'}</dd></div>
           <div><dt>ابعاد</dt><dd>{record.thickness ?? '—'} × {record.diameter ?? '—'} میلی‌متر</dd></div>
           <div><dt>زمان ثبت</dt><dd>{record.createdAt ? new Date(record.createdAt).toLocaleString('fa-IR') : '—'}</dd></div>
         </dl>

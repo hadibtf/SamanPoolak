@@ -2279,13 +2279,18 @@
 }
 :local(.root):global(.order-view) :global(.manager-production-log-form) {
   display: grid;
-  grid-template-columns: minmax(130px, .8fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(130px, .8fr) minmax(0, 1fr) minmax(0, 1fr) max-content;
   align-items: end;
   gap: 10px;
 }
 :local(.root):global(.order-view) :global(.manager-production-log-form) > input,
 :local(.root):global(.order-view) :global(.manager-production-log-form) > select { min-width: 0; min-height: 44px; }
 :local(.root):global(.order-view) :global(.manager-production-log-form) button { min-height: 44px; white-space: nowrap; }
+:local(.root):global(.order-view) :global(.manager-production-actions) { display: flex; align-items: center; justify-self: end; gap: 8px; width: max-content; min-width: max-content; flex-wrap: nowrap; }
+:local(.root):global(.order-view) :global(.manager-production-log-form) :global(.manager-production-short-completion-btn) { min-height: 44px; padding: 8px 12px; border: 1px solid #b52e47; border-radius: 10px; background: #c73850; color: #fff; font: inherit; font-size: 12px; font-weight: 750; white-space: nowrap; cursor: pointer; box-shadow: 0 5px 12px rgba(199, 56, 80, .18); transition: background-color .15s ease, box-shadow .15s ease; }
+:local(.root):global(.order-view) :global(.manager-production-log-form) :global(.manager-production-short-completion-btn):hover:not(:disabled) { background: #b52e47; box-shadow: 0 6px 14px rgba(181, 46, 71, .24); }
+:local(.root):global(.order-view) :global(.manager-production-log-form) :global(.manager-production-short-completion-btn):focus-visible { outline: 2px solid #c73850; outline-offset: 2px; }
+:local(.root):global(.order-view) :global(.manager-production-log-form) :global(.manager-production-short-completion-btn):disabled { opacity: .58; cursor: wait; box-shadow: none; }
 :local(.root):global(.order-view) :global(.manager-production-submit-btn) {
   display: inline-flex;
   align-items: center;
@@ -2664,6 +2669,12 @@
   :local(.root):global(.order-view) :global(.production-short-completion) { width: max-content; max-width: 100%; }
 }
 
+@media (max-width: 900px) {
+  :local(.root):global(.order-view) :global(.manager-production-log-form) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :local(.root):global(.order-view) :global(.manager-production-actions) { grid-column: 1 / -1; justify-self: start; width: 100%; min-width: 0; flex-wrap: wrap; }
+  :local(.root):global(.order-view) :global(.manager-production-log-form) :global(.manager-production-short-completion-btn) { max-width: 100%; white-space: normal; }
+}
+
 @media (max-width: 480px) {
   :local(.root):global(.order-view) { padding-inline: 12px; }
   :local(.root):global(.order-view) :global(.order-section) { padding: 11px; }
@@ -2958,7 +2969,6 @@
   background: color-mix(in srgb, var(--sp-surface) 93%, var(--order-section-accent) 7%);
   color: var(--order-section-accent);
 }
-
 :local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) input,
 :local(.root):global(.order-view) :global(.order-state-section) :global(.state-form) select {
   border-color: color-mix(in srgb, var(--order-section-accent) 32%, var(--sp-border));

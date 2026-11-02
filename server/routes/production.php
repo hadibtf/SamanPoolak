@@ -269,6 +269,29 @@ function production_pieces_from_weight($weightKg, $weightOf10Grams)
     return (int) round($weightKg * 1000 * 10 / $weightOf10Grams);
 }
 
+function production_recalculate_manager_log_quantities($orderId, $items)
+{
+    try {
+        $select = db()->prepare('SELECT id, total_weight_grams FROM manager_production_logs
+            WHERE order_id = :orderId AND order_item_uid = :itemUid AND total_weight_grams > 0');
+        $update = db()->prepare('UPDATE manager_production_logs SET quantity = :quantity WHERE id = :id');
+        foreach ((array) $items as $item) {
+            $itemUid = trim((string) ($item['uid'] ?? ''));
+            $weightOf10 = (float) ($item['weightOf10'] ?? 0);
+            if ($itemUid === '' || $weightOf10 <= 0) continue;
+            $select->execute([':orderId' => $orderId, ':itemUid' => $itemUid]);
+            foreach ($select->fetchAll() as $log) {
+                $quantity = production_pieces_from_weight((float) $log['total_weight_grams'] / 1000, $weightOf10);
+                $update->execute([':quantity' => $quantity <= 99999999999 ? $quantity : 0, ':id' => $log['id']]);
+            }
+        }
+    } catch (PDOException $e) {
+        $mysqlErrorCode = isset($e->errorInfo[1]) ? (string) $e->errorInfo[1] : '';
+        if ((string) $e->getCode() === '42S02' || $mysqlErrorCode === '1146') return;
+        throw $e;
+    }
+}
+
 function production_task_weight_set($params, $body, $user)
 {
     require_employee($user); require_fields($body, ['weightOf10Grams']);
@@ -357,8 +380,8 @@ function production_manager_log_create($params, $body, $user)
 
     db()->beginTransaction();
     try {
-        // Serialize manager entries for this order item and read its one-time
-        // sample weight from the canonical order row.
+        // Serialize manager entries for this order item and read its current
+        // sample weight so quantity can be calculated when available.
         $orderStmt = db()->prepare('SELECT items FROM orders WHERE id = :id AND deleted_at IS NULL LIMIT 1 FOR UPDATE');
         $orderStmt->execute([':id' => $orderId]);
         $order = $orderStmt->fetch();
@@ -367,8 +390,11 @@ function production_manager_log_create($params, $body, $user)
         foreach (($order['items'] ? json_decode($order['items'], true) : []) as $candidate) {
             if (($candidate['uid'] ?? '') === $itemUid) { $item = $candidate; break; }
         }
+        if (!$item) { db()->rollBack(); json_error('Order item not found', 404); }
         $weightOf10 = (float) ($item['weightOf10'] ?? 0);
-        if (!$item || $weightOf10 <= 0) { db()->rollBack(); json_error('Record the order item 10-piece weight before manager production', 422); }
+        $quantity = $weightOf10 > 0 ? production_pieces_from_weight($weightKg, $weightOf10) : 0;
+        if ($weightOf10 > 0 && ($quantity <= 0 || $quantity > 99999999999)) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $totalWeightGrams = $weightKg * 1000;
         $productionStopped = !empty($item['productionStopped']) || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE';
 
         $existing = db()->prepare('SELECT id, employee_user_id, employee_person_id, order_id, order_item_uid, total_weight_grams, production_date, deleted_at
@@ -383,7 +409,7 @@ function production_manager_log_create($params, $body, $user)
                 : (int) $previous['employee_user_id'] === (int) $employee['userId'];
             if (!$sameEmployee || (int) $previous['order_id'] !== $orderId
                 || $previous['order_item_uid'] !== $itemUid
-                || abs((float) $previous['total_weight_grams'] - $weightKg * 1000) > 0.00001
+                || abs((float) $previous['total_weight_grams'] - $totalWeightGrams) > 0.00001
                 || $previous['production_date'] !== $date) {
                 json_error('Submission key already used for different production', 409);
             }
@@ -393,14 +419,12 @@ function production_manager_log_create($params, $body, $user)
             db()->rollBack(); json_error('Production is confirmed complete for this order item', 409);
         }
 
-        $quantity = production_pieces_from_weight($weightKg, $weightOf10);
-        if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
         $now = now_utc();
         $insert = db()->prepare('INSERT INTO manager_production_logs
             (employee_user_id, employee_person_id, entered_by, order_id, order_item_uid, quantity, total_weight_grams, production_date, submission_key, created_at)
             VALUES (:employeeId, :personId, :enteredBy, :orderId, :itemUid, :quantity, :weight, :date, :key, :createdAt)');
         $insert->execute([':employeeId' => $employee['userId'], ':personId' => $employee['personId'], ':enteredBy' => $user['id'], ':orderId' => $orderId,
-            ':itemUid' => $itemUid, ':quantity' => $quantity, ':weight' => $weightKg * 1000,
+            ':itemUid' => $itemUid, ':quantity' => $quantity, ':weight' => $totalWeightGrams,
             ':date' => $date, ':key' => $key, ':createdAt' => $now]);
         $id = (int) db()->lastInsertId();
         db()->commit();
@@ -451,20 +475,22 @@ function production_manager_log_update($params, $body, $user)
         foreach (($order['items'] ? json_decode($order['items'], true) : []) as $candidate) {
             if (($candidate['uid'] ?? '') === $itemUid) { $item = $candidate; break; }
         }
+        if (!$item) { db()->rollBack(); json_error('Order item not found', 404); }
         $weightOf10 = (float) ($item['weightOf10'] ?? 0);
-        if (!$item || $weightOf10 <= 0) { db()->rollBack(); json_error('Record the order item 10-piece weight before editing production', 422); }
 
         $existing = db()->prepare('SELECT id FROM manager_production_logs
             WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL FOR UPDATE');
         $existing->execute([':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
-        if (!$existing->fetch()) { db()->rollBack(); json_error('Manager production log not found', 404); }
+        $existingLog = $existing->fetch();
+        if (!$existingLog) { db()->rollBack(); json_error('Manager production log not found', 404); }
 
-        $quantity = production_pieces_from_weight($weightKg, $weightOf10);
-        if ($quantity <= 0 || $quantity > 99999999999) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $quantity = $weightOf10 > 0 ? production_pieces_from_weight($weightKg, $weightOf10) : 0;
+        if ($weightOf10 > 0 && ($quantity <= 0 || $quantity > 99999999999)) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
+        $totalWeightGrams = $weightKg * 1000;
         $update = db()->prepare('UPDATE manager_production_logs SET employee_user_id = :employeeId, employee_person_id = :personId, quantity = :quantity,
             total_weight_grams = :weight, production_date = :date, updated_at = :updated
             WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL');
-        $update->execute([':employeeId' => $employee['userId'], ':personId' => $employee['personId'], ':quantity' => $quantity, ':weight' => $weightKg * 1000,
+        $update->execute([':employeeId' => $employee['userId'], ':personId' => $employee['personId'], ':quantity' => $quantity, ':weight' => $totalWeightGrams,
             ':date' => $date, ':updated' => now_utc(), ':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
         production_sync_order_item_completion($orderId, $itemUid, (int) $user['id']);
         db()->commit();
@@ -875,11 +901,11 @@ function production_management_employee_totals($start, $end, $employeeUserId = n
 {
     $taskFilter = $employeeUserId === null ? '' : ' AND l.employee_user_id = :taskEmployee';
     $managerFilter = $employeeUserId === null ? '' : ' AND (l.employee_user_id = :managerEmployee OR l.employee_person_id = (SELECT person_id FROM employee_accounts WHERE user_id = :managerAccount))';
-    $stmt = db()->prepare("SELECT employee_person_id, employee_user_id, employee_name, SUM(quantity) AS total_quantity
+    $stmt = db()->prepare("SELECT employee_person_id, employee_user_id, employee_name, SUM(quantity) AS total_quantity, SUM(quantity_pending) AS pending_count
         FROM (
             SELECT ea.person_id AS employee_person_id, l.employee_user_id,
                 COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
-                l.quantity
+                l.quantity, 0 AS quantity_pending
             FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL JOIN users u ON u.id = l.employee_user_id
             LEFT JOIN employee_accounts ea ON ea.user_id = u.id
             LEFT JOIN people p ON p.id = ea.person_id
@@ -887,7 +913,7 @@ function production_management_employee_totals($start, $end, $employeeUserId = n
             UNION ALL
             SELECT COALESCE(l.employee_person_id, ea.person_id) AS employee_person_id, l.employee_user_id,
                 COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name,
-                l.quantity
+                l.quantity, CASE WHEN l.quantity <= 0 THEN 1 ELSE 0 END AS quantity_pending
             FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
             LEFT JOIN users u ON u.id = l.employee_user_id
             LEFT JOIN employee_accounts ea ON ea.user_id = u.id
@@ -911,6 +937,7 @@ function production_management_employee_totals($start, $end, $employeeUserId = n
         'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
         'employeeName' => $row['employee_name'] ?: '—',
         'quantity' => (float) $row['total_quantity'],
+        'pendingCount' => (int) $row['pending_count'],
     ], $stmt->fetchAll());
 }
 
@@ -950,16 +977,16 @@ function production_management_month_statistics($params, $body, $user)
         ':managerStart' => $prefix . '01', ':managerEnd' => $prefix . '31',
     ];
     if ($employeeId !== null) { $dailyBind[':taskEmployee'] = $employeeId; $dailyBind[':managerEmployee'] = $employeeId; }
-    $dailyStmt = db()->prepare('SELECT production_date, SUM(quantity) AS total_quantity FROM (
-            SELECT l.production_date, l.quantity FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+    $dailyStmt = db()->prepare('SELECT production_date, SUM(quantity) AS total_quantity, SUM(quantity_pending) AS pending_count FROM (
+            SELECT l.production_date, l.quantity, 0 AS quantity_pending FROM production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
             WHERE l.deleted_at IS NULL AND l.production_date >= :taskStart AND l.production_date <= :taskEnd' . $taskFilter . '
             UNION ALL
-            SELECT l.production_date, l.quantity FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
+            SELECT l.production_date, l.quantity, CASE WHEN l.quantity <= 0 THEN 1 ELSE 0 END AS quantity_pending FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
             WHERE l.deleted_at IS NULL AND l.production_date >= :managerStart AND l.production_date <= :managerEnd' . $managerFilter . '
         ) all_production GROUP BY production_date ORDER BY production_date ASC');
     $dailyStmt->execute($dailyBind);
     $daily = array_map(fn ($row) => [
-        'date' => $row['production_date'], 'quantity' => (float) $row['total_quantity'],
+        'date' => $row['production_date'], 'quantity' => (float) $row['total_quantity'], 'pendingCount' => (int) $row['pending_count'],
     ], $dailyStmt->fetchAll());
 
     $yearStart = sprintf('%04d0101', $year);
@@ -1055,6 +1082,7 @@ function production_management_month_statistics($params, $body, $user)
             'customerName' => $row['customer_name'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
+            'quantityPending' => !empty($row['is_manager_entry']) && (float) $row['quantity'] <= 0 && (float) ($item['weightOf10'] ?? 0) <= 0,
             'totalWeightGrams' => (float) $row['total_weight_grams'],
             'productionDate' => $row['production_date'],
             'createdAt' => to_iso($row['created_at']),
@@ -1132,6 +1160,7 @@ function production_management_day_statistics($params, $body, $user)
             'customerName' => $row['customer_name'],
             'productName' => $item['productName'] ?? '—',
             'quantity' => (float) $row['quantity'],
+            'quantityPending' => !empty($row['is_manager_entry']) && (float) $row['quantity'] <= 0 && (float) ($item['weightOf10'] ?? 0) <= 0,
             'totalWeightGrams' => (float) $row['total_weight_grams'],
             'productionDate' => $row['production_date'],
             'createdAt' => to_iso($row['created_at']),
