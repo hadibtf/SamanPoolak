@@ -59,6 +59,15 @@ const formatInvoicePriceInput = (value) => {
   return raw.endsWith('.') ? `${formatted}.` : formatted;
 };
 const invoiceItemKey = (item, index) => item.uid || `item-${index}`;
+const invoiceLineKey = (order, item, index) => `${order.id}:${invoiceItemKey(item, index)}`;
+const normalizeInvoiceOrderNumber = (value) => String(value ?? '')
+  .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+  .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+  .replace(/[\s\u200c\u200e\u200f]/g, '')
+  .toLocaleLowerCase('fa-IR');
+const invoiceCustomerKey = (order) => order?.customerId != null
+  ? `id:${order.customerId}`
+  : `name:${String(order?.customerName || '').trim().toLocaleLowerCase('fa-IR')}`;
 const formatDimensions = (item) => {
   const diameter = Number(item?.diameter);
   const thickness = Number(item?.thickness);
@@ -850,6 +859,9 @@ const OrderView = () => {
   const [invoiceOrientation, setInvoiceOrientation] = useState('portrait');
   const [invoiceQuantities, setInvoiceQuantities] = useState({});
   const [invoicePrices, setInvoicePrices] = useState({});
+  const [invoiceOrders, setInvoiceOrders] = useState([]);
+  const [invoiceOrderNumber, setInvoiceOrderNumber] = useState('');
+  const [isLookingUpInvoiceOrder, setIsLookingUpInvoiceOrder] = useState(false);
   const [invoiceNote, setInvoiceNote] = useState('');
   const [isInvoiceExportOpen, setIsInvoiceExportOpen] = useState(false);
   const [isExportingInvoice, setIsExportingInvoice] = useState(false);
@@ -878,11 +890,11 @@ const OrderView = () => {
   useEffect(() => {
     if (!isInvoiceExportOpen) return undefined;
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape' && !isExportingInvoice) setIsInvoiceExportOpen(false);
+      if (event.key === 'Escape' && !isExportingInvoice && !isLookingUpInvoiceOrder) setIsInvoiceExportOpen(false);
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [isInvoiceExportOpen, isExportingInvoice]);
+  }, [isInvoiceExportOpen, isExportingInvoice, isLookingUpInvoiceOrder]);
 
   const markingMap = useMemo(() => {
     const map = {};
@@ -977,45 +989,128 @@ const OrderView = () => {
   const phones = (customer?.phones || []).filter(Boolean);
   const addresses = (customer?.addresses || []).filter(Boolean);
   const invoiceDate = new DateObject({ calendar: persian, locale: persian_fa }).format('YYYY/MM/DD');
-  const getInvoiceQuantity = (item, index) => Math.max(0, Math.floor(Number(invoiceQuantities[invoiceItemKey(item, index)]) || 0));
-  const invoiceGrandTotal = items.reduce(
-    (sum, item, index) => sum + (Number(item.salePrice) || 0) * getInvoiceQuantity(item, index),
+  const invoiceLines = invoiceOrders.flatMap((selectedOrder) => (selectedOrder.items || []).map((item, index) => ({
+    order: selectedOrder,
+    item,
+    index,
+    key: invoiceLineKey(selectedOrder, item, index),
+  })));
+  const getInvoiceQuantity = (line) => Math.max(0, Math.floor(Number(invoiceQuantities[line.key]) || 0));
+  const invoiceGrandTotal = invoiceLines.reduce(
+    (sum, line) => sum + (Number(line.item.salePrice) || 0) * getInvoiceQuantity(line),
     0
   );
 
   const openInvoiceExport = () => {
     setInvoiceOrientation('portrait');
     setInvoiceNote('');
+    setInvoiceOrders([order]);
+    setInvoiceOrderNumber('');
     setInvoiceQuantities(Object.fromEntries(items.map((item, index) => [
-      invoiceItemKey(item, index),
+      invoiceLineKey(order, item, index),
       Math.max(0, Number(productionQuantities[item.uid]) || 0),
     ])));
     setInvoicePrices(Object.fromEntries(items.map((item, index) => [
-      invoiceItemKey(item, index),
+      invoiceLineKey(order, item, index),
       item.salePrice == null ? '' : formatInvoicePriceInput(fromRial(item.salePrice)),
     ])));
     setIsInvoiceExportOpen(true);
   };
 
+  const addInvoiceOrder = async () => {
+    const orderNumber = normalizeInvoiceOrderNumber(invoiceOrderNumber);
+    if (!orderNumber || isLookingUpInvoiceOrder || isExportingInvoice) return;
+    setIsLookingUpInvoiceOrder(true);
+    try {
+      const { orders: availableOrders } = await ordersApi.list();
+      const match = (availableOrders || []).find((candidate) => (
+        normalizeInvoiceOrderNumber(candidate.orderNumber) === orderNumber
+      ));
+      if (!match) {
+        showToast('سفارشی با این شماره پیدا نشد.', 'error');
+        return;
+      }
+      if (invoiceOrders.some((selectedOrder) => Number(selectedOrder.id) === Number(match.id))) {
+        showToast('این سفارش قبلاً به فاکتور اضافه شده است.', 'error');
+        return;
+      }
+      if (invoiceCustomerKey(order) !== invoiceCustomerKey(match)) {
+        showToast('فقط سفارش‌های یک مشتری را می‌توان در یک فاکتور ترکیب کرد.', 'error');
+        return;
+      }
+
+      const matchItems = match.items || [];
+      const productionSummaries = await Promise.all(matchItems.map((item) => (
+        item.uid
+          ? productionApi.itemSummary(match.id, item.uid).catch(() => null)
+          : Promise.resolve(null)
+      )));
+      setInvoiceOrders((previous) => [...previous, match]);
+      setInvoiceQuantities((previous) => ({
+        ...previous,
+        ...Object.fromEntries(matchItems.map((item, index) => [
+          invoiceLineKey(match, item, index),
+          Math.max(0, Number(productionSummaries[index]?.totalProduced) || 0),
+        ])),
+      }));
+      setInvoicePrices((previous) => ({
+        ...previous,
+        ...Object.fromEntries(matchItems.map((item, index) => [
+          invoiceLineKey(match, item, index),
+          item.salePrice == null ? '' : formatInvoicePriceInput(fromRial(item.salePrice)),
+        ])),
+      }));
+      setInvoiceOrderNumber('');
+    } catch (error) {
+      console.error('Failed to find invoice order:', error);
+      showToast('خطا در جست‌وجوی سفارش.', 'error');
+    } finally {
+      setIsLookingUpInvoiceOrder(false);
+    }
+  };
+
+  const removeInvoiceOrder = (orderToRemove) => {
+    const removedKeys = (orderToRemove.items || []).map((item, index) => invoiceLineKey(orderToRemove, item, index));
+    setInvoiceOrders((previous) => previous.filter((selectedOrder) => Number(selectedOrder.id) !== Number(orderToRemove.id)));
+    setInvoiceQuantities((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !removedKeys.includes(key))));
+    setInvoicePrices((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !removedKeys.includes(key))));
+  };
+
   const handleExportInvoice = async () => {
-    if (!invoiceRef.current) return;
+    if (!invoiceRef.current || !invoiceOrders.length) return;
     setIsExportingInvoice(true);
     let savingPrices = false;
     let exportSucceeded = false;
     try {
-      const nextItems = items.map((item, index) => {
-        const rawPrice = String(invoicePrices[invoiceItemKey(item, index)] ?? '').replace(/,/g, '').trim();
-        const nextPrice = rawPrice === '' ? null : toRial(Number(rawPrice));
-        return { ...item, salePrice: nextPrice };
+      const ordersWithPrices = invoiceOrders.map((selectedOrder) => {
+        const nextItems = (selectedOrder.items || []).map((item, index) => {
+          const rawPrice = String(invoicePrices[invoiceLineKey(selectedOrder, item, index)] ?? '').replace(/,/g, '').trim();
+          const nextPrice = rawPrice === '' ? null : toRial(Number(rawPrice));
+          return { ...item, salePrice: nextPrice };
+        });
+        const pricesChanged = nextItems.some((item, index) => (
+          (item.salePrice == null ? null : Number(item.salePrice))
+          !== (selectedOrder.items[index].salePrice == null ? null : Number(selectedOrder.items[index].salePrice))
+        ));
+        return { order: selectedOrder, nextItems, pricesChanged };
       });
-      const pricesChanged = nextItems.some((item, index) => (
-        (item.salePrice == null ? null : Number(item.salePrice))
-        !== (items[index].salePrice == null ? null : Number(items[index].salePrice))
-      ));
-      if (pricesChanged) {
+      const changedOrders = ordersWithPrices.filter((entry) => entry.pricesChanged);
+      let exportedOrders = invoiceOrders;
+      if (changedOrders.length) {
         savingPrices = true;
-        const { order: updatedOrder } = await ordersApi.update(orderId, { items: nextItems });
-        flushSync(() => setOrder(updatedOrder));
+        const savedOrders = await Promise.all(changedOrders.map(async ({ order: selectedOrder, nextItems }) => {
+          const { order: updatedOrder } = await ordersApi.update(selectedOrder.id, { items: nextItems });
+          return [Number(selectedOrder.id), updatedOrder];
+        }));
+        const savedById = new Map(savedOrders);
+        exportedOrders = ordersWithPrices.map(({ order: selectedOrder, nextItems, pricesChanged }) => (
+          savedById.get(Number(selectedOrder.id)) || (pricesChanged ? { ...selectedOrder, items: nextItems } : selectedOrder)
+        ));
+        flushSync(() => {
+          setInvoiceOrders(exportedOrders);
+          const updatedCurrentOrder = exportedOrders.find((selectedOrder) => Number(selectedOrder.id) === orderId);
+          if (updatedCurrentOrder) setOrder(updatedCurrentOrder);
+        });
         savingPrices = false;
       }
       const canvas = await html2canvas(invoiceRef.current, {
@@ -1035,9 +1130,12 @@ const OrderView = () => {
       else { h = pageH; w = pageH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pageW - w) / 2, (pageH - h) / 2, w, h);
 
-      // Name the file after the company (or customer) + order date.
+      // Name the file after the company/customer and the included order number(s).
       const who = (customer?.companyName?.trim() || order.customerName || 'فاکتور').replace(/\s+/g, '-');
-      const fileName = `${who}-${order.date}.pdf`;
+      const orderSuffix = exportedOrders.length > 1
+        ? `orders-${exportedOrders.map((selectedOrder) => selectedOrder.orderNumber).join('_')}`
+        : order.date;
+      const fileName = `${who}-${orderSuffix}.pdf`;
       // Plain in-memory browser download — nothing is stored server-side.
       pdf.save(fileName);
       exportSucceeded = true;
@@ -1172,7 +1270,7 @@ const OrderView = () => {
           <div className="invoice-head">
             <div>
               <h1>فاکتور فروش</h1>
-              <div className="invoice-meta">شماره سفارش: {order.orderNumber}</div>
+              <div className="invoice-meta">شماره سفارش: {invoiceOrders.map((selectedOrder) => selectedOrder.orderNumber).join('، ')}</div>
             </div>
             <div className="invoice-meta-left">
               <div>تاریخ: {invoiceDate}</div>
@@ -1206,18 +1304,25 @@ const OrderView = () => {
               </tr>
             </thead>
             <tbody>
-              {items.map((it, i) => (
-                <tr key={it.uid || i}>
-                  <td className="c-num">{(i + 1).toLocaleString('fa-IR')}</td>
-                  <td className="c-desc">{invoiceDescription(it, i)}</td>
-                  <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.thickness)}</bdi></td>
-                  <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.diameter)}</bdi></td>
-                  <td className="c-qty">{fa(getInvoiceQuantity(it, i))}</td>
-                  <td className="c-unit">عدد</td>
-                  <td className="c-price"><bdi>{formatInvoiceAmount(it.salePrice, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
-                  <td className="c-price"><bdi>{formatInvoiceAmount((Number(it.salePrice) || 0) * getInvoiceQuantity(it, i), invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
-                </tr>
-              ))}
+              {invoiceLines.map((line, rowIndex) => {
+                const { item: it } = line;
+                const quantity = getInvoiceQuantity(line);
+                return (
+                  <tr key={line.key}>
+                    <td className="c-num">{(rowIndex + 1).toLocaleString('fa-IR')}</td>
+                    <td className="c-desc">
+                      {invoiceOrders.length > 1 && <small className={glassStyles.invoiceOrderReference}>سفارش {line.order.orderNumber}</small>}
+                      {invoiceDescription(it, line.index)}
+                    </td>
+                    <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.thickness)}</bdi></td>
+                    <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.diameter)}</bdi></td>
+                    <td className="c-qty">{fa(quantity)}</td>
+                    <td className="c-unit">عدد</td>
+                    <td className="c-price"><bdi>{formatInvoiceAmount(it.salePrice, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
+                    <td className="c-price"><bdi>{formatInvoiceAmount((Number(it.salePrice) || 0) * quantity, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr>
@@ -1230,7 +1335,7 @@ const OrderView = () => {
       </div>
 
       {isInvoiceExportOpen && (
-        <div className={glassStyles.invoiceExportBackdrop} onMouseDown={() => !isExportingInvoice && setIsInvoiceExportOpen(false)}>
+        <div className={glassStyles.invoiceExportBackdrop} onMouseDown={() => !isExportingInvoice && !isLookingUpInvoiceOrder && setIsInvoiceExportOpen(false)}>
           <section
             className={glassStyles.invoiceExportDialog}
             role="dialog"
@@ -1241,13 +1346,54 @@ const OrderView = () => {
           >
             <header className={glassStyles.invoiceExportHeader}>
               <span className={glassStyles.invoiceExportIcon}><i className="fa-solid fa-file-invoice-dollar" aria-hidden="true" /></span>
-              <button type="button" className={glassStyles.invoiceExportClose} onClick={() => setIsInvoiceExportOpen(false)} aria-label="بستن" disabled={isExportingInvoice}>
+              <button type="button" className={glassStyles.invoiceExportClose} onClick={() => setIsInvoiceExportOpen(false)} aria-label="بستن" disabled={isExportingInvoice || isLookingUpInvoiceOrder}>
                 <i className="fa-solid fa-xmark" aria-hidden="true" />
               </button>
               <h2 id="invoice-export-title">صدور فاکتور</h2>
             </header>
 
             <div className={glassStyles.invoiceExportBody}>
+              <section className={glassStyles.invoiceOrderLookup} aria-label="افزودن سفارش به فاکتور">
+                <label htmlFor="invoice-order-number">افزودن سفارش با شماره سفارش</label>
+                <div className={glassStyles.invoiceOrderLookupControl}>
+                  <input
+                    id="invoice-order-number"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    dir="ltr"
+                    value={invoiceOrderNumber}
+                    onChange={(event) => setInvoiceOrderNumber(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addInvoiceOrder();
+                      }
+                    }}
+                    placeholder="شماره سفارش را وارد کنید"
+                    disabled={isLookingUpInvoiceOrder || isExportingInvoice}
+                  />
+                  <button type="button" onClick={addInvoiceOrder} disabled={isLookingUpInvoiceOrder || isExportingInvoice || !invoiceOrderNumber.trim()}>
+                    {isLookingUpInvoiceOrder ? 'در حال جست‌وجو…' : 'افزودن'}
+                  </button>
+                </div>
+                <p>فقط سفارش‌های همین مشتری را می‌توان در این فاکتور ترکیب کرد.</p>
+                <div className={glassStyles.invoiceSelectedOrders} aria-label="سفارش‌های انتخاب‌شده">
+                  {invoiceOrders.map((selectedOrder) => (
+                    <div className={glassStyles.invoiceSelectedOrder} key={selectedOrder.id}>
+                      <span>سفارش {selectedOrder.orderNumber}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeInvoiceOrder(selectedOrder)}
+                        disabled={isLookingUpInvoiceOrder || isExportingInvoice}
+                        aria-label={`حذف سفارش ${selectedOrder.orderNumber} از فاکتور`}
+                      >
+                        <i className="fa-solid fa-xmark" aria-hidden="true" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
               <div className={glassStyles.invoiceOrientationControl}>
                 <span>جهت فاکتور</span>
                 <div role="group" aria-label="جهت فاکتور">
@@ -1272,11 +1418,13 @@ const OrderView = () => {
               </label>
               <div className={glassStyles.invoiceQuantityList}>
                 <div className={glassStyles.invoiceQuantityHeading}><strong>تعداد و قیمت هر قلم</strong></div>
-                {items.map((item, index) => {
-                  const key = invoiceItemKey(item, index);
+                {invoiceLines.map((line) => {
+                  const item = line.item;
+                  const { index, key } = line;
                   return (
                     <label className={glassStyles.invoiceQuantityRow} key={key}>
                       <span className={glassStyles.invoiceQuantityProduct}>
+                        {invoiceOrders.length > 1 && <small className={glassStyles.invoiceQuantityOrder}>سفارش {line.order.orderNumber}</small>}
                         <strong>{invoiceDialogDescription(item, index)}</strong>
                       </span>
                       <span className={glassStyles.invoiceQuantityInputWrap}>
@@ -1332,8 +1480,8 @@ const OrderView = () => {
             </div>
 
             <footer className={glassStyles.invoiceExportActions}>
-              <button type="button" className={glassStyles.invoiceExportCancel} onClick={() => setIsInvoiceExportOpen(false)} disabled={isExportingInvoice}>انصراف</button>
-              <button type="button" className={glassStyles.invoiceExportConfirm} onClick={handleExportInvoice} disabled={isExportingInvoice}>
+              <button type="button" className={glassStyles.invoiceExportCancel} onClick={() => setIsInvoiceExportOpen(false)} disabled={isExportingInvoice || isLookingUpInvoiceOrder}>انصراف</button>
+              <button type="button" className={glassStyles.invoiceExportConfirm} onClick={handleExportInvoice} disabled={isExportingInvoice || isLookingUpInvoiceOrder || !invoiceOrders.length}>
                 {isExportingInvoice ? 'در حال ذخیره و صدور…' : 'ذخیره قیمت و صدور فاکتور'}
               </button>
             </footer>
