@@ -41,6 +41,7 @@
  * @property {string} state
  * @property {JalaliDateKey|null} date
  * @property {Grams|null} totalWeight
+ * @property {string} [note] Optional explanation saved with the state change.
  *
  * @typedef {Object} OrderItem
  * @property {string} uid Stable item UID used by production references.

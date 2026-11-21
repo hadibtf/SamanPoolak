@@ -140,8 +140,11 @@ cleanup, providers for auth/settings, and React Router for navigation.
   hardening/plating details, description, prices, state/history, weights, and the
   manager's `productionStopped` confirmation flag.
 - Order workflow labels come from `ORDER_STATES`: registered, pressing,
-  production complete, hardening sent/returned, plating sent/returned, ready. A state change appends
-  `{state, date, totalWeight}`; an order is done when all items are READY.
+  production complete, hardening sent/returned, plating sent/returned, ready,
+  packaged, and delivered. A state change appends
+  `{state, date, totalWeight, note?}`. An order is done when every item has a
+  latest delivered state (`DELIVERED_WORKSHOP`, `SENT_FREIGHT`, or
+  `DELIVERED_PLATING`).
 - `computeWeights()` derives unit grams = 10-piece grams / 10 and expected
   weight = unit × quantity. The order view derives produced quantity and measured
   weight from active production logs; manager log quantities are calculated from
@@ -218,16 +221,21 @@ statistics once calculated. They do not change assignment status and cannot be
 edited through employee task endpoints. Admins can correct the date, batch
 weight, and employee through dedicated manager-log endpoints; deletions are
 soft-deleted so they remain recoverable in the database.
-The order progress bar caps visually at 100% while the produced totals retain any
-overproduction. When an item's produced quantity reaches or exceeds its order
-quantity, an admin can confirm production completion; admins can also manually
-confirm completion below the ordered quantity after acknowledging the shortfall.
-This records `PRODUCTION_COMPLETE` in the state history, persists
-`productionStopped`, hides assignment/manager entry, and blocks new assignments,
-employee weight setup, and new employee/manager production entries. Admins can
-still correct or soft-delete existing manager entries after completion, or use
-the `ادامه تولید` action in the order view or status selector to clear the
-completion event and reopen production logging and assignment; resuming adds an
+The order progress bar caps visually at 100% while produced totals retain any
+overproduction. The order-view manager entry form stays available at and above
+the ordered quantity until production is explicitly stopped. When an item's
+produced quantity reaches or exceeds its order quantity, an admin can confirm
+production completion; admins can also manually confirm below the ordered
+quantity after acknowledging the shortfall. This records
+`PRODUCTION_COMPLETE` in the state history, persists `productionStopped`, hides
+assignment/manager entry, and blocks new assignments, employee weight setup, and
+new employee/manager production entries. The order-list delivery action checks
+active production records first; missing records, short item quantities, or
+uncalculated manager entries require an explanation to override. It records
+`DELIVERED_WORKSHOP` with that note in each item's history and stops production.
+Admins can still correct or soft-delete existing manager entries after
+completion, or use the `ادامه تولید` action in the order view or status selector
+to clear the production stop and reopen logging and assignment; resuming adds an
 `ادامه تولید` timeline entry. If the item had already moved to a later workflow
 state, resuming production preserves that later state.
 

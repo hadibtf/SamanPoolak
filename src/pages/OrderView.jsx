@@ -629,18 +629,16 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
                 containerClassName="manager-production-date"
                 portal
               />
-              {(remainingQuantity === null || remainingQuantity > 0) && (
-                <div className="manager-production-actions">
-                  {remainingQuantity > 0 && (
-                    <button type="button" className="manager-production-short-completion-btn" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
-                      {confirmingProductionStop ? 'در حال ذخیره...' : `تأیید اتمام تولید با ${fa(remainingQuantity)} کسری`}
-                    </button>
-                  )}
-                  <button type="submit" className="manager-production-submit-btn" aria-label={savingManualLog ? 'در حال ثبت...' : 'ثبت'} disabled={savingManualLog || employees.length === 0}>
-                    <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+              <div className="manager-production-actions">
+                {remainingQuantity > 0 && (
+                  <button type="button" className="manager-production-short-completion-btn" disabled={confirmingProductionStop} onClick={confirmProductionStop}>
+                    {confirmingProductionStop ? 'در حال ذخیره...' : `تأیید اتمام تولید با ${fa(remainingQuantity)} کسری`}
                   </button>
-                </div>
-              )}
+                )}
+                <button type="submit" className="manager-production-submit-btn" aria-label={savingManualLog ? 'در حال ثبت...' : 'ثبت'} disabled={savingManualLog || employees.length === 0}>
+                  <i className="fa-solid fa-arrow-left" aria-hidden="true" />
+                </button>
+              </div>
               {employees.length === 0 && <small>فهرست کارمندان در دسترس نیست.</small>}
             </form>
           </section>
@@ -1130,12 +1128,9 @@ const OrderView = () => {
       else { h = pageH; w = pageH * imgRatio; }
       pdf.addImage(imgData, 'JPEG', (pageW - w) / 2, (pageH - h) / 2, w, h);
 
-      // Name the file after the company/customer and the included order number(s).
+      // Name the file after the company/customer and order date.
       const who = (customer?.companyName?.trim() || order.customerName || 'فاکتور').replace(/\s+/g, '-');
-      const orderSuffix = exportedOrders.length > 1
-        ? `orders-${exportedOrders.map((selectedOrder) => selectedOrder.orderNumber).join('_')}`
-        : order.date;
-      const fileName = `${who}-${orderSuffix}.pdf`;
+      const fileName = `${who}-${order.date}.pdf`;
       // Plain in-memory browser download — nothing is stored server-side.
       pdf.save(fileName);
       exportSucceeded = true;
@@ -1270,7 +1265,6 @@ const OrderView = () => {
           <div className="invoice-head">
             <div>
               <h1>فاکتور فروش</h1>
-              <div className="invoice-meta">شماره سفارش: {invoiceOrders.map((selectedOrder) => selectedOrder.orderNumber).join('، ')}</div>
             </div>
             <div className="invoice-meta-left">
               <div>تاریخ: {invoiceDate}</div>
@@ -1311,7 +1305,6 @@ const OrderView = () => {
                   <tr key={line.key}>
                     <td className="c-num">{(rowIndex + 1).toLocaleString('fa-IR')}</td>
                     <td className="c-desc">
-                      {invoiceOrders.length > 1 && <small className={glassStyles.invoiceOrderReference}>سفارش {line.order.orderNumber}</small>}
                       {invoiceDescription(it, line.index)}
                     </td>
                     <td className="c-dimension"><bdi dir="ltr">{formatInvoiceDimension(it.thickness)}</bdi></td>

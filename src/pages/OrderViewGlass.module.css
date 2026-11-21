@@ -327,7 +327,6 @@
   overflow-wrap: anywhere;
 }
 .invoiceQuantityOrder { color: #6682a5; font-size: 11px; font-weight: 750; }
-.invoiceOrderReference { display: block; margin-bottom: 3px; color: #64748b; font-size: 11px; font-weight: 700; }
 .invoiceQuantityInputWrap input,
 .invoicePriceInputWrap input {
   width: 100%;
@@ -788,8 +787,7 @@
 [data-theme="dark"] .invoiceOrderLookupControl input { border-color: rgba(194, 217, 248, .22); background: linear-gradient(145deg, rgba(255, 255, 255, .09), rgba(0, 0, 0, .12)); color: #e3efff; }
 [data-theme="dark"] .invoiceOrderLookupControl button { border-color: rgba(130, 177, 239, .22); background: rgba(115, 165, 232, .14); color: #c8e0ff; }
 [data-theme="dark"] .invoiceOrderLookup p,
-[data-theme="dark"] .invoiceQuantityOrder,
-[data-theme="dark"] .invoiceOrderReference { color: #9fb5d1; }
+[data-theme="dark"] .invoiceQuantityOrder { color: #9fb5d1; }
 [data-theme="dark"] .invoiceSelectedOrder { border-color: rgba(130, 177, 239, .23); background: rgba(115, 165, 232, .12); color: #c8e0ff; }
 [data-theme="dark"] .invoiceSelectedOrder button { background: rgba(255, 255, 255, .08); color: #cad8ea; }
 [data-theme="dark"] .invoiceQuantityRow { border-color: rgba(194, 217, 248, .2); background: linear-gradient(130deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .035)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 5px 14px rgba(0, 0, 0, .12); }

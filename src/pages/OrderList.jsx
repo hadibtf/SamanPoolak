@@ -6,7 +6,7 @@ import JalaliDatePicker from '../components/JalaliDatePicker';
 import persian from 'react-date-object/calendars/persian';
 import persian_fa from 'react-date-object/locales/persian_fa';
 import { jalaliDateKey, deriveOrderStatus } from '../domain';
-import { peopleApi, ordersApi, ApiError } from '../api/client';
+import { peopleApi, ordersApi, productionApi, ApiError } from '../api/client';
 import { PLATING_LABELS } from '../constants';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
@@ -136,6 +136,11 @@ const OrderList = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [fAdvancedOrderNumber, setFAdvancedOrderNumber] = useState('');
   const [statusTab, setStatusTab] = useState('in-progress');
+  const [deliveryDialog, setDeliveryDialog] = useState(null);
+  const [deliveryNote, setDeliveryNote] = useState('');
+  const [deliveryBusyOrderId, setDeliveryBusyOrderId] = useState(null);
+  const [deliveryDialogError, setDeliveryDialogError] = useState('');
+  const [deliveryFeedback, setDeliveryFeedback] = useState(null);
 
   const ordersQuery = useApiQuery(async () => newestFirst((await ordersApi.list()).orders));
   const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people));
@@ -248,6 +253,98 @@ const OrderList = () => {
 
   const handleRangeStartChange = handleRangeDateChange(setFFrom);
   const handleRangeEndChange = handleRangeDateChange(setFTo);
+
+  const saveOrderDelivery = async (order, note = '') => {
+    const timestamp = Date.now();
+    const explanation = note.trim();
+    const items = (order.items || []).map((item) => ({
+      ...item,
+      state: 'DELIVERED_WORKSHOP',
+      productionStopped: true,
+      stateHistory: [
+        ...(item.stateHistory || []),
+        {
+          state: 'DELIVERED_WORKSHOP',
+          date: timestamp,
+          totalWeight: null,
+          ...(explanation ? { note: explanation } : {}),
+        },
+      ],
+    }));
+    const { order: updated } = await ordersApi.update(order.id, { items });
+    setOrders((rows) => (rows || []).map((row) => String(row.id) === String(updated.id) ? updated : row));
+  };
+
+  const handleMarkOrderDelivered = async (event, order) => {
+    event.stopPropagation();
+    if (deliveryBusyOrderId !== null) return;
+    setDeliveryFeedback(null);
+    setDeliveryBusyOrderId(order.id);
+
+    try {
+      const items = order.items || [];
+      const summaries = await Promise.all(items.map((item) => productionApi.itemSummary(order.id, item.uid)));
+      const noActiveRecords = summaries.every((summary) => !Array.isArray(summary?.logs) || summary.logs.length === 0);
+      const issues = items.flatMap((item, index) => {
+        const summary = summaries[index] || {};
+        const logs = Array.isArray(summary.logs) ? summary.logs : [];
+        const ordered = Number(toEnglishDigits(item.quantity)) || 0;
+        const produced = Number(summary.totalProduced)
+          || logs.reduce((total, log) => total + (Number(log.quantity) || 0), 0);
+        const pendingCount = logs.filter((log) => log.isManagerEntry && !(Number(log.quantity) > 0)).length;
+        if (produced + 0.00001 >= ordered && pendingCount === 0) return [];
+        return [{ item, ordered, produced, pendingCount }];
+      });
+
+      if (noActiveRecords || issues.length > 0) {
+        setDeliveryDialog({ order, noActiveRecords, issues });
+        setDeliveryNote('');
+        setDeliveryDialogError('');
+        return;
+      }
+
+      await saveOrderDelivery(order);
+    } catch (error) {
+      console.error('Failed to review or deliver order:', error);
+      setDeliveryFeedback({
+        orderId: order.id,
+        message: error instanceof ApiError && error.status === 0
+          ? 'برای بررسی یا ثبت تحویل به اتصال اینترنت نیاز دارید.'
+          : 'بررسی سوابق یا ثبت تحویل سفارش انجام نشد؛ وضعیت سفارش تغییری نکرد.',
+      });
+    } finally {
+      setDeliveryBusyOrderId(null);
+    }
+  };
+
+  const closeDeliveryDialog = () => {
+    if (deliveryBusyOrderId !== null) return;
+    setDeliveryDialog(null);
+    setDeliveryNote('');
+    setDeliveryDialogError('');
+  };
+
+  const confirmOrderDelivery = async (event) => {
+    event.stopPropagation();
+    const explanation = deliveryNote.trim();
+    if (!deliveryDialog || deliveryBusyOrderId !== null) return;
+    if (!explanation && !window.confirm('توضیحی وارد نکرده‌اید. آیا مطمئن هستید که بدون توضیح، سفارش را تحویل‌شده ثبت کنید؟')) return;
+
+    setDeliveryBusyOrderId(deliveryDialog.order.id);
+    setDeliveryDialogError('');
+    try {
+      await saveOrderDelivery(deliveryDialog.order, explanation);
+      setDeliveryDialog(null);
+      setDeliveryNote('');
+    } catch (error) {
+      console.error('Failed to deliver order:', error);
+      setDeliveryDialogError(error instanceof ApiError && error.status === 0
+        ? 'برای ثبت تحویل به اتصال اینترنت نیاز دارید.'
+        : 'ثبت تحویل سفارش انجام نشد؛ وضعیت سفارش تغییری نکرد. دوباره تلاش کنید.');
+    } finally {
+      setDeliveryBusyOrderId(null);
+    }
+  };
 
   const toggleSelection = (setter, value) => {
     setter((current) => current.includes(value)
@@ -473,6 +570,7 @@ const OrderList = () => {
         ) : (
           visibleOrders.map((o) => {
             const orderItems = o.items || [];
+            const orderDone = deriveOrderStatus(o).done;
             const person = personByCustomerId.get(String(o.customerId));
             const companyName = o.companyName?.trim()
               || person?.companyName?.trim()
@@ -552,6 +650,18 @@ const OrderList = () => {
                 </div>
 
                 <div className="card-actions">
+                  {!orderDone && orderItems.length > 0 && (
+                    <button
+                      type="button"
+                      className="order-list-action order-deliver-action"
+                      disabled={deliveryBusyOrderId !== null}
+                      aria-busy={String(deliveryBusyOrderId === o.id)}
+                      onClick={(event) => handleMarkOrderDelivered(event, o)}
+                    >
+                      <i className={`fa-solid ${deliveryBusyOrderId === o.id ? 'fa-spinner fa-spin' : 'fa-circle-check'}`} aria-hidden="true"></i>
+                      <span>{deliveryBusyOrderId === o.id ? 'در حال بررسی...' : 'تکمیل و تحویل'}</span>
+                    </button>
+                  )}
                   <button type="button" className="order-list-action" onClick={(e) => handleEdit(e, o)}>
                     <i className="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                     <span>ویرایش</span>
@@ -561,11 +671,85 @@ const OrderList = () => {
                     <span>حذف</span>
                   </button>
                 </div>
+                {deliveryFeedback && String(deliveryFeedback.orderId) === String(o.id) && (
+                  <p className={styles.deliveryFeedback} role="status">{deliveryFeedback.message}</p>
+                )}
               </ImageGlassSurface>
             );
           })
         )}
       </div>
+
+      {deliveryDialog && (
+        <div className={styles.deliveryBackdrop} onMouseDown={closeDeliveryDialog}>
+          <section
+            className={styles.deliveryDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-delivery-dialog-title"
+            dir="rtl"
+            onMouseDown={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape' && deliveryBusyOrderId === null) closeDeliveryDialog();
+            }}
+          >
+            <header className={styles.deliveryDialogHeader}>
+              <span className={styles.deliveryDialogIcon} aria-hidden="true"><i className="fa-solid fa-triangle-exclamation" /></span>
+              <div>
+                <h2 id="order-delivery-dialog-title">بررسی تولید پیش از تحویل</h2>
+                <p>سفارش <bdi dir="ltr">#{toEnglishDigits(deliveryDialog.order.orderNumber)}</bdi></p>
+              </div>
+              <button type="button" className={styles.deliveryDialogClose} onClick={closeDeliveryDialog} disabled={deliveryBusyOrderId !== null} aria-label="بستن">
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
+              </button>
+            </header>
+
+            <div className={styles.deliveryDialogBody}>
+              <div className={styles.deliveryWarning} role="alert">
+                {deliveryDialog.noActiveRecords && <p>برای این سفارش هیچ سابقه فعال تولیدی ثبت نشده است.</p>}
+                {deliveryDialog.issues.length > 0 && (
+                  <>
+                    <p>تولید بعضی اقلام به تعداد سفارش نرسیده یا وزن واحد یکی از اقلام هنوز محاسبه نشده است:</p>
+                    <ul className={styles.deliveryIssueList}>
+                      {deliveryDialog.issues.map(({ item, ordered, produced, pendingCount }) => (
+                        <li key={item.uid}>
+                          <strong>{item.productName || 'کالای بدون نام'}</strong>
+                          <span>تولید {formatCountValue(produced)} از {formatCountValue(ordered)} عدد</span>
+                          {pendingCount > 0 && <small>{formatCountValue(pendingCount)} ثبت تولید در انتظار محاسبه تعداد است.</small>}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+
+              <label className={styles.deliveryNoteLabel} htmlFor="order-delivery-note">توضیح وضعیت سفارش (اختیاری)</label>
+              <textarea
+                id="order-delivery-note"
+                className={styles.deliveryNoteInput}
+                value={deliveryNote}
+                onChange={(event) => { setDeliveryNote(event.target.value); setDeliveryDialogError(''); }}
+                placeholder="وضعیت واقعی تولید یا علت ناقص بودن رکوردها را توضیح دهید"
+                autoFocus
+              />
+              <p className={styles.deliveryNoteHint}>ثبت توضیح برای پیگیری وضعیت سفارش مفید است. تحویل بدون توضیح نیازمند تأیید دوباره است؛ تولید پس از تحویل متوقف می‌شود.</p>
+              {deliveryDialogError && <p className={styles.deliveryDialogError} role="alert">{deliveryDialogError}</p>}
+            </div>
+
+            <footer className={styles.deliveryDialogActions}>
+              <button type="button" className={styles.deliveryCancelButton} onClick={closeDeliveryDialog} disabled={deliveryBusyOrderId !== null}>انصراف</button>
+              <button
+                type="button"
+                className={styles.deliveryConfirmButton}
+                onClick={confirmOrderDelivery}
+                disabled={deliveryBusyOrderId !== null}
+              >
+                {deliveryBusyOrderId === deliveryDialog.order.id ? 'در حال ثبت...' : 'ادامه و ثبت تحویل'}
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   );
 };
