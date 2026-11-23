@@ -1,6 +1,6 @@
 import { useApiQuery, liveRows, newestFirst } from '../hooks/useApiQuery';
 import ApiReadStatus from '../components/ApiReadStatus';
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import persian from 'react-date-object/calendars/persian';
@@ -8,6 +8,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import { jalaliDateKey, deriveOrderStatus } from '../domain';
 import { peopleApi, ordersApi, productionApi, ApiError } from '../api/client';
 import { PLATING_LABELS } from '../constants';
+import { isOrderProductionComplete } from '../orderCompleteness';
 import MetallicText from '../components/MetallicText';
 import styles from './Management.module.css';
 import SegmentedTabs from '../components/SegmentedTabs';
@@ -125,6 +126,8 @@ const getProductSize = (item) => {
   return { key: `${diameter}x${thickness}`, label: `${diameter} × ${thickness}` };
 };
 
+const orderItemSummaryKey = (orderId, itemUid) => JSON.stringify([String(orderId), String(itemUid)]);
+
 const OrderList = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -136,6 +139,10 @@ const OrderList = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [fAdvancedOrderNumber, setFAdvancedOrderNumber] = useState('');
   const [statusTab, setStatusTab] = useState('in-progress');
+  const [deliveryCompletenessTab, setDeliveryCompletenessTab] = useState('all');
+  const [deliverySummaryVersion, setDeliverySummaryVersion] = useState(0);
+  const [deliverySummaryRetry, setDeliverySummaryRetry] = useState(0);
+  const [deliverySummaryError, setDeliverySummaryError] = useState(false);
   const [deliveryDialog, setDeliveryDialog] = useState(null);
   const [deliveryNote, setDeliveryNote] = useState('');
   const [deliveryBusyOrderId, setDeliveryBusyOrderId] = useState(null);
@@ -146,6 +153,15 @@ const OrderList = () => {
   const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people));
   const { data: orders, setData: setOrders } = ordersQuery;
   const { data: people } = peopleQuery;
+  const deliverySummaries = useRef(new Map());
+  const deliverySummaryRequestId = useRef(0);
+
+  useLayoutEffect(() => {
+    deliverySummaryRequestId.current += 1;
+    deliverySummaries.current.clear();
+    setDeliverySummaryError(false);
+    setDeliverySummaryVersion((version) => version + 1);
+  }, [orders]);
   const personByCustomerId = useMemo(
     () => new Map((people || []).map((person) => [String(person.id), person])),
     [people]
@@ -225,9 +241,76 @@ const OrderList = () => {
     });
   }, [orders, searchQuery, fAdvancedOrderNumber, selectedCustomers, selectedSizes, dateKey, fromKey, toKey, personByCustomerId, companyByCustomerId]);
 
-  const completedOrders = useMemo(() => filtered.filter((order) => deriveOrderStatus(order).done), [filtered]);
+  const deliveredOrders = useMemo(() => filtered.filter((order) => deriveOrderStatus(order).done), [filtered]);
   const inProgressOrders = useMemo(() => filtered.filter((order) => !deriveOrderStatus(order).done), [filtered]);
-  const visibleOrders = statusTab === 'completed' ? completedOrders : inProgressOrders;
+  const isDeliveryCompletenessFilterActive = statusTab === 'delivered' && deliveryCompletenessTab !== 'all';
+
+  useEffect(() => {
+    if (!isDeliveryCompletenessFilterActive) {
+      setDeliverySummaryError(false);
+      return undefined;
+    }
+
+    const missingSummaries = [];
+    deliveredOrders.forEach((order) => {
+      (order.items || []).forEach((item) => {
+        const key = orderItemSummaryKey(order.id, item.uid);
+        if (!deliverySummaries.current.has(key)) missingSummaries.push({ order, item, key });
+      });
+    });
+
+    if (!missingSummaries.length) {
+      setDeliverySummaryError(false);
+      return undefined;
+    }
+
+    const requestId = ++deliverySummaryRequestId.current;
+    setDeliverySummaryError(false);
+    let nextIndex = 0;
+    let hasFailedRequest = false;
+
+    const worker = async () => {
+      while (nextIndex < missingSummaries.length) {
+        if (requestId !== deliverySummaryRequestId.current) return;
+        const task = missingSummaries[nextIndex++];
+        try {
+          const summary = await productionApi.itemSummary(task.order.id, task.item.uid);
+          if (requestId !== deliverySummaryRequestId.current) return;
+          if (!summary || typeof summary !== 'object') throw new Error('Invalid production summary');
+          deliverySummaries.current.set(task.key, summary);
+        } catch {
+          if (requestId !== deliverySummaryRequestId.current) return;
+          hasFailedRequest = true;
+        }
+      }
+    };
+
+    const loadSummaries = async () => {
+      const workerCount = Math.min(4, missingSummaries.length);
+      await Promise.all(Array.from({ length: workerCount }, worker));
+      if (requestId !== deliverySummaryRequestId.current) return;
+      setDeliverySummaryVersion((version) => version + 1);
+      setDeliverySummaryError(hasFailedRequest);
+    };
+
+    loadSummaries();
+    return () => {
+      if (requestId === deliverySummaryRequestId.current) deliverySummaryRequestId.current += 1;
+    };
+  }, [isDeliveryCompletenessFilterActive, deliveryCompletenessTab, deliveredOrders, deliverySummaryRetry]);
+
+  const getOrderCompleteness = (order) => isOrderProductionComplete(
+    order,
+    (item) => deliverySummaries.current.get(orderItemSummaryKey(order.id, item.uid))
+  );
+  const completenessSummariesMissing = isDeliveryCompletenessFilterActive
+    && deliveredOrders.some((order) => getOrderCompleteness(order) === null);
+  const deliveryFilteredOrders = useMemo(() => {
+    if (deliveryCompletenessTab === 'all') return deliveredOrders;
+    const expectedCompleteness = deliveryCompletenessTab === 'complete';
+    return deliveredOrders.filter((order) => getOrderCompleteness(order) === expectedCompleteness);
+  }, [deliveredOrders, deliveryCompletenessTab, deliverySummaryVersion]);
+  const visibleOrders = statusTab === 'delivered' ? deliveryFilteredOrders : inProgressOrders;
   const hasFilters = Boolean(
     searchQuery.trim() || fAdvancedOrderNumber.trim() || fDate || fFrom || fTo
       || selectedCustomers.length || selectedSizes.length
@@ -550,20 +633,48 @@ const OrderList = () => {
 
       <SegmentedTabs className={styles.statusTabs} role="group" label="فیلتر وضعیت سفارش" value={statusTab} onChange={setStatusTab} items={[
         { value: 'in-progress', label: 'در حال انجام', icon: 'fa-solid fa-clock', badge: formatCountValue(inProgressOrders.length) },
-        { value: 'completed', label: 'تکمیل شده', icon: 'fa-solid fa-circle-check', badge: formatCountValue(completedOrders.length) },
+        { value: 'delivered', label: 'تحویل شده', icon: 'fa-solid fa-circle-check', badge: formatCountValue(deliveredOrders.length) },
       ]} />
 
+      {statusTab === 'delivered' && (
+        <SegmentedTabs
+          className={styles.deliveryCompletenessTabs}
+          role="group"
+          label="فیلتر میزان تولید سفارش‌های تحویل‌شده"
+          value={deliveryCompletenessTab}
+          onChange={setDeliveryCompletenessTab}
+          items={[
+            { value: 'all', label: 'همه' },
+            { value: 'complete', label: 'کامل' },
+            { value: 'incomplete', label: 'ناقص' },
+          ]}
+        />
+      )}
+
       <div className="orders-grid">
-        {ordersQuery.loading || peopleQuery.loading || ordersQuery.error || peopleQuery.error ? null : visibleOrders.length === 0 ? (
+        {ordersQuery.loading || peopleQuery.loading || ordersQuery.error || peopleQuery.error ? null : completenessSummariesMissing && !deliverySummaryError ? (
+          <p className="hint-text" role="status" dir="rtl">در حال بررسی میزان تولید سفارش‌های تحویل‌شده...</p>
+        ) : isDeliveryCompletenessFilterActive && deliverySummaryError ? (
+          <div className="inline-error" role="alert" dir="rtl">
+            دریافت خلاصه تولید سفارش‌ها ناموفق بود. اتصال اینترنت را بررسی کنید.
+            <button type="button" onClick={() => setDeliverySummaryRetry((retry) => retry + 1)}>تلاش دوباره</button>
+          </div>
+        ) : visibleOrders.length === 0 ? (
           <div className="empty-state">
             <i className="fa-solid fa-box-open"></i>
             <p>
               {orders && orders.length === 0
                 ? 'هنوز سفارشی ثبت نشده است.'
                 : hasFilters
-                  ? 'سفارشی با این فیلترها و وضعیت یافت نشد.'
-                  : statusTab === 'completed'
-                    ? 'هنوز سفارش تکمیل‌شده‌ای وجود ندارد.'
+                  ? statusTab === 'delivered' && deliveryCompletenessTab !== 'all'
+                    ? 'سفارشی با فیلترهای فعلی و میزان تولید انتخاب‌شده یافت نشد.'
+                    : 'سفارشی با این فیلترها و وضعیت یافت نشد.'
+                  : statusTab === 'delivered'
+                    ? deliveryCompletenessTab === 'complete'
+                      ? 'سفارش تحویل‌شده‌ای با تولید کامل وجود ندارد.'
+                      : deliveryCompletenessTab === 'incomplete'
+                        ? 'سفارش تحویل‌شده ناقصی وجود ندارد.'
+                        : 'هنوز سفارش تحویل‌شده‌ای وجود ندارد.'
                     : 'سفارشی در حال انجام نیست.'}
             </p>
           </div>

@@ -51,20 +51,8 @@ $routes = [
     ['PUT',    '/orders/{id}',      'orders_update', true],
     ['DELETE', '/orders/{id}',      'orders_delete', true],
     ['GET',    '/production/employees', 'production_employees', true],
-    ['GET',    '/production/tasks', 'production_tasks_list', true],
-    ['POST',   '/production/tasks', 'production_tasks_create', true],
-    ['PUT',    '/production/tasks/{id}', 'production_task_update', true],
-    ['PUT',    '/production/tasks/{id}/weight', 'production_task_weight_set', true],
-    ['GET',    '/production/statistics/month', 'production_employee_month_statistics', true],
-    ['GET',    '/production/statistics/day', 'production_employee_day_statistics', true],
-    ['GET',    '/production/statistics/management/employees', 'production_management_statistics_employees', true],
     ['GET',    '/production/statistics/management/month', 'production_management_month_statistics', true],
     ['GET',    '/production/statistics/management/day', 'production_management_day_statistics', true],
-    ['GET',    '/production/tasks/{id}/logs', 'production_task_logs_list', true],
-    ['POST',   '/production/tasks/{id}/logs', 'production_task_log_create', true],
-    ['DELETE', '/production/tasks/{id}/logs', 'production_task_logs_clear', true],
-    ['PUT',    '/production/tasks/{id}/logs/{logId}', 'production_task_log_update', true],
-    ['DELETE', '/production/tasks/{id}/logs/{logId}', 'production_task_log_delete', true],
     ['GET',    '/production/orders/{orderId}/items/{itemUid}/summary', 'production_item_summary', true],
     ['POST',   '/production/orders/{orderId}/items/{itemUid}/logs', 'production_manager_log_create', true],
     ['PUT',    '/production/orders/{orderId}/items/{itemUid}/logs/{logId}', 'production_manager_log_update', true],
@@ -121,19 +109,14 @@ try {
         if (preg_match($regex, $path, $matches)) {
             $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
             $user   = $needsAuth ? require_auth() : null;
-            // Employee tokens are intentionally narrow: production task reads
-            // (and, later, production-log writes) are their only business API.
+            // Employee tokens have no production workflow; only account and
+            // holiday endpoints remain available.
             $employeeAllowed = [
-                'POST /auth/logout', 'GET /auth/me', 'GET /production/tasks', 'GET /holidays',
-                'GET /production/statistics/month', 'GET /production/statistics/day',
+                'POST /auth/logout', 'GET /auth/me', 'GET /holidays',
             ];
             if ($user && ($user['role'] ?? '') === 'employee'
-                && !in_array($method . ' ' . $path, $employeeAllowed, true)
-                && !preg_match('#^(GET|POST) /production/tasks/[^/]+/logs$#', $method . ' ' . $path)
-                && !preg_match('#^DELETE /production/tasks/[^/]+/logs$#', $method . ' ' . $path)
-                && !preg_match('#^(PUT|DELETE) /production/tasks/[^/]+/logs/[^/]+$#', $method . ' ' . $path)
-                && !preg_match('#^PUT /production/tasks/[^/]+/weight$#', $method . ' ' . $path)) {
-                json_error('Employee access is limited to production tasks', 403);
+                && !in_array($method . ' ' . $path, $employeeAllowed, true)) {
+                json_error('Employee access is limited to account services', 403);
             }
             $body   = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? json_input() : [];
             $handler($params, $body, $user);

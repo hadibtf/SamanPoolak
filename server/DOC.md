@@ -42,7 +42,7 @@ server/
     orders.php       order CRUD + server-side YYMMN number + createdByName join
     markings.php     per-customer marking directory + image-file upload
     expenses.php     expense CRUD
-    production.php   assignments, measured-weight logs, corrections, statistics
+    production.php   manager-entered logs, corrections, management statistics
     inquiries.php    landing-page request capture + back-office status
     job_applications.php careers form capture + authenticated HR status
     admin.php        backup / restore (admin-only)
@@ -99,17 +99,16 @@ are not available to employees. Employee credentials are managed through People.
 
 ### Production
 
-Implemented in `routes/production.php`; relationships and units are documented
-in [employee production](../MASTERCONTEXT.md#employee-production).
+Employee task/report entry and employee production statistics are retired.
+The retirement migration removes their data and report link while preserving
+existing order production rows. Employee accounts remain managed through People;
+employee tokens have no production routes. Production records are entered by
+managers on order items.
 
 - `GET /production/employees` *(admin)* lists eligible employees.
-- `GET /production/tasks` returns admin tasks or the employee's own safe task projection.
-- `POST /production/tasks` *(admin)* accepts `orderId, orderItemUid,
-  employeeUserId, requiredQuantity, assignedDate, splitFromTaskId?`.
-- `PUT /production/tasks/{id}` *(admin)* changes `requiredQuantity`.
 - `GET /production/orders/{orderId}/items/{itemUid}/summary` *(management)*
-  returns assignments, progress, per-employee totals, and both employee and
-  manager-entered logs, plus the canonical order item state/history.
+  returns manager-entered logs, progress, per-employee totals, and the canonical
+  order item state/history.
 - `POST /production/orders/{orderId}/items/{itemUid}/logs` *(admin)* accepts
   `{ employeeUserId, weightKg, productionDate, submissionKey }`. It derives
   pieces from the order item's saved 10-piece weight, has no order-quantity cap,
@@ -118,35 +117,19 @@ in [employee production](../MASTERCONTEXT.md#employee-production).
   `{ employeeUserId, weightKg, productionDate }` and recalculates quantity from
   the item's saved 10-piece weight. `DELETE` on the same path soft-deletes the
   manager entry; refreshed totals are available through the item summary.
-- `PUT /production/tasks/{id}/weight` *(own employee task)* saves
-  `{ weightOf10Grams }` once; an existing measurement returns 409.
-- `GET /production/tasks/{id}/logs` *(own employee task)* lists active logs.
-- `POST /production/tasks/{id}/logs` *(own employee task)* accepts
-  `{ weightKg, productionDate, submissionKey }`, returning 201
-  `{ productionLog, productionTask }`, or 200 for an identical UUID retry.
-- `PUT /production/tasks/{id}/logs/{logId}` *(own employee log)* accepts
-  `{ weightKg, productionDate }` and returns the updated log/task.
-- `DELETE /production/tasks/{id}/logs/{logId}` soft-deletes the employee's log.
-- `DELETE /production/tasks/{id}/logs` clears only the employee's selected task
-  logs, returning `{ deletedCount, productionTask }`.
-- `GET /production/statistics/month?year&month` and `/day?date` return the
-  authenticated employee's aggregates and daily details, including manager
-  entries attributed to that employee.
-- `GET /production/statistics/management/employees`, `/month?year&month`, and
-  `/day?date` *(admin)* support combined statistics; month/day accept optional
+- `GET /production/statistics/management/month?year&month` and
+  `/day?date` *(admin)* return management statistics from manager-entered logs;
+  month/day accept optional
   `employeeUserId` to restrict results to one employee.
 
-Employee batch kg and manager-entered kg are stored as `total_weight_grams` in
-their respective log tables. Employee piece quantity is rounded from the task's
-saved 10-piece gram measurement; manager entries use the order item's saved
-10-piece measurement. Manager entries are separate from assignments and do not
-change assignment status. Past Jalali dates are accepted within
-1405–1499. All aggregates exclude `deleted_at` rows. Transactions lock parent
-rows; employee task logs enforce assignment capacity and recalculate task status,
-while manager logs have no assignment capacity check. An identical UUID retry
-returns the original log; changed content or a deleted key returns 409. Apply
-the `2026-10-06-manager-production-logs` migration before deploying this route.
-Employee projections exclude customer contacts, pricing, and administrative data.
+Manager batch kg is stored as `total_weight_grams`; piece quantity is rounded
+from the order item's saved 10-piece gram measurement. If the sample weight is
+missing, quantity remains pending until it is entered. Past Jalali dates are
+accepted within 1405–1499. Aggregates exclude `deleted_at` rows. An identical
+UUID retry returns the original log; changed content or a deleted key returns
+409. Apply `2026-10-06-manager-production-logs` and both pending employee
+production-retirement migrations to the intended database before deploying this
+route. The retirement migrations require `--allow-destructive`.
 
 ### Users *(admin only)*
 - `GET /users` → `{ users: [user] }`.

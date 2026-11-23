@@ -72,20 +72,8 @@
  * @property {string} customerName
  * @property {OrderItem[]} items
  *
- * @typedef {Object} ProductionAssignment
- * @property {number} id
- * @property {OrderId} orderId
- * @property {string} orderItemUid
- * @property {UserId} employeeUserId
- * @property {PieceCount} requiredQuantity
- * @property {Grams|null} weightOf10
- * @property {PieceCount|null} producedQuantity
- * @property {JalaliDateKey} assignedDate
- * @property {string} status
- *
  * @typedef {Object} ProductionLog
  * @property {number|string} id Manager-entered log IDs use a `manager-` prefix.
- * @property {number|null} taskId Manager-entered logs have no employee task.
  * @property {boolean} isManagerEntry
  * @property {UserId|null} employeeUserId Manager entries may belong to a profile without a login.
  * @property {PersonId|null} employeePersonId
@@ -111,24 +99,12 @@
  * @property {string|null} src
  * @property {string} location
  *
- * @typedef {Object} ProductionLogRequest
- * @property {Kilograms} weightKg API input is kilograms; response total is grams.
- * @property {JalaliDateKey} productionDate
- * @property {string} submissionKey
- *
  * @typedef {Object} ManagerProductionLogRequest
  * @property {PersonId} [employeePersonId] Preferred identity for linked employee profiles.
  * @property {UserId} [employeeUserId] Used for legacy employee logins without a People profile.
  * @property {Kilograms} weightKg Measured batch weight; piece quantity is calculated from the item's sample weight when available.
  * @property {JalaliDateKey} productionDate
  * @property {string} submissionKey
- *
- * @typedef {Object} ProductionAssignmentRequest
- * @property {OrderId} orderId
- * @property {string} orderItemUid
- * @property {UserId} employeeUserId
- * @property {PieceCount} requiredQuantity
- * @property {JalaliDateKey} assignedDate
  *
  * @typedef {Object} ExpenseRequest
  * @property {JalaliDateKey} date

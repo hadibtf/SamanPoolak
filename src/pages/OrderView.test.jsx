@@ -72,7 +72,7 @@ const renderOrderView = async (order, totalProduced = 10) => {
   mocks.peopleGet.mockResolvedValue({ person: null });
   mocks.markingsList.mockResolvedValue({ markings: [] });
   mocks.employees.mockResolvedValue({ employees: [{ personId: '2-9', userId: 9, name: 'کارمند آزمایشی', employeeKey: 'person:2-9' }] });
-  mocks.itemSummary.mockResolvedValue({ tasks: [], totalProduced, logs: [] });
+  mocks.itemSummary.mockResolvedValue({ totalProduced, logs: [] });
 
   render(
     <MemoryRouter initialEntries={['/orders/view/1']}>

@@ -1,37 +1,21 @@
 import React from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
-import EmployeeTasks from './pages/EmployeeTasks';
-import EmployeeStatistics from './pages/EmployeeStatistics';
 import EmployeeLogin from './pages/EmployeeLogin';
 import { useAuth } from './auth/AuthContext';
-import navStyles from './components/FloatingNav.module.css';
-
-function EmployeeShell() {
-  const { logout } = useAuth();
-  return (
-    <div className="app-shell">
-      <main className="app-container">
-        <div className="page-frame">
-          <Routes>
-            <Route path="/" element={<Navigate to="/tasks" replace />} />
-            <Route path="/tasks" element={<EmployeeTasks />} />
-            <Route path="/statistics" element={<EmployeeStatistics />} />
-            <Route path="*" element={<Navigate to="/tasks" replace />} />
-          </Routes>
-        </div>
-      </main>
-      <nav className={navStyles['floating-nav']} style={{ '--nav-count': 3, '--nav-max-width': '420px' }}>
-        <NavLink className={navStyles["floating-nav-item"]} to="/tasks"><i className="fa-solid fa-list-check" /><span>وظایف</span></NavLink>
-        <NavLink className={navStyles["floating-nav-item"]} to="/statistics"><i className="fa-solid fa-chart-column" /><span>آمار تولید</span></NavLink>
-        <button className={`${navStyles["floating-nav-item"]} ${navStyles.danger}`} type="button" onClick={logout}><i className="fa-solid fa-arrow-right-from-bracket" /><span>خروج</span></button>
-      </nav>
-    </div>
-  );
-}
+import styles from './pages/Login.module.css';
 
 export default function EmployeeApp() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   if (loading) return <div className="app-splash" />;
-  if (!user) return <EmployeeLogin />;
-  return user.role === 'employee' ? <EmployeeShell /> : <EmployeeLogin />;
+  if (!user || user.role !== 'employee') return <EmployeeLogin />;
+
+  return <main className={styles.root} dir="rtl">
+    <section className="login-card glass-card">
+      <div className="login-brand">
+        <img className="login-logo-img" src={`${import.meta.env.BASE_URL}logo192.png`} alt="سامان پولک" />
+        <h1>پنل تولید کارکنان غیرفعال است</h1>
+        <p>در حال حاضر ثبت یا مشاهده تولید از پنل کارکنان در دسترس نیست.</p>
+      </div>
+      <button type="button" className="primary-btn" onClick={logout}>خروج</button>
+    </section>
+  </main>;
 }

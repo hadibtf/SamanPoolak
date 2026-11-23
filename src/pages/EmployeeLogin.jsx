@@ -36,8 +36,8 @@ const EmployeeLogin = () => {
       <form className="login-card glass-card" onSubmit={handleSubmit}>
         <div className="login-brand">
           <img className="login-logo-img" src={`${import.meta.env.BASE_URL}logo192.png`} alt="سامان پولک" />
-          <h1>سامانه آمار تولید کارکنان</h1>
-          <p>برای ادامه وارد حساب کاربری خود شوید</p>
+          <h1>ورود کارکنان</h1>
+          <p>ورود با حساب کاربری سازمانی</p>
         </div>
         <div className="form-group">
           <label>نام کاربری</label>

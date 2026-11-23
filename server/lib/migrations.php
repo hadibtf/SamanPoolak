@@ -6,7 +6,9 @@ interface MigrationDatabase
     public function trackingTableExists(): bool;
     public function ensureTrackingTable(): void;
     public function appliedMigrations(): array;
+    public function tableExists($table): bool;
     public function columnExists($table, $column): bool;
+    public function foreignKeyExists($table, $constraint): bool;
     public function execute($sql): void;
     public function recordMigration($migrationId): void;
     public function acquireMigrationLock($lockName): bool;
@@ -64,6 +66,16 @@ final class PdoMigrationDatabase implements MigrationDatabase
         return $rows;
     }
 
+    public function tableExists($table): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name'
+        );
+        $stmt->execute([':table_name' => $table]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
     public function columnExists($table, $column): bool
     {
         $stmt = $this->pdo->prepare(
@@ -71,6 +83,17 @@ final class PdoMigrationDatabase implements MigrationDatabase
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND COLUMN_NAME = :column_name'
         );
         $stmt->execute([':table_name' => $table, ':column_name' => $column]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function foreignKeyExists($table, $constraint): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = :table_name
+               AND CONSTRAINT_NAME = :constraint_name AND CONSTRAINT_TYPE = \'FOREIGN KEY\''
+        );
+        $stmt->execute([':table_name' => $table, ':constraint_name' => $constraint]);
         return (int) $stmt->fetchColumn() > 0;
     }
 

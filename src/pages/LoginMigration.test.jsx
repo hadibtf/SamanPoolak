@@ -34,7 +34,7 @@ describe('login surfaces after the Vite migration', () => {
 
   test('employee login keeps its employee surface', async () => {
     render(<EmployeeLogin />);
-    expect(screen.getByText('سامانه آمار تولید کارکنان')).toBeInTheDocument();
+    expect(screen.getByText('ورود کارکنان')).toBeInTheDocument();
     await submitLogin('employee');
   });
 });

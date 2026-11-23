@@ -17,7 +17,7 @@ imply exhaustive test coverage.
 | [project-map](#project-map) | Product, domains, folders, source entry points |
 | [architecture](#architecture) | App surfaces, auth, API, screen state |
 | [domain-rules](#domain-rules) | Money, dates, IDs, orders, weights |
-| [employee-production](#employee-production) | Isolation, assignments, logging, corrections, charts |
+| [employee-production](#employee-production) | Retired employee production access; manager production remains |
 | [ui-and-pdf](#ui-and-pdf) | Styling, calendar, RTL, exports |
 | [deployment](#deployment) | Commands, configuration, migrations, host setup |
 | [verification](#verification) | Tests, feature implementation checklist, release status |
@@ -49,8 +49,9 @@ imply exhaustive test coverage.
 
 Persian/RTL business software for a metal stamping/plating workshop: payroll,
 attendance, people/customers, customer markings, multi-item orders, invoices,
-expenses, employee production, statistics, and administrative settings. The
-landing and careers sites are separate static surfaces.
+expenses, manager-entered production, statistics, and administrative settings.
+Employee accounts remain for attribution on production records. The landing and
+careers sites are separate static surfaces.
 
 | Surface | Host | Host directory under `/home/hadibt` |
 | --- | --- | --- |
@@ -156,88 +157,25 @@ cleanup, providers for auth/settings, and React Router for navigation.
   dimensions, and description, omitting absent parts.
 
 <a id="employee-production"></a>
-## Employee production
+## Employee production (retired)
 
-### Identity and separation
+Employee accounts remain provisioned through People, but employee task and
+report entry, employee production statistics, task assignment controls, and
+their APIs are retired. The employee site now shows an unavailable notice after
+login. Employee task logs and report storage are removed from existing databases;
+synced order production remains as ordinary manager production records. Manager
+production remains available through `manager_production_logs` and continues to
+power management statistics.
 
-Provision or reset employee credentials in People add/edit, using the one-to-one
-`employee_accounts` mapping between an EMPLOYEE person and user. Employee login
-accounts are always active and have no active/inactive setting. Passwords are
-write-only. Existing admin/general-user account handling stays separate.
-Employee login uses the shared login presentation with title
-«سامانه آمار تولید کارکنان». Employee UI must reveal no management URL or link.
-Role checks, configured login origins, and task/log ownership enforce access.
-
-### Assignment and measurement
-
-Admins assign an existing order item to an employee. Quantity edits cannot fall
-below already produced pieces or exceed order capacity. When a new assignment
-exceeds free capacity, an explicit confirmation may transfer the deficit from
-a selected prior assignment's unproduced quantity. Historical authorship stays intact.
-
-First save the measured weight of **10 pieces in grams**, using a separate
-button. Then accept production batch weight in **kilograms**. The API stores
-actual `total_weight_grams` and calculates whole pieces:
-
-```text
-unitGrams = weightOf10Grams / 10
-pieces = round(weightKg * 1000 / unitGrams)
-expectedKg = requiredPieces * unitGrams / 1000
-remainingKg = remainingPieces * unitGrams / 1000
-```
-
-Show estimated pieces per log and estimated remaining weight. Use placeholders
-`۰.۰ گرم` / `۰.۰ کیلوگرم`, without «مثلاً». Use «لیست تولید» with a single-open
-accordion; employee routes are `/tasks` and `/statistics`.
-
-### Logs, ownership, and statistics
-
-Logs derive employee/order/item references from the authorized task. Valid past
-production days remain selectable within supported Jalali years 1405–1499.
-Each creation has a submission UUID: identical retry returns its original log;
-changed content or reuse of a deleted key conflicts. Separate UUIDs permit
-legitimate repeated partial production.
-
-Employees may edit batch weight/date, soft-delete their own log, or clear their
-own selected task/item's logs. Never clear other employees' production. Clearing
-retains the saved 10-piece weight. Soft-deleted rows remain database-recoverable;
-there is no restore UI, and edits have no separate revision history.
-
-All progress and statistics use active logs (`deleted_at IS NULL`). Transactions
-lock parent records, enforce remaining capacity, and recalculate ASSIGNED,
-IN_PROGRESS, or COMPLETED status. Management order summaries show assignments,
-per-employee production, log dates and audit times. Admin statistics support
-individual/all employees; employee statistics expose only the caller's records.
-
-Admins can enter a dated production log for an order item and employee by batch
-weight even before the item's 10-piece sample weight is known. The entry's
-quantity remains uncalculated until the sample weight is added; updating that
-weight recalculates manager log quantities from their measured batch weights.
-These entries live in `manager_production_logs`, record the entering admin, do
-not create or change an assignment, and have no order-quantity cap. Active
-manager entries remain visible in statistics by their measured weight while
-their quantities are pending; they count in order progress and quantity
-statistics once calculated. They do not change assignment status and cannot be
-edited through employee task endpoints. Admins can correct the date, batch
-weight, and employee through dedicated manager-log endpoints; deletions are
-soft-deleted so they remain recoverable in the database.
-The order progress bar caps visually at 100% while produced totals retain any
-overproduction. The order-view manager entry form stays available at and above
-the ordered quantity until production is explicitly stopped. When an item's
-produced quantity reaches or exceeds its order quantity, an admin can confirm
-production completion; admins can also manually confirm below the ordered
-quantity after acknowledging the shortfall. This records
-`PRODUCTION_COMPLETE` in the state history, persists `productionStopped`, hides
-assignment/manager entry, and blocks new assignments, employee weight setup, and
-new employee/manager production entries. The order-list delivery action checks
-active production records first; missing records, short item quantities, or
-uncalculated manager entries require an explanation to override. It records
-`DELIVERED_WORKSHOP` with that note in each item's history and stops production.
-Admins can still correct or soft-delete existing manager entries after
-completion, or use the `ادامه تولید` action in the order view or status selector
-to clear the production stop and reopen logging and assignment; resuming adds an
-`ادامه تولید` timeline entry. If the item had already moved to a later workflow
-state, resuming production preserves that later state.
+Manager production records use the order item's saved 10-piece sample weight to
+calculate piece quantity. If that sample is missing, the entry remains pending
+until an admin saves the sample. Managers can correct the date, weight, and
+employee or soft-delete a record. The order progress bar caps visually at 100%
+while produced totals retain any overproduction. Admins can confirm production
+completion at or below the ordered quantity after acknowledging a shortfall;
+completion blocks new manager production entries. Admins can still correct or
+soft-delete existing manager entries after completion, or use `ادامه تولید` to
+reopen logging. Resuming preserves later workflow states.
 
 Charts include every valid day, zero-fill empty days, and allow daily drill-down.
 Tooltips show quantity only; years have no thousands separators. Scale labels
@@ -329,26 +267,21 @@ Use checks proportionate to the change:
 
 - PHP lint for changed PHP files and `php server/tests/production_validation.php`.
 - Vitest: `npm test`.
-- Platform and employee production builds, sequentially; no TypeScript check exists.
-- After app deployment, verify assets and deep-route refreshes (`/tasks`,
-  `/statistics`), not just root HTTP 200. Test appropriate authorized/denied roles.
+- Platform and employee login-surface builds, sequentially; no TypeScript check exists.
+- After app deployment, verify the employee site's root login and inactive notice,
+  and the management `/statistics` route. Test appropriate authorized/denied roles.
 
-Owner accepted the employee release on 2026-09-26 after iterative live testing.
-Shipped: separate employee app, assignment edits/splits, gram-first measurement,
-kg logs, past-day entry, log corrections/soft-deletion, and both statistics views.
-Previously passed: PHP lint/validation, seven chart/calendar Jest tests, both
-production builds, live route checks, unauthenticated mutation rejection, and
-employee rejection from management statistics. Exhaustive authenticated
-admin/second-employee, concurrent-write, and duplicate-retry integration tests
-were not independently completed. Do not represent release acceptance as those
-tests having run. Offline business-data writes are unsupported.
+Historical release record: the employee assignment and reporting workflow was
+accepted on 2026-09-26 and retired on 2026-11-22. Earlier verification notes
+describe that retired release, not the current employee experience. Offline
+business-data writes are unsupported.
 
 <a id="troubleshooting"></a>
 ## Known failures and remedies
 
 | Symptom | Check / remedy |
 | --- | --- |
-| Employee deep-link refresh 404 | Employee doc-root SPA `.htaccess` upload |
+| Employee root page returns 404 | Employee doc-root SPA `.htaccess` upload |
 | Build warning about a large chunk | Inspect the Vite bundle report; current app surfaces include large existing route bundles |
 | Missing table/column API 500 | Apply required SQL in selected live database |
 | MySQL #1046 | Select `hadibt_business_platform` first |

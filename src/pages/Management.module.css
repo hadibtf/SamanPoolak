@@ -2008,10 +2008,6 @@
 :local(.root):global(.order-view) :global(.production-record-table) tbody td:nth-child(2) { white-space: normal; overflow-wrap: anywhere; }
 :local(.root):global(.order-view) :global(.production-record-table) tbody tr:last-child td { border-bottom: 0; }
 :local(.root):global(.order-view) :global(.production-record-edit-row) td { padding: 9px 12px; }
-:local(.root) :global(.production-assignment-row) { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-:local(.root) :global(.production-assignment-row) button { border: 1px solid #cdd9ec; color: #0875df; background: #f6faff; border-radius: 8px; padding: 6px 12px; cursor: pointer; }
-:local(.root) :global(.production-assignment-edit) { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-:local(.root) :global(.production-assignment-edit) input { width: 100px; min-height: 34px; border: 1px solid #cdd9ec; border-radius: 8px; padding: 4px 8px; }
 
 /* Compact order sections and shadcn-inspired information grouping. */
 :local(.root):global(.order-view) :global(.order-section) {
@@ -2961,8 +2957,6 @@
   border-color: var(--sp-border) !important;
   color: var(--sp-text) !important;
 }
-[data-theme="dark"] :local(.root) :global(.production-assignment-edit) input { background: var(--sp-surface) !important; border-color: var(--sp-border); color: var(--sp-text); }
-[data-theme="dark"] :local(.root) :global(.production-assignment-row) button { background: #202a36; border-color: #3c526b; color: #9acaff; }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-summary-list) > div { border-bottom-color: rgba(255,255,255,.14); }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-summary-list) small { color: var(--sp-text-muted); }
 [data-theme="dark"] :local(.root):global(.order-view) :global(.production-record-table) th,
@@ -3167,11 +3161,6 @@
 :local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-form) :global(.rmdp-input),
 :local(.root):global(.order-view) :global(.order-production-section) :global(.manager-production-log-edit-form) :global(.rmdp-input) {
   border-color: color-mix(in srgb, var(--order-section-accent) 28%, var(--sp-border));
-}
-:local(.root):global(.order-view) :global(.order-production-section) :global(.production-assignment-row) button {
-  border-color: color-mix(in srgb, var(--order-section-accent) 36%, var(--sp-border));
-  background: color-mix(in srgb, var(--sp-surface) 91%, var(--order-section-accent) 9%);
-  color: var(--order-section-accent);
 }
 :local(.root):global(.order-view) :global(.order-production-section) :global(.production-completion-panel) {
   border-color: color-mix(in srgb, var(--order-section-accent) 38%, var(--sp-border));

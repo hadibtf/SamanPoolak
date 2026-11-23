@@ -64,7 +64,7 @@ npm run deploy:all      # api + platform + landing + jobs + employee
 - Builds may run in either order. Each build clears only its own output directory.
 - Employee deploy explicitly uploads the SPA `.htaccess` through curl after
   WinSCP synchronization; its manual ZIP includes that file too. Verify refreshes
-  on `/tasks` and `/statistics`, since a root-page check does not catch missing rewrites.
+  on the employee root; it now shows an unavailable notice after login.
 - `deploy:web` and `deploy:platform` build from `dist/platform/`; employee deploys
   use `dist/employee/`. Manual ZIP packages use the same surface-specific output.
 - Platform and landing deploys **do not upload** `.htaccess` because the server's
@@ -111,7 +111,7 @@ production) before using `apply`:
 cd /home/hadibt/api
 php migrate.php status
 php migrate.php dry-run
-php migrate.php apply
+php migrate.php apply --allow-destructive
 php migrate.php status
 ```
 
@@ -122,16 +122,18 @@ It stops on an error. MySQL/MariaDB implicitly commits `ALTER TABLE`, so DDL
 migrations are not wrapped in transactions; each must check for existing schema
 before changing it so a partial failure can be retried safely. A destructive
 migration is blocked unless explicitly run as `php migrate.php apply --allow-destructive`.
+The employee-production retirement migrations remove employee report rows and
+legacy task tables, and remove the report link from `manager_production_logs`.
+Production rows already synced from reports remain as ordinary order records;
+separate manager-entered rows and employee accounts are preserved. These
+migrations require `--allow-destructive`.
 
 If cPanel Terminal is unavailable, phpMyAdmin can bootstrap tracking for the
-two historical production migrations **only after their columns have been
-verified**. Select `hadibt_business_platform` and run the read-only query below;
-it must return all four columns with their expected definitions. Then run the
-tracking-table and insert statements, followed by the confirmation query. The
-insert records already-existing schema and does not run `ALTER TABLE`. Do not
-use this bootstrap to mark a migration whose schema changes have not been
-applied. Future PHP migrations require CLI access or a separately prepared,
-reviewed phpMyAdmin SQL procedure.
+two historical production migrations only on a database that still has the
+legacy production tables. After the retirement migration drops those tables,
+use the CLI migration runner; do not bootstrap the historical IDs manually.
+Future PHP migrations require CLI access or a separately prepared, reviewed
+phpMyAdmin SQL procedure.
 
 ```sql
 SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
@@ -227,7 +229,7 @@ Recorded here for rebuilding on a fresh host:
 7. **Schema** — phpMyAdmin → Import `server/schema.sql` (creates all fresh-install tables and migration tracking).
 8. **Migrations** — from cPanel Terminal in `/home/hadibt/api`, run
    `php migrate.php status`, `php migrate.php dry-run`, then
-   `php migrate.php apply` after confirming `config.php` targets the intended DB.
+   `php migrate.php apply --allow-destructive` after confirming `config.php` targets the intended DB.
 9. **SSL** — run AutoSSL for both subdomains; verify `https://api.samanpoolak.ir/`
    returns `{"ok":true,…}`.
 10. **First admin** — one-time:
@@ -242,7 +244,7 @@ Recorded here for rebuilding on a fresh host:
    and preserves its server-owned `.htaccess`. Seed that doc root once with the
    SPA rewrite from [`public/.htaccess`](public/.htaccess). `npm run
    deploy:employee` uploads that rewrite with the employee build, so refreshing
-   `/tasks` or `/statistics` continues to serve the SPA.
+   the employee root continues to serve the SPA.
 
 ---
 

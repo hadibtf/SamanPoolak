@@ -153,7 +153,7 @@ const invoiceDialogDescription = (item, index) => {
 };
 
 // ---- One item panel (specs + state machine + weight reconciliation) ----
-const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, canAssign, canViewProduction, hidden = false }) => {
+const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSummaryChange, orderId, canManageProduction, canViewProduction, hidden = false }) => {
   const dimensions = formatDimensions(item);
   const [nextState, setNextState] = useState('');
   const [stageWeight, setStageWeight] = useState('');
@@ -165,9 +165,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   const [savingWeightOf10, setSavingWeightOf10] = useState(false);
   const [editingWeightOf10, setEditingWeightOf10] = useState(false);
   const [employees, setEmployees] = useState([]);
-  const [assigning, setAssigning] = useState(false);
-  const [editingTaskId, setEditingTaskId] = useState(null);
-  const [editingQuantity, setEditingQuantity] = useState('');
   const [productionSummary, setProductionSummary] = useState(null);
   const [summaryError, setSummaryError] = useState('');
   const [manualDate, setManualDate] = useState(currentJalaliDateKey);
@@ -196,9 +193,9 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
   };
 
   useEffect(() => {
-    if (!canAssign) return;
+    if (!canManageProduction) return;
     productionApi.employees().then(({ employees: list }) => setEmployees(list || [])).catch(() => onToast('خطا در دریافت فهرست کارمندان.', 'error'));
-  }, [canAssign, onToast]);
+  }, [canManageProduction, onToast]);
 
   useEffect(() => {
     if (!canViewProduction) return undefined;
@@ -206,18 +203,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     const interval = window.setInterval(loadSummary, 15000);
     return () => window.clearInterval(interval);
   }, [canViewProduction, orderId, item.uid]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const saveTaskQuantity = async (taskId) => {
-    const value = Number(editingQuantity);
-    if (!Number.isFinite(value) || value <= 0) { onToast('تعداد معتبر وارد کنید.', 'error'); return; }
-    setAssigning(true);
-    try {
-      await productionApi.updateTask(taskId, { requiredQuantity: value });
-      setEditingTaskId(null); loadSummary(); onToast('تعداد وظیفه به‌روزرسانی شد.');
-    } catch (error) {
-      onToast(error instanceof ApiError ? error.message : 'ویرایش وظیفه انجام نشد.', 'error');
-    } finally { setAssigning(false); }
-  };
 
   const saveWeightOf10 = async () => {
     const weight = Number(weightOf10Input);
@@ -357,7 +342,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       return;
     }
     if (totalProducedQuantity < orderQuantity
-      && !window.confirm(`تولید ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش کمتر است. با تأیید، تولید همین مقدار نهایی می‌شود و ثبت تولید و تخصیص بسته خواهد شد. ادامه می‌دهید؟`)) return;
+      && !window.confirm(`تولید ${fa(totalProducedQuantity)} عدد از ${fa(orderQuantity)} عدد سفارش کمتر است. با تأیید، تولید همین مقدار نهایی می‌شود و ثبت تولید بسته خواهد شد. ادامه می‌دهید؟`)) return;
     setConfirmingProductionStop(true);
     try {
       const completionState = 'PRODUCTION_COMPLETE';
@@ -377,7 +362,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
   const resumeProduction = async () => {
     if (resumingProduction) return;
-    if (!window.confirm('با ادامه تولید، ثبت تولید و تخصیص این قلم دوباره فعال می‌شود. ادامه می‌دهید؟')) return;
+    if (!window.confirm('با ادامه تولید، ثبت تولید این قلم دوباره فعال می‌شود. ادامه می‌دهید؟')) return;
     setResumingProduction(true);
     try {
       const stateHistory = (item.stateHistory || []).filter((entry) => entry.state !== 'PRODUCTION_COMPLETE');
@@ -392,7 +377,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
       });
       if (saved) {
         setNextState('');
-        onToast('تولید ادامه پیدا می‌کند؛ ثبت و تخصیص دوباره فعال شد.');
+        onToast('تولید ادامه پیدا می‌کند؛ ثبت تولید دوباره فعال شد.');
       }
     } finally {
       setResumingProduction(false);
@@ -605,7 +590,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
       <section className="order-section order-production-section" aria-label="رکورد">
         <h4 className="order-section-title">رکورد</h4>
-        {canAssign && !productionStopped && (
+        {canManageProduction && !productionStopped && (
           <section className="manager-production-log-section" aria-label="ثبت دستی تولید توسط مدیر">
             <form className="manager-production-log-form" onSubmit={saveManualProduction}>
               <input aria-label="وزن" type="number" min="0.001" step="0.001" inputMode="decimal" dir="rtl" value={manualWeightKg} onChange={(event) => setManualWeightKg(event.target.value)} placeholder="وزن" required />
@@ -646,7 +631,6 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
 
         {canViewProduction && productionSummary && (
         <div className="production-summary">
-          {canAssign && productionSummary.tasks.length > 0 && <div className="production-summary-list"><b>تخصیص‌ها</b>{productionSummary.tasks.map((task) => <div key={task.id} className="production-assignment-row"><span>{task.employeeName} — {fa(task.requiredQuantity)} عدد (تولید: {fa(task.producedQuantity)}) — {task.status} <small>{task.createdAt ? new Date(task.createdAt).toLocaleString('fa-IR') : ''}</small></span>{editingTaskId === task.id ? <span className="production-assignment-edit"><input type="number" min="0.001" step="0.001" value={editingQuantity} onChange={(event) => setEditingQuantity(event.target.value)} aria-label="تعداد جدید وظیفه" /><button type="button" disabled={assigning} onClick={() => saveTaskQuantity(task.id)}>ذخیره</button><button type="button" onClick={() => setEditingTaskId(null)}>انصراف</button></span> : <button type="button" onClick={() => { setEditingTaskId(task.id); setEditingQuantity(String(task.requiredQuantity)); }}>ویرایش</button>}</div>)}</div>}
           {displayedProductionLogs.length > 0 && <div className="production-record-list">
             <div className="production-record-table-wrap">
               <table className="production-record-table">
@@ -711,7 +695,7 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
           </div>}
         </div>
       )}
-        {canAssign && (productionStopped || (productionSummary && productionReachedTarget)) && (
+        {canManageProduction && (productionStopped || (productionSummary && productionReachedTarget)) && (
           <section className={`production-completion-panel${productionStopped ? ' is-confirmed' : ''}`} aria-live="polite">
             <div className="production-completion-summary">
               <strong>تکمیل</strong>
@@ -1253,7 +1237,7 @@ const OrderView = () => {
           onToast={showToast}
           onProductionSummaryChange={reportItemProduction}
           orderId={orderId}
-          canAssign={user?.role === 'admin'}
+          canManageProduction={user?.role === 'admin'}
           canViewProduction={user?.role !== 'employee'}
           hidden={item.uid !== selectedItem?.uid}
         />

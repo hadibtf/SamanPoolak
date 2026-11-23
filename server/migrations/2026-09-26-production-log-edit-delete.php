@@ -5,10 +5,12 @@ return [
     'destructive' => false,
     'transactional' => false,
     'verify' => static function (MigrationDatabase $database): bool {
+        if (!$database->tableExists('production_logs')) return true;
         return $database->columnExists('production_logs', 'updated_at')
             && $database->columnExists('production_logs', 'deleted_at');
     },
     'up' => static function (MigrationDatabase $database): void {
+        if (!$database->tableExists('production_logs')) return;
         if (!$database->columnExists('production_logs', 'updated_at')) {
             $database->execute(
                 'ALTER TABLE `production_logs` ADD COLUMN `updated_at` DATETIME NULL AFTER `created_at`'

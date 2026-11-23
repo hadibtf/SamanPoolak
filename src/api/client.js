@@ -183,25 +183,6 @@ export const expensesApi = {
 
 export const productionApi = {
   employees: () => api.get('/production/employees'),
-  /** @returns {Promise<{productionTasks: import('../types/domain').ProductionAssignment[]}>} */
-  listTasks: (updatedAfter) => api.get(`/production/tasks${updatedAfter ? `?updatedAfter=${encodeURIComponent(updatedAfter)}` : ''}`),
-  /** @param {import('../types/domain').ProductionAssignmentRequest} task
- * @returns {Promise<{productionTask: import('../types/domain').ProductionAssignment}>}
- */
-  assignTask: (task) => api.post('/production/tasks', task),
-  updateTask: (taskId, patch) => api.put(`/production/tasks/${encodeURIComponent(taskId)}`, patch),
-  setTaskWeight: (taskId, weightOf10Grams) => api.put(`/production/tasks/${encodeURIComponent(taskId)}/weight`, { weightOf10Grams }),
-  taskLogs: (taskId) => api.get(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
-  /** @param {number} taskId @param {import('../types/domain').ProductionLogRequest} log
- * @returns {Promise<{productionLog: import('../types/domain').ProductionLog, productionTask: import('../types/domain').ProductionAssignment}>}
- */
-  logProduction: (taskId, log) => api.post(`/production/tasks/${encodeURIComponent(taskId)}/logs`, log),
-  updateProductionLog: (taskId, logId, patch) => api.put(`/production/tasks/${encodeURIComponent(taskId)}/logs/${encodeURIComponent(logId)}`, patch),
-  deleteProductionLog: (taskId, logId) => api.del(`/production/tasks/${encodeURIComponent(taskId)}/logs/${encodeURIComponent(logId)}`),
-  clearProductionLogs: (taskId) => api.del(`/production/tasks/${encodeURIComponent(taskId)}/logs`),
-  employeeMonthStatistics: (year, month) => api.get(`/production/statistics/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}`),
-  employeeDayStatistics: (date) => api.get(`/production/statistics/day?date=${encodeURIComponent(date)}`),
-  managementStatisticsEmployees: () => api.get('/production/statistics/management/employees'),
   managementMonthStatistics: (year, month, employeeUserId) => api.get(`/production/statistics/management/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
   managementDayStatistics: (date, employeeUserId) => api.get(`/production/statistics/management/day?date=${encodeURIComponent(date)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
   itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),

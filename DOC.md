@@ -33,7 +33,6 @@ on entry/focus/reconnect; confirmed writes update that state from canonical API
 responses or refetch the affected query. There is no persistent browser database
 or background mirror. Offline reload does not restore business records.
 Production summaries use the same direct API model with narrowly scoped polling.
-See [employee production](MASTERCONTEXT.md#employee-production) for domain rules.
 
 🤖 **Analogy:** Retrofit requests updating Compose state, with lifecycle-aware
 refresh and no Room cache.
@@ -44,10 +43,10 @@ refresh and no Room cache.
 
 `src/index.jsx` selects the employee app at build time when
 `VITE_APP_SURFACE=employee`; otherwise it loads the management app shown
-below. Employee routes are `/tasks` (single-open production-list accordion) and
-`/statistics`. Its login reuses the platform presentation with title
-«سامانه آمار تولید کارکنان», without management links or routes. Employee login
-credentials are maintained through the management People add/edit screen.
+below. Employee credentials remain managed through People, but employee
+production task/report screens and APIs are retired. After login, the employee
+surface shows an unavailable notice; manager-entered production remains in the
+management app.
 
 ```
 src/index.jsx

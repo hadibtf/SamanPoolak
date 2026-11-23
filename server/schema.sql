@@ -245,60 +245,7 @@ CREATE TABLE IF NOT EXISTS holidays (
     INDEX idx_holidays_updated (updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Production: an assignment points to an existing order and its stable
--- items[].uid. Product/customer/specification data stays on the order item;
--- it is deliberately not copied into this table. An item can be split into
--- multiple tasks, so (order_id, order_item_uid) is indexed but not unique.
-CREATE TABLE IF NOT EXISTS production_tasks (
-    id               INT AUTO_INCREMENT PRIMARY KEY,
-    order_id         INT           NOT NULL,
-    order_item_uid   VARCHAR(128)  NOT NULL,
-    employee_user_id INT           NOT NULL,
-    required_quantity DECIMAL(14,3) NOT NULL,
-    weight_of_10_grams DECIMAL(14,3) NULL, -- measured by employee before first log
-    assigned_date    VARCHAR(8)    NOT NULL DEFAULT '', -- Jalali YYYYMMDD
-    assigned_by      INT           NOT NULL,
-    status           VARCHAR(32)   NOT NULL DEFAULT 'ASSIGNED',
-    created_at       DATETIME      NOT NULL,
-    updated_at       DATETIME      NOT NULL,
-    completed_at     DATETIME      NULL,
-    deleted_at       DATETIME      NULL,
-    CONSTRAINT fk_production_tasks_order FOREIGN KEY (order_id) REFERENCES orders(id),
-    CONSTRAINT fk_production_tasks_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
-    CONSTRAINT fk_production_tasks_assigned_by FOREIGN KEY (assigned_by) REFERENCES users(id),
-    INDEX idx_production_tasks_employee_status (employee_user_id, status),
-    INDEX idx_production_tasks_order_item (order_id, order_item_uid),
-    INDEX idx_production_tasks_updated (updated_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- One row per submitted partial-production record. order_id/order_item_uid and
--- employee_user_id are copied from the authorized task by the API (not trusted
--- from the client) so history remains directly auditable and fast to aggregate.
-CREATE TABLE IF NOT EXISTS production_logs (
-    id                  INT AUTO_INCREMENT PRIMARY KEY,
-    task_id             INT           NOT NULL,
-    employee_user_id    INT           NOT NULL,
-    order_id            INT           NOT NULL,
-    order_item_uid      VARCHAR(128)  NOT NULL,
-    quantity            DECIMAL(14,3) NOT NULL,
-    total_weight_grams  DECIMAL(14,3) NOT NULL, -- snapshot from task's 10-piece measurement
-    production_date     VARCHAR(8)    NOT NULL, -- Jalali YYYYMMDD
-    submission_key      CHAR(36)      NOT NULL,
-    created_at          DATETIME      NOT NULL,
-    updated_at          DATETIME      NULL,
-    deleted_at          DATETIME      NULL,
-    CONSTRAINT fk_production_logs_task FOREIGN KEY (task_id) REFERENCES production_tasks(id),
-    CONSTRAINT fk_production_logs_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
-    CONSTRAINT fk_production_logs_order FOREIGN KEY (order_id) REFERENCES orders(id),
-    UNIQUE KEY uq_production_logs_submission (task_id, employee_user_id, submission_key),
-    INDEX idx_production_logs_employee_date (employee_user_id, production_date),
-    INDEX idx_production_logs_task (task_id),
-    INDEX idx_production_logs_order_item (order_id, order_item_uid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Admin-entered logs are separate from employee assignment logs: they have no
--- production task and deliberately do not inherit an assignment quantity cap.
--- The people profile is the canonical employee identity; the login ID is optional.
+-- Manager-entered production is recorded directly on order items.
 CREATE TABLE IF NOT EXISTS manager_production_logs (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     employee_user_id    INT           NULL,
