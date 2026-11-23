@@ -839,6 +839,7 @@ const OrderView = () => {
   const { currency: displayCurrency, fromRial, toRial } = useSettings();
   const invoiceCurrency = displayCurrency === 'TOMAN' ? 'toman' : 'rial';
   const [invoiceOrientation, setInvoiceOrientation] = useState('portrait');
+  const [invoiceDocumentType, setInvoiceDocumentType] = useState('invoice');
   const [invoiceQuantities, setInvoiceQuantities] = useState({});
   const [invoicePrices, setInvoicePrices] = useState({});
   const [invoiceOrders, setInvoiceOrders] = useState([]);
@@ -1058,8 +1059,9 @@ const OrderView = () => {
     setInvoicePrices((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !removedKeys.includes(key))));
   };
 
-  const handleExportInvoice = async () => {
+  const handleExportInvoice = async (documentType = 'invoice') => {
     if (!invoiceRef.current || !invoiceOrders.length) return;
+    flushSync(() => setInvoiceDocumentType(documentType));
     setIsExportingInvoice(true);
     let savingPrices = false;
     let exportSucceeded = false;
@@ -1114,13 +1116,15 @@ const OrderView = () => {
 
       // Name the file after the company/customer and order date.
       const who = (customer?.companyName?.trim() || order.customerName || 'فاکتور').replace(/\s+/g, '-');
-      const fileName = `${who}-${order.date}.pdf`;
+      const documentSuffix = documentType === 'proforma' ? '-پیش-فاکتور' : '';
+      const fileName = `${who}-${order.date}${documentSuffix}.pdf`;
       // Plain in-memory browser download — nothing is stored server-side.
       pdf.save(fileName);
       exportSucceeded = true;
     } catch (error) {
       console.error('Invoice export failed:', error);
-      showToast(savingPrices ? 'ذخیره قیمت‌های سفارش انجام نشد و فاکتور صادر نشد.' : 'خطا در صدور فاکتور.', 'error');
+      const documentLabel = documentType === 'proforma' ? 'پیش فاکتور' : 'فاکتور';
+      showToast(savingPrices ? `ذخیره قیمت‌های سفارش انجام نشد و ${documentLabel} صادر نشد.` : `خطا در صدور ${documentLabel}.`, 'error');
     } finally {
       setIsExportingInvoice(false);
       if (exportSucceeded) setIsInvoiceExportOpen(false);
@@ -1246,9 +1250,9 @@ const OrderView = () => {
       {/* Off-screen invoice (PDF source) */}
       <div className="invoice-offscreen" aria-hidden="true">
         <div className="invoice-sheet" data-orientation={invoiceOrientation} ref={invoiceRef}>
-          <div className="invoice-head">
+          <div className={`invoice-head${invoiceDocumentType === 'proforma' ? ' invoice-head-proforma' : ''}`}>
             <div>
-              <h1>فاکتور فروش</h1>
+              <h1>{invoiceDocumentType === 'proforma' ? 'پیش فاکتور' : 'فاکتور فروش'}</h1>
             </div>
             <div className="invoice-meta-left">
               <div>تاریخ: {invoiceDate}</div>
@@ -1260,13 +1264,6 @@ const OrderView = () => {
             {phones.length > 0 && <div><span>تلفن:</span> {phones.join(' ، ')}</div>}
             {addresses.length > 0 && <div><span>نشانی:</span> {addresses.join(' — ')}</div>}
           </div>
-
-          {invoiceNote.trim() && (
-            <section className="invoice-note">
-              <strong>توضیحات</strong>
-              <p>{invoiceNote.trim()}</p>
-            </section>
-          )}
 
           <table className="invoice-table">
             <thead>
@@ -1306,6 +1303,14 @@ const OrderView = () => {
                 <td colSpan={7} className="c-total-label">جمع کل</td>
                 <td className="c-price"><bdi>{formatInvoiceAmount(invoiceGrandTotal, invoiceCurrency)}</bdi> {invoiceCurrency === 'toman' ? 'تومان' : 'ریال'}</td>
               </tr>
+              {invoiceNote.trim() && (
+                <tr className="c-note-row">
+                  <td colSpan={8}>
+                    <strong>توضیحات</strong>
+                    <p>{invoiceNote.trim()}</p>
+                  </td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>
@@ -1458,8 +1463,11 @@ const OrderView = () => {
 
             <footer className={glassStyles.invoiceExportActions}>
               <button type="button" className={glassStyles.invoiceExportCancel} onClick={() => setIsInvoiceExportOpen(false)} disabled={isExportingInvoice || isLookingUpInvoiceOrder}>انصراف</button>
-              <button type="button" className={glassStyles.invoiceExportConfirm} onClick={handleExportInvoice} disabled={isExportingInvoice || isLookingUpInvoiceOrder || !invoiceOrders.length}>
+              <button type="button" className={glassStyles.invoiceExportConfirm} onClick={() => handleExportInvoice('invoice')} disabled={isExportingInvoice || isLookingUpInvoiceOrder || !invoiceOrders.length}>
                 {isExportingInvoice ? 'در حال ذخیره و صدور…' : 'ذخیره قیمت و صدور فاکتور'}
+              </button>
+              <button type="button" className={glassStyles.invoiceExportProforma} onClick={() => handleExportInvoice('proforma')} disabled={isExportingInvoice || isLookingUpInvoiceOrder || !invoiceOrders.length}>
+                {isExportingInvoice ? 'در حال ذخیره و صدور…' : 'صدور پیش فاکتور'}
               </button>
             </footer>
           </section>

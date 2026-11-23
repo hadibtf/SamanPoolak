@@ -3003,6 +3003,17 @@
   margin-bottom: 22px;
 }
 
+:local(.root) :global(.invoice-head-proforma) {
+  position: relative;
+  justify-content: center;
+  align-items: center;
+}
+:local(.root) :global(.invoice-head-proforma) :global(.invoice-meta-left) {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 :local(.root) :global(.invoice-head) h1 {
   font-size: 30px;
   margin: 0 0 6px;
@@ -3025,21 +3036,23 @@
 :local(.root) :global(.invoice-customer) span { color: #64748b; }
 :local(.root) :global(.invoice-customer) strong { color: #0f172a; }
 
-:local(.root) :global(.invoice-note) {
-  margin: -4px 0 22px;
-  padding: 13px 18px;
-  border: 1px solid #dbe5f1;
-  border-inline-start: 4px solid #1e40af;
-  border-radius: 10px;
+:local(.root) :global(.invoice-table) :global(.c-note-row) td {
   background: #f8fafc;
   color: #1e293b;
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.8;
+  text-align: right;
+  direction: rtl;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-:local(.root) :global(.invoice-note) strong { color: #1e40af; }
-:local(.root) :global(.invoice-note) p { margin: 4px 0 0; }
+:local(.root) :global(.invoice-table) :global(.c-note-row) strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #1e40af;
+}
+:local(.root) :global(.invoice-table) :global(.c-note-row) p { margin: 0; }
 
 :local(.root) :global(.invoice-table) {
   width: 100%;

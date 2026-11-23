@@ -367,6 +367,7 @@
 }
 .invoiceExportCancel { flex: 1; border-color: #dce5f0 !important; background: #fff; color: #687b95; }
 .invoiceExportConfirm { flex: 1.5; background: linear-gradient(145deg, #347fda, #1e5fb6); color: #fff; box-shadow: 0 5px 12px rgba(31, 95, 182, .2); }
+.invoiceExportProforma { flex: 1.5; border-color: #cbd9ed !important; background: #fff; color: #1e5fb6; }
 .invoiceExportActions button:disabled { cursor: wait; opacity: .65; }
 
 
@@ -394,7 +395,7 @@
   .invoiceQuantityProduct strong { font-size: 13px; }
   .invoiceQuantityInputWrap input,
   .invoicePriceInputWrap input { min-height: 32px; padding: 3px 5px; font-size: 14px; }
-  .invoiceExportActions { padding: 10px 12px 13px; }
+  .invoiceExportActions { display: grid; grid-template-columns: minmax(0, 1fr); padding: 10px 12px 13px; }
 }
 
 .stack:global(.item-panel) {
@@ -797,6 +798,7 @@
 [data-theme="dark"] .invoiceDescriptionField textarea::placeholder { color: #9fb1c9; }
 [data-theme="dark"] .invoiceExportActions { border-top-color: rgba(194, 217, 248, .14); background: rgba(0, 0, 0, .12); }
 [data-theme="dark"] .invoiceExportCancel { border-color: rgba(194, 217, 248, .18) !important; background: rgba(255, 255, 255, .06); color: #cad8ea; }
+[data-theme="dark"] .invoiceExportProforma { border-color: rgba(130, 177, 239, .28) !important; background: rgba(115, 165, 232, .11); color: #c8e0ff; }
 [data-theme="dark"] .stack:global(.item-panel) :global(.order-section) { border-color: rgba(180, 208, 242, .19); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 10px 25px rgba(0, 0, 0, .2); }
 [data-theme="dark"] .stack:global(.item-panel) :global(.order-item-details) { background: linear-gradient(145deg, rgba(38, 65, 101, .75), rgba(29, 48, 78, .72)); }
 [data-theme="dark"] .stack:global(.item-panel) :global(.order-production-section) { background: linear-gradient(145deg, rgba(29, 76, 70, .75), rgba(26, 58, 59, .73)); }
