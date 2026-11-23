@@ -53,8 +53,8 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
    name, user, or password here, make the same change to the `database`
    service environment in `docker-compose.yml`. Keep the database host set to
    `database`, which is the Compose service name visible from the API container.
-   The local CORS allowlist supports both `localhost` and `127.0.0.1` for the
-   management and employee frontends.
+   The local CORS allowlist supports `localhost` and `127.0.0.1` for the
+   management frontend.
    Change `setup_key` to a private local value before creating an admin account.
 
 5. Start the local API and database from the repository root:
@@ -106,16 +106,9 @@ Windows, Docker Desktop's WSL 2 backend is recommended.
    npm run dev:platform
    ```
 
-   Open <http://localhost:3000> and sign in with the local admin account. Create
-   local employees and employee accounts through the management app as needed.
-
-8. To run the employee frontend too, open a third terminal and run:
-
-   ```sh
-   npm run dev:employee
-   ```
-
-   Open <http://localhost:3001>.
+   Open <http://localhost:3000> and sign in with the local admin account. Add
+   employee profiles in People when you need to attribute manager-entered
+   production or manage attendance and payroll.
 
 Vite binds to all interfaces during local development and prints both the
 `localhost` URL and a `Network` URL discovered from the machine's LAN address.
@@ -130,16 +123,14 @@ when you want the browser to call a different API directly.
 | Service | Address / location | Purpose |
 | --- | --- | --- |
 | Management React app | `http://localhost:3000` | Admin and management interface |
-| Employee React app | `http://localhost:3001` | Employee interface |
-| PHP API | `http://localhost:18000` | Local API used by both apps |
+| PHP API | `http://localhost:18000` | Local API used by the management app |
 | MySQL | Docker network only | Local application database |
 | Database volume | `samanpoolak-local-db` | Persists local records between runs |
 | PHP config | `server/config.local.php` | Local DB credentials, origins, setup key |
 
-`npm run dev:platform` and `npm run dev:employee` set the correct React surface,
-port, and local API URL. Production deploy scripts continue to use the hosted API
-configuration. `docker-compose.yml` binds the API port to `127.0.0.1`; MySQL has
-no host port published.
+`npm run dev:platform` starts the management frontend on port 3000. Production
+deploy scripts continue to use the hosted API configuration. `docker-compose.yml`
+binds the API port to `127.0.0.1`; MySQL has no host port published.
 
 ## Daily commands
 

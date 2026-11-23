@@ -34,8 +34,8 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = async (username, password, surface = 'management') => {
-    const { token, user: me } = await authApi.login(username, password, surface);
+  const login = async (username, password) => {
+    const { token, user: me } = await authApi.login(username, password);
     setToken(token);
     setUser(me);
     return me;

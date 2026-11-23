@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { peopleApi, ApiError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 import JalaliDatePicker from './JalaliDatePicker';
 import BottomSheet from './BottomSheet';
 import persian from 'react-date-object/calendars/persian';
@@ -189,12 +188,7 @@ const PersonFormSheet = ({
   onSaved,
   onError,
 }) => {
-  const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
-  const isEmployeeEdit = isAdmin && person?.category === 'EMPLOYEE';
   const [formData, setFormData] = useState(() => getPersonFormState(person, initialCategory));
-  const [employeeAccount, setEmployeeAccount] = useState({ username: '', password: '' });
-  const [loadingEmployeeAccount, setLoadingEmployeeAccount] = useState(isEmployeeEdit);
   const [saving, setSaving] = useState(false);
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState(null);
@@ -216,30 +210,6 @@ const PersonFormSheet = ({
     setDuplicateMatches(null);
     window.requestAnimationFrame(() => submitButtonRef.current?.focus());
   }, []);
-
-  useEffect(() => {
-    if (!isEmployeeEdit) {
-      setLoadingEmployeeAccount(false);
-      setEmployeeAccount({ username: '', password: '' });
-      return undefined;
-    }
-
-    let cancelled = false;
-    setLoadingEmployeeAccount(true);
-    peopleApi.employeeAccount(person.id)
-      .then(({ employeeAccount: account }) => {
-        if (cancelled) return;
-        setEmployeeAccount({ username: account?.username || '', password: '' });
-        setLoadingEmployeeAccount(false);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        callbacksRef.current.onError?.(error, getSaveErrorMessage(error));
-        callbacksRef.current.onClose?.();
-      });
-
-    return () => { cancelled = true; };
-  }, [isEmployeeEdit, person?.id]);
 
   useEffect(() => {
     if (!duplicateMatches) return undefined;
@@ -320,7 +290,6 @@ const PersonFormSheet = ({
       ['id', 'createdAt', 'updatedAt', 'deletedAt', 'createdBy', 'updatedBy', 'syncStatus', 'mCardNo', 'sex']
         .forEach((key) => delete payload[key]);
       payload.cardNo = (formData.mCardNo || '').trim();
-      if (isAdmin && formData.category === 'EMPLOYEE') payload.employeeAccount = employeeAccount;
 
       if (person) {
         ({ person: savedPerson } = await peopleApi.update(person.id, payload));
@@ -392,9 +361,6 @@ const PersonFormSheet = ({
           <i className="fa-solid fa-xmark" aria-hidden="true" />
         </button>
       </div>
-      {loadingEmployeeAccount ? (
-        <p className="hint-text">در حال دریافت اطلاعات حساب کارمند...</p>
-      ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
           {showCategorySelector && (
             <fieldset className={styles.categoryFieldset}>
@@ -599,27 +565,6 @@ const PersonFormSheet = ({
                     + افزودن نشانی
                   </button>
                 </div>
-                {formData.category === 'EMPLOYEE' && isAdmin && (
-                  <div className={`${styles.field} ${styles.fullWidth}`}>
-                    <label htmlFor="person-employee-username">حساب ورود کارمند (اختیاری)</label>
-                    <input
-                      id="person-employee-username"
-                      name="employeeUsername"
-                      value={employeeAccount.username}
-                      onChange={(event) => setEmployeeAccount((previous) => ({ ...previous, username: event.target.value }))}
-                      placeholder="نام کاربری"
-                      autoComplete="username"
-                    />
-                    <input
-                      type="password"
-                      name="employeePassword"
-                      value={employeeAccount.password}
-                      onChange={(event) => setEmployeeAccount((previous) => ({ ...previous, password: event.target.value }))}
-                      placeholder={person ? 'رمز عبور جدید (اختیاری)' : 'رمز عبور برای ساخت حساب'}
-                      autoComplete="new-password"
-                    />
-                  </div>
-                )}
               </div>
             </details>
           </section>
@@ -631,7 +576,6 @@ const PersonFormSheet = ({
             <button type="button" className="cancel-btn" onClick={onClose}>انصراف</button>
           </div>
         </form>
-      )}
       </BottomSheet>
       {duplicateMatches && typeof document !== 'undefined' && createPortal(
         <div

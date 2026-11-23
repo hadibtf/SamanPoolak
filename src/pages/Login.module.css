@@ -15,9 +15,8 @@
   gap: 16px;
 }
 
-/* These are the exact manager-platform glass-card and primary-button visuals,
-   scoped here so the employee build can reuse the login without shipping the
-   manager stylesheet. */
+/* These are the manager-platform glass-card and primary-button visuals,
+   scoped here so the login stays independent from dashboard styles. */
 :local(.root) :global(.login-card):global(.glass-card) {
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(30px) saturate(180%);

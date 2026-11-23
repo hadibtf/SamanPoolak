@@ -4,23 +4,13 @@
 function production_employees($params, $body, $user)
 {
     require_admin($user);
-    $stmt = db()->query("SELECT employee_choices.* FROM (
-        SELECT ea.user_id, p.id AS person_id, u.username,
-            COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username, CONCAT('کارمند ', p.id)) AS employee_name
-        FROM people p LEFT JOIN employee_accounts ea ON ea.person_id = p.id
-        LEFT JOIN users u ON u.id = ea.user_id
-        WHERE p.category = 'EMPLOYEE' AND p.deleted_at IS NULL
-        UNION ALL
-        SELECT u.id AS user_id, NULL AS person_id, u.username,
-            COALESCE(NULLIF(TRIM(u.display_name), ''), u.username) AS employee_name
-        FROM users u LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        WHERE u.role = 'employee' AND ea.person_id IS NULL
-    ) employee_choices ORDER BY employee_name, user_id, person_id");
+    $stmt = db()->query("SELECT p.id AS person_id,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), CONCAT('کارمند ', p.id)) AS employee_name
+        FROM people p WHERE p.category = 'EMPLOYEE' AND p.deleted_at IS NULL
+        ORDER BY employee_name, p.id");
     $employees = array_map(fn ($r) => [
-        'userId' => $r['user_id'] === null ? null : (int) $r['user_id'], 'personId' => $r['person_id'],
-        'employeeKey' => $r['person_id'] !== null ? 'person:' . $r['person_id'] : 'user:' . $r['user_id'],
+        'personId' => $r['person_id'], 'employeeKey' => 'person:' . $r['person_id'],
         'name' => $r['employee_name'] ?: '—',
-        'username' => $r['username'],
     ], $stmt->fetchAll());
     json_response(['employees' => $employees]);
 }
@@ -84,7 +74,6 @@ function manager_production_log_to_wire($row)
 {
     return [
         'id' => 'manager-' . (int) $row['id'], 'isManagerEntry' => true,
-        'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
         'employeePersonId' => $row['employee_person_id'] ?? null,
         'employeeName' => $row['employee_name'] ?? '', 'orderId' => (int) $row['order_id'],
         'orderItemUid' => $row['order_item_uid'], 'quantity' => (float) $row['quantity'],
@@ -97,27 +86,12 @@ function manager_production_log_to_wire($row)
 function production_manager_employee_identity($body)
 {
     $personId = trim((string) ($body['employeePersonId'] ?? ''));
-    if ($personId !== '') {
-        $stmt = db()->prepare("SELECT p.id AS person_id, ea.user_id
-            FROM people p LEFT JOIN employee_accounts ea ON ea.person_id = p.id
-            WHERE p.id = :personId AND p.category = 'EMPLOYEE' AND p.deleted_at IS NULL LIMIT 1");
-        $stmt->execute([':personId' => $personId]);
-        $person = $stmt->fetch();
-        return $person ? ['personId' => $person['person_id'], 'userId' => $person['user_id'] === null ? null : (int) $person['user_id']] : null;
-    }
-
-    // Continue accepting employee IDs from older browser clients during rollout.
-    $userIdRaw = production_normalize_digits($body['employeeUserId'] ?? '');
-    $userId = ctype_digit($userIdRaw) ? (int) $userIdRaw : 0;
-    if ($userId <= 0) return null;
-    $stmt = db()->prepare("SELECT p.id AS person_id, u.id AS user_id
-        FROM users u LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        LEFT JOIN people p ON p.id = ea.person_id
-        WHERE u.id = :userId AND u.role = 'employee'
-            AND (ea.person_id IS NULL OR (p.category = 'EMPLOYEE' AND p.deleted_at IS NULL)) LIMIT 1");
-    $stmt->execute([':userId' => $userId]);
+    if ($personId === '') return null;
+    $stmt = db()->prepare("SELECT id FROM people
+        WHERE id = :personId AND category = 'EMPLOYEE' AND deleted_at IS NULL LIMIT 1");
+    $stmt->execute([':personId' => $personId]);
     $person = $stmt->fetch();
-    return $person ? ['personId' => $person['person_id'], 'userId' => (int) $person['user_id']] : null;
+    return $person ? ['personId' => $person['id']] : null;
 }
 
 function production_manager_log_create($params, $body, $user)
@@ -155,16 +129,14 @@ function production_manager_log_create($params, $body, $user)
         $totalWeightGrams = $weightKg * 1000;
         $productionStopped = !empty($item['productionStopped']) || ($item['state'] ?? '') === 'PRODUCTION_COMPLETE';
 
-        $existing = db()->prepare('SELECT id, employee_user_id, employee_person_id, order_id, order_item_uid, total_weight_grams, production_date, deleted_at
+        $existing = db()->prepare('SELECT id, employee_person_id, order_id, order_item_uid, total_weight_grams, production_date, deleted_at
             FROM manager_production_logs WHERE submission_key = :key LIMIT 1');
         $existing->execute([':key' => $key]);
         $previous = $existing->fetch();
         if ($previous) {
             db()->commit();
             if ($previous['deleted_at'] !== null) json_error('This submission key belongs to a deleted log', 409);
-            $sameEmployee = $previous['employee_person_id'] !== null
-                ? $previous['employee_person_id'] === $employee['personId']
-                : (int) $previous['employee_user_id'] === (int) $employee['userId'];
+            $sameEmployee = $previous['employee_person_id'] === $employee['personId'];
             if (!$sameEmployee || (int) $previous['order_id'] !== $orderId
                 || $previous['order_item_uid'] !== $itemUid
                 || abs((float) $previous['total_weight_grams'] - $totalWeightGrams) > 0.00001
@@ -179,9 +151,9 @@ function production_manager_log_create($params, $body, $user)
 
         $now = now_utc();
         $insert = db()->prepare('INSERT INTO manager_production_logs
-            (employee_user_id, employee_person_id, entered_by, order_id, order_item_uid, quantity, total_weight_grams, production_date, submission_key, created_at)
-            VALUES (:employeeId, :personId, :enteredBy, :orderId, :itemUid, :quantity, :weight, :date, :key, :createdAt)');
-        $insert->execute([':employeeId' => $employee['userId'], ':personId' => $employee['personId'], ':enteredBy' => $user['id'], ':orderId' => $orderId,
+            (employee_person_id, entered_by, order_id, order_item_uid, quantity, total_weight_grams, production_date, submission_key, created_at)
+            VALUES (:personId, :enteredBy, :orderId, :itemUid, :quantity, :weight, :date, :key, :createdAt)');
+        $insert->execute([':personId' => $employee['personId'], ':enteredBy' => $user['id'], ':orderId' => $orderId,
             ':itemUid' => $itemUid, ':quantity' => $quantity, ':weight' => $totalWeightGrams,
             ':date' => $date, ':key' => $key, ':createdAt' => $now]);
         $id = (int) db()->lastInsertId();
@@ -245,10 +217,10 @@ function production_manager_log_update($params, $body, $user)
         $quantity = $weightOf10 > 0 ? production_pieces_from_weight($weightKg, $weightOf10) : 0;
         if ($weightOf10 > 0 && ($quantity <= 0 || $quantity > 99999999999)) { db()->rollBack(); json_error('Measured weight does not represent a valid piece count', 422); }
         $totalWeightGrams = $weightKg * 1000;
-        $update = db()->prepare('UPDATE manager_production_logs SET employee_user_id = :employeeId, employee_person_id = :personId, quantity = :quantity,
+        $update = db()->prepare('UPDATE manager_production_logs SET employee_person_id = :personId, quantity = :quantity,
             total_weight_grams = :weight, production_date = :date, updated_at = :updated
             WHERE id = :id AND order_id = :orderId AND order_item_uid = :itemUid AND deleted_at IS NULL');
-        $update->execute([':employeeId' => $employee['userId'], ':personId' => $employee['personId'], ':quantity' => $quantity, ':weight' => $totalWeightGrams,
+        $update->execute([':personId' => $employee['personId'], ':quantity' => $quantity, ':weight' => $totalWeightGrams,
             ':date' => $date, ':updated' => now_utc(), ':id' => $logId, ':orderId' => $orderId, ':itemUid' => $itemUid]);
         production_sync_order_item_completion($orderId, $itemUid, (int) $user['id']);
         db()->commit();
@@ -285,11 +257,9 @@ function production_manager_log_delete($params, $body, $user)
 
 function production_manager_log_response($id, $status)
 {
-    $log = db()->prepare("SELECT l.*, COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username) AS employee_name, 'manager' AS source
+    $log = db()->prepare("SELECT l.*, COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), '—') AS employee_name, 'manager' AS source
         FROM manager_production_logs l
-        LEFT JOIN users u ON u.id = l.employee_user_id
-        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
+        LEFT JOIN people p ON p.id = l.employee_person_id
         WHERE l.id = :id AND l.deleted_at IS NULL");
     $log->execute([':id' => $id]);
     $row = $log->fetch();
@@ -371,38 +341,30 @@ function production_statistics_month_params()
 
 function production_management_statistics_employee_filter()
 {
-    $raw = $_GET['employeeUserId'] ?? '';
+    $raw = trim((string) ($_GET['employeePersonId'] ?? ''));
     if ($raw === '') return null;
-    if (!ctype_digit((string) $raw) || (int) $raw <= 0) json_error('Invalid employee', 422);
-    $id = (int) $raw;
-    $stmt = db()->prepare("SELECT id FROM users WHERE id = :id AND role = 'employee' LIMIT 1");
-    $stmt->execute([':id' => $id]);
+    $stmt = db()->prepare("SELECT id FROM people WHERE id = :id AND category = 'EMPLOYEE' AND deleted_at IS NULL LIMIT 1");
+    $stmt->execute([':id' => $raw]);
     if (!$stmt->fetch()) json_error('Employee not found', 404);
-    return $id;
+    return $raw;
 }
 
-function production_management_employee_totals($start, $end, $employeeUserId = null)
+function production_management_employee_totals($start, $end, $employeePersonId = null)
 {
-    $filter = $employeeUserId === null ? '' : ' AND (l.employee_user_id = :employeeUser OR l.employee_person_id = (SELECT person_id FROM employee_accounts WHERE user_id = :employeeAccount))';
-    $stmt = db()->prepare("SELECT COALESCE(l.employee_person_id, ea.person_id) AS employee_person_id, l.employee_user_id,
-        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username, '—') AS employee_name,
+    $filter = $employeePersonId === null ? '' : ' AND l.employee_person_id = :employeePersonId';
+    $stmt = db()->prepare("SELECT l.employee_person_id,
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), '—') AS employee_name,
         SUM(l.quantity) AS total_quantity, SUM(CASE WHEN l.quantity <= 0 THEN 1 ELSE 0 END) AS pending_count
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
-        LEFT JOIN users u ON u.id = l.employee_user_id
-        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
+        LEFT JOIN people p ON p.id = l.employee_person_id
         WHERE l.deleted_at IS NULL AND l.production_date >= :startDate AND l.production_date <= :endDate" . $filter . "
-        GROUP BY COALESCE(l.employee_person_id, ea.person_id), l.employee_user_id, employee_name
+        GROUP BY l.employee_person_id, employee_name
         ORDER BY total_quantity DESC, employee_name ASC");
     $bind = [':startDate' => $start, ':endDate' => $end];
-    if ($employeeUserId !== null) {
-        $bind[':employeeUser'] = $employeeUserId;
-        $bind[':employeeAccount'] = $employeeUserId;
-    }
+    if ($employeePersonId !== null) $bind[':employeePersonId'] = $employeePersonId;
     $stmt->execute($bind);
     return array_map(fn ($row) => [
         'employeePersonId' => $row['employee_person_id'],
-        'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
         'employeeName' => $row['employee_name'] ?: '—',
         'quantity' => (float) $row['total_quantity'],
         'pendingCount' => (int) $row['pending_count'],
@@ -413,11 +375,11 @@ function production_management_month_statistics($params, $body, $user)
 {
     require_admin($user);
     [$year, $month, $prefix] = production_statistics_month_params();
-    $employeeId = production_management_statistics_employee_filter();
-    $filter = $employeeId === null ? '' : ' AND l.employee_user_id = :employee';
+    $employeePersonId = production_management_statistics_employee_filter();
+    $filter = $employeePersonId === null ? '' : ' AND l.employee_person_id = :employeePersonId';
 
     $dailyBind = [':startDate' => $prefix . '01', ':endDate' => $prefix . '31'];
-    if ($employeeId !== null) $dailyBind[':employee'] = $employeeId;
+    if ($employeePersonId !== null) $dailyBind[':employeePersonId'] = $employeePersonId;
     $dailyStmt = db()->prepare('SELECT l.production_date, SUM(l.quantity) AS total_quantity,
         SUM(CASE WHEN l.quantity <= 0 THEN 1 ELSE 0 END) AS pending_count
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
@@ -431,7 +393,7 @@ function production_management_month_statistics($params, $body, $user)
     $yearStart = sprintf('%04d0101', $year);
     $yearEnd = sprintf('%04d1231', $year);
     $monthlyBind = [':startDate' => $yearStart, ':endDate' => $yearEnd];
-    if ($employeeId !== null) $monthlyBind[':employee'] = $employeeId;
+    if ($employeePersonId !== null) $monthlyBind[':employeePersonId'] = $employeePersonId;
     $monthlyStmt = db()->prepare('SELECT SUBSTRING(l.production_date, 5, 2) AS month_number, SUM(l.quantity) AS total_quantity
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
         WHERE l.deleted_at IS NULL AND l.production_date >= :startDate AND l.production_date <= :endDate' . $filter . '
@@ -440,7 +402,7 @@ function production_management_month_statistics($params, $body, $user)
     $monthly = array_map(fn ($row) => ['month' => (int) $row['month_number'], 'quantity' => (float) $row['total_quantity']], $monthlyStmt->fetchAll());
 
     $yearChartBind = [':startDate' => '14050101', ':endDate' => '14251231'];
-    if ($employeeId !== null) $yearChartBind[':employee'] = $employeeId;
+    if ($employeePersonId !== null) $yearChartBind[':employeePersonId'] = $employeePersonId;
     $yearlyStmt = db()->prepare('SELECT SUBSTRING(l.production_date, 1, 4) AS year_number, SUM(l.quantity) AS total_quantity
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id AND o.deleted_at IS NULL
         WHERE l.deleted_at IS NULL AND l.production_date >= :startDate AND l.production_date <= :endDate' . $filter . '
@@ -448,18 +410,16 @@ function production_management_month_statistics($params, $body, $user)
     $yearlyStmt->execute($yearChartBind);
     $yearly = array_map(fn ($row) => ['year' => (int) $row['year_number'], 'quantity' => (float) $row['total_quantity']], $yearlyStmt->fetchAll());
 
-    $byEmployee = production_management_employee_totals($prefix . '01', $prefix . '31', $employeeId);
-    $yearByEmployee = production_management_employee_totals($yearStart, $yearEnd, $employeeId);
+    $byEmployee = production_management_employee_totals($prefix . '01', $prefix . '31', $employeePersonId);
+    $yearByEmployee = production_management_employee_totals($yearStart, $yearEnd, $employeePersonId);
     $recordsBind = [':startDate' => $prefix . '01', ':endDate' => $prefix . '31'];
     $recordsFilter = '';
-    if ($employeeId !== null) { $recordsBind[':employee'] = $employeeId; $recordsFilter = ' AND l.employee_user_id = :employee'; }
-    $recordsStmt = db()->prepare("SELECT l.*, COALESCE(l.employee_person_id, ea.person_id) AS employee_person_id,
+    if ($employeePersonId !== null) { $recordsBind[':employeePersonId'] = $employeePersonId; $recordsFilter = ' AND l.employee_person_id = :employeePersonId'; }
+    $recordsStmt = db()->prepare("SELECT l.*,
         o.order_number, o.customer_name, o.items,
-        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username, '—') AS employee_name
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), '—') AS employee_name
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id
-        LEFT JOIN users u ON u.id = l.employee_user_id
-        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
+        LEFT JOIN people p ON p.id = l.employee_person_id
         WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date >= :startDate AND l.production_date <= :endDate" . $recordsFilter . "
         ORDER BY l.production_date ASC, l.created_at ASC, l.id ASC");
     $recordsStmt->execute($recordsBind);
@@ -472,7 +432,6 @@ function production_management_month_statistics($params, $body, $user)
         $itemState = $item['state'] ?? '';
         $records[] = [
             'id' => 'manager-' . (int) $row['id'], 'isManagerEntry' => true,
-            'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
             'employeePersonId' => $row['employee_person_id'], 'employeeName' => $row['employee_name'],
             'orderId' => (int) $row['order_id'], 'orderItemUid' => $row['order_item_uid'],
             'orderNumber' => $row['order_number'],
@@ -487,7 +446,7 @@ function production_management_month_statistics($params, $body, $user)
         ];
     }
     json_response([
-        'year' => $year, 'month' => $month, 'employeeUserId' => $employeeId,
+        'year' => $year, 'month' => $month, 'employeePersonId' => $employeePersonId,
         'total' => array_sum(array_column($daily, 'quantity')),
         'daily' => $daily, 'monthly' => $monthly, 'yearly' => $yearly,
         'byEmployee' => $byEmployee, 'yearByEmployee' => $yearByEmployee, 'records' => $records,
@@ -501,17 +460,15 @@ function production_management_day_statistics($params, $body, $user)
     if (!production_valid_date($date) || (int) substr($date, 0, 4) < 1405 || (int) substr($date, 0, 4) > 1499) {
         json_error('Invalid production statistics date', 422);
     }
-    $employeeId = production_management_statistics_employee_filter();
-    $filter = $employeeId === null ? '' : ' AND l.employee_user_id = :employee';
+    $employeePersonId = production_management_statistics_employee_filter();
+    $filter = $employeePersonId === null ? '' : ' AND l.employee_person_id = :employeePersonId';
     $bind = [':productionDate' => $date];
-    if ($employeeId !== null) $bind[':employee'] = $employeeId;
-    $stmt = db()->prepare("SELECT l.*, COALESCE(l.employee_person_id, ea.person_id) AS employee_person_id,
+    if ($employeePersonId !== null) $bind[':employeePersonId'] = $employeePersonId;
+    $stmt = db()->prepare("SELECT l.*,
         o.order_number, o.customer_name, o.items,
-        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), u.display_name, u.username, '—') AS employee_name
+        COALESCE(NULLIF(TRIM(CONCAT(p.first_name, ' ', p.last_name)), ''), '—') AS employee_name
         FROM manager_production_logs l JOIN orders o ON o.id = l.order_id
-        LEFT JOIN users u ON u.id = l.employee_user_id
-        LEFT JOIN employee_accounts ea ON ea.user_id = u.id
-        LEFT JOIN people p ON p.id = COALESCE(l.employee_person_id, ea.person_id)
+        LEFT JOIN people p ON p.id = l.employee_person_id
         WHERE o.deleted_at IS NULL AND l.deleted_at IS NULL AND l.production_date = :productionDate" . $filter . "
         ORDER BY l.created_at ASC, l.id ASC");
     $stmt->execute($bind);
@@ -524,7 +481,6 @@ function production_management_day_statistics($params, $body, $user)
         $itemState = $item['state'] ?? '';
         $records[] = [
             'id' => 'manager-' . (int) $row['id'], 'isManagerEntry' => true,
-            'employeeUserId' => $row['employee_user_id'] === null ? null : (int) $row['employee_user_id'],
             'employeePersonId' => $row['employee_person_id'], 'employeeName' => $row['employee_name'],
             'orderId' => (int) $row['order_id'], 'orderItemUid' => $row['order_item_uid'],
             'orderNumber' => $row['order_number'],
@@ -538,7 +494,7 @@ function production_management_day_statistics($params, $body, $user)
             'diameter' => $item['diameter'] ?? null, 'platingColor' => $item['platingColor'] ?? 'NONE',
         ];
     }
-    json_response(['date' => $date, 'employeeUserId' => $employeeId,
+    json_response(['date' => $date, 'employeePersonId' => $employeePersonId,
         'total' => array_sum(array_column($records, 'quantity')), 'records' => $records]);
 }
 
@@ -557,12 +513,10 @@ function production_item_summary($params, $body, $user)
     }
     if (!$orderItem) json_error('Order item not found', 404);
 
-    $logs = db()->prepare("SELECT ml.id, ml.employee_user_id, ml.employee_person_id, ml.order_id, ml.order_item_uid,
+    $logs = db()->prepare("SELECT ml.id, ml.employee_person_id, ml.order_id, ml.order_item_uid,
         ml.quantity, ml.total_weight_grams, ml.production_date, ml.created_at, ml.updated_at, ml.deleted_at,
-        COALESCE(NULLIF(TRIM(CONCAT(mp.first_name, ' ', mp.last_name)), ''), mu.display_name, mu.username, '—') AS employee_name
-        FROM manager_production_logs ml LEFT JOIN users mu ON mu.id = ml.employee_user_id
-        LEFT JOIN employee_accounts mea ON mea.user_id = mu.id
-        LEFT JOIN people mp ON mp.id = COALESCE(ml.employee_person_id, mea.person_id)
+        COALESCE(NULLIF(TRIM(CONCAT(mp.first_name, ' ', mp.last_name)), ''), '—') AS employee_name
+        FROM manager_production_logs ml LEFT JOIN people mp ON mp.id = ml.employee_person_id
         WHERE ml.order_id = :orderId AND ml.order_item_uid = :itemUid AND ml.deleted_at IS NULL
         ORDER BY ml.created_at DESC, ml.id DESC");
     $logs->execute([':orderId' => $orderId, ':itemUid' => $uid]);
@@ -570,10 +524,9 @@ function production_item_summary($params, $body, $user)
     $byEmployee = [];
     foreach ($logRows as $log) {
         $personId = $log['employee_person_id'] ?? null;
-        $userId = $log['employee_user_id'] === null ? null : (int) $log['employee_user_id'];
-        $key = $personId !== null ? 'person:' . $personId : 'user:' . ($userId ?? 'unknown');
+        $key = $personId !== null ? 'person:' . $personId : 'name:' . ($log['employee_name'] ?: '—');
         if (!isset($byEmployee[$key])) $byEmployee[$key] = [
-            'employeePersonId' => $personId, 'employeeUserId' => $userId,
+            'employeePersonId' => $personId,
             'employeeName' => $log['employee_name'], 'quantity' => 0,
         ];
         $byEmployee[$key]['quantity'] += (float) $log['quantity'];

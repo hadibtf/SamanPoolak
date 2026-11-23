@@ -55,8 +55,7 @@ async function request(method, path, body) {
     const requestUrl = USE_DEV_API_PROXY ? `/__api${path}` : `${BASE_URL}${path}`;
     res = await fetch(requestUrl, {
       method,
-      // Be explicit for the separate employee origin and never reuse a stale
-      // cross-origin response after an API/CORS deployment.
+      // Never reuse a stale cross-origin response after an API/CORS deployment.
       mode: 'cors',
       cache: 'no-store',
       headers,
@@ -107,7 +106,7 @@ const resourceQuery = (options) => {
 // --- Convenience wrappers -------------------------------------------------
 
 export const authApi = {
-  login: (username, password, surface = 'management') => api.post('/auth/login', { username, password, surface }),
+  login: (username, password) => api.post('/auth/login', { username, password }),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
 };
@@ -135,7 +134,6 @@ export const peopleApi = {
  * @returns {Promise<{person: import('../types/domain').Person}>}
  */
   update: (id, patch) => api.put(`/people/${encodeURIComponent(id)}`, patch),
-  employeeAccount: (id) => api.get(`/people/${encodeURIComponent(id)}/employee-account`),
   remove: (id) => api.del(`/people/${encodeURIComponent(id)}`),
 };
 
@@ -183,8 +181,8 @@ export const expensesApi = {
 
 export const productionApi = {
   employees: () => api.get('/production/employees'),
-  managementMonthStatistics: (year, month, employeeUserId) => api.get(`/production/statistics/management/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
-  managementDayStatistics: (date, employeeUserId) => api.get(`/production/statistics/management/day?date=${encodeURIComponent(date)}${employeeUserId ? `&employeeUserId=${encodeURIComponent(employeeUserId)}` : ''}`),
+  managementMonthStatistics: (year, month, employeePersonId) => api.get(`/production/statistics/management/month?year=${encodeURIComponent(year)}&month=${encodeURIComponent(month)}${employeePersonId ? `&employeePersonId=${encodeURIComponent(employeePersonId)}` : ''}`),
+  managementDayStatistics: (date, employeePersonId) => api.get(`/production/statistics/management/day?date=${encodeURIComponent(date)}${employeePersonId ? `&employeePersonId=${encodeURIComponent(employeePersonId)}` : ''}`),
   itemSummary: (orderId, itemUid) => api.get(`/production/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemUid)}/summary`),
   /** @param {number} orderId @param {string} itemUid @param {import('../types/domain').ManagerProductionLogRequest} log
    * @returns {Promise<{productionLog: import('../types/domain').ProductionLog}>}

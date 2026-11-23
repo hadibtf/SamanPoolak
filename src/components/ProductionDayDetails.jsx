@@ -8,10 +8,10 @@ const platingLabels = Object.fromEntries(PLATING_OPTIONS.map(({ value, label }) 
 const groupRecordsByEmployee = (records = []) => {
   const groups = new Map();
   records.forEach((record) => {
-    const key = String(record.employeeUserId ?? `name:${record.employeeName || '—'}`);
+    const key = String(record.employeePersonId ?? `name:${record.employeeName || '—'}`);
     if (!groups.has(key)) {
       groups.set(key, {
-        employeeUserId: key,
+        employeePersonId: key,
         employeeName: record.employeeName || '—',
         records: [],
       });
@@ -21,7 +21,7 @@ const groupRecordsByEmployee = (records = []) => {
   return [...groups.values()];
 };
 
-export function EmployeeProductionRecord({ record, linkToOrder = false, showStatus = false, showItemIcon = false }) {
+export function ProductionRecord({ record, linkToOrder = false, showStatus = false, showItemIcon = false }) {
   const colorKey = record.platingColor === 'GOLD' || record.platingColor === 'SILVER' ? record.platingColor : 'NONE';
   const tone = colorKey === 'GOLD' ? 'gold' : colorKey === 'SILVER' ? 'silver' : 'matte';
   const dimension = [record.diameter, record.thickness]
@@ -87,10 +87,10 @@ export default function ProductionDayDetails({ date, details, loading, error, sh
     {loading && <div className="detail-state">در حال دریافت جزئیات...</div>}
     {error && <div className="detail-state error">{error}</div>}
     {details && details.records.length === 0 && <div className="detail-state">{emptyMessage}</div>}
-    {showEmployee ? employeeGroups.map((group) => <section className="statistics-worker-group" key={group.employeeUserId} aria-label={`تولید ${group.employeeName}`}>
+    {showEmployee ? employeeGroups.map((group) => <section className="statistics-worker-group" key={group.employeePersonId} aria-label={`تولید ${group.employeeName}`}>
       <h3 className="statistics-worker-name">{group.employeeName}</h3>
       <div className="statistics-worker-products">
-        {group.records.map((record) => <EmployeeProductionRecord key={record.id} record={record} />)}
+        {group.records.map((record) => <ProductionRecord key={record.id} record={record} />)}
       </div>
     </section>) : details?.records.map((record) => {
       return <article key={record.id}>

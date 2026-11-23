@@ -41,7 +41,6 @@ $routes = [
     ['DELETE', '/users/{id}',       'users_delete',  true],
     ['GET',    '/people',           'people_list',   true],
     ['POST',   '/people',           'people_create', true],
-    ['GET',    '/people/{id}/employee-account', 'people_employee_account_get', true],
     ['GET',    '/people/{id}',      'people_get',    true],
     ['PUT',    '/people/{id}',      'people_update', true],
     ['DELETE', '/people/{id}',      'people_delete', true],
@@ -109,15 +108,6 @@ try {
         if (preg_match($regex, $path, $matches)) {
             $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
             $user   = $needsAuth ? require_auth() : null;
-            // Employee tokens have no production workflow; only account and
-            // holiday endpoints remain available.
-            $employeeAllowed = [
-                'POST /auth/logout', 'GET /auth/me', 'GET /holidays',
-            ];
-            if ($user && ($user['role'] ?? '') === 'employee'
-                && !in_array($method . ' ' . $path, $employeeAllowed, true)) {
-                json_error('Employee access is limited to account services', 403);
-            }
             $body   = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? json_input() : [];
             $handler($params, $body, $user);
             exit;

@@ -30,8 +30,6 @@ jobs:
       - name: Build management app
         run: npm run build:platform
 
-      - name: Build employee app
-        run: npm run build:employee
 
   backend:
     name: PHP validation
@@ -52,3 +50,6 @@ jobs:
 
       - name: Run production validation
         run: php server/tests/production_validation.php
+
+      - name: Run migration validation
+        run: php server/tests/migrations_validation.php

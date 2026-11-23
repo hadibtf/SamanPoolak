@@ -76,7 +76,7 @@ PHP lint, and PHP validation tests before release.
 No production database, live browser profiles, backup/restore data, or remote
 records were modified during implementation. Real cross-device accounts,
 device-specific exports and production calendar/backup imports still require
-rollout verification. Builds generate `dist/platform` and `dist/employee`; the
+rollout verification. The management build generates `dist/platform`; the
 obsolete `build` directory is regenerated from the platform build for parity.
 
 The unrelated existing `migrations_validation.php` check currently fails because

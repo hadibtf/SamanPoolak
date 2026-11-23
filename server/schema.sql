@@ -64,18 +64,6 @@ CREATE TABLE IF NOT EXISTS counters (
     value INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Links an EMPLOYEE People record to its employee login. Kept as a separate
--- table because users is created before people and existing user accounts must
--- stay untouched. The People route owns this one-to-one relationship.
-CREATE TABLE IF NOT EXISTS employee_accounts (
-    person_id       VARCHAR(32) PRIMARY KEY,
-    user_id         INT         NOT NULL UNIQUE,
-    created_at      DATETIME    NOT NULL,
-    updated_at      DATETIME    NOT NULL,
-    CONSTRAINT fk_employee_accounts_person FOREIGN KEY (person_id) REFERENCES people(id),
-    CONSTRAINT fk_employee_accounts_user FOREIGN KEY (user_id) REFERENCES users(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE IF NOT EXISTS app_settings (
     name       VARCHAR(64) PRIMARY KEY,
     value      LONGTEXT     NULL,
@@ -248,7 +236,6 @@ CREATE TABLE IF NOT EXISTS holidays (
 -- Manager-entered production is recorded directly on order items.
 CREATE TABLE IF NOT EXISTS manager_production_logs (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
-    employee_user_id    INT           NULL,
     employee_person_id  VARCHAR(32)   NULL,
     entered_by          INT           NOT NULL,
     order_id            INT           NOT NULL,
@@ -260,12 +247,10 @@ CREATE TABLE IF NOT EXISTS manager_production_logs (
     created_at          DATETIME      NOT NULL,
     updated_at          DATETIME      NULL,
     deleted_at          DATETIME      NULL,
-    CONSTRAINT fk_manager_production_logs_employee FOREIGN KEY (employee_user_id) REFERENCES users(id),
     CONSTRAINT fk_manager_production_logs_person FOREIGN KEY (employee_person_id) REFERENCES people(id),
     CONSTRAINT fk_manager_production_logs_entered_by FOREIGN KEY (entered_by) REFERENCES users(id),
     CONSTRAINT fk_manager_production_logs_order FOREIGN KEY (order_id) REFERENCES orders(id),
     UNIQUE KEY uq_manager_production_logs_submission (submission_key),
-    INDEX idx_manager_production_logs_employee_date (employee_user_id, production_date),
     INDEX idx_manager_production_logs_person_date (employee_person_id, production_date),
     INDEX idx_manager_production_logs_order_item (order_id, order_item_uid),
     INDEX idx_manager_production_logs_created (created_at)

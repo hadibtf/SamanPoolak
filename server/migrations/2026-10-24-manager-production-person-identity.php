@@ -7,6 +7,14 @@ return [
         return $database->columnExists('manager_production_logs', 'employee_person_id');
     },
     'up' => static function (MigrationDatabase $database): void {
+        // New installs no longer have employee login tables or IDs. Retain this
+        // migration for databases that already recorded it, while making it safe
+        // to replay against the final person-only schema.
+        if (!$database->tableExists('manager_production_logs')
+            || !$database->columnExists('manager_production_logs', 'employee_user_id')
+            || !$database->tableExists('employee_accounts')) {
+            return;
+        }
         if (!$database->columnExists('manager_production_logs', 'employee_person_id')) {
             $database->execute('ALTER TABLE manager_production_logs
                 ADD COLUMN employee_person_id VARCHAR(32) NULL AFTER employee_user_id,

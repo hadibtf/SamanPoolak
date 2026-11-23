@@ -12,7 +12,7 @@ return [
         if (!$database->columnExists('manager_production_logs', 'id')) {
             $database->execute('CREATE TABLE IF NOT EXISTS manager_production_logs (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `employee_user_id` INT NOT NULL,
+                `employee_person_id` VARCHAR(32) NULL,
                 `entered_by` INT NOT NULL,
                 `order_id` INT NOT NULL,
                 `order_item_uid` VARCHAR(128) NOT NULL,
@@ -23,11 +23,11 @@ return [
                 `created_at` DATETIME NOT NULL,
                 `updated_at` DATETIME NULL,
                 `deleted_at` DATETIME NULL,
-                CONSTRAINT fk_manager_production_logs_employee FOREIGN KEY (`employee_user_id`) REFERENCES users(id),
+                CONSTRAINT fk_manager_production_logs_person FOREIGN KEY (`employee_person_id`) REFERENCES people(id),
                 CONSTRAINT fk_manager_production_logs_entered_by FOREIGN KEY (`entered_by`) REFERENCES users(id),
                 CONSTRAINT fk_manager_production_logs_order FOREIGN KEY (`order_id`) REFERENCES orders(id),
                 UNIQUE KEY uq_manager_production_logs_submission (`submission_key`),
-                INDEX idx_manager_production_logs_employee_date (`employee_user_id`, `production_date`),
+                INDEX idx_manager_production_logs_person_date (`employee_person_id`, `production_date`),
                 INDEX idx_manager_production_logs_order_item (`order_id`, `order_item_uid`),
                 INDEX idx_manager_production_logs_created (`created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');

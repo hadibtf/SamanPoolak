@@ -41,12 +41,11 @@ refresh and no Room cache.
 
 ## 2. Boot & auth gate
 
-`src/index.jsx` selects the employee app at build time when
-`VITE_APP_SURFACE=employee`; otherwise it loads the management app shown
-below. Employee credentials remain managed through People, but employee
-production task/report screens and APIs are retired. After login, the employee
-surface shows an unavailable notice; manager-entered production remains in the
-management app.
+`src/index.jsx` mounts the management app. Employee People profiles remain for
+attendance, payroll, and attribution on manager-entered production records, but
+there are no employee logins, employee accounts, employee-facing app, or
+employee-submitted production endpoints. Authentication accepts management
+roles only.
 
 ```
 src/index.jsx
@@ -198,9 +197,8 @@ paint `option { background-color; color }` explicitly (don't rely on
 ---
 
 ## 9. Conventions & gotchas
-- **Build:** `npm run build:platform` writes to `dist/platform/` and
-  `npm run build:employee` writes to `dist/employee/`; `npm run build` aliases
-  the platform build. Run `npm test` for Vitest checks.
+- **Build:** `npm run build:platform` writes to `dist/platform/`; `npm run build`
+  aliases the platform build. Run `npm test` for Vitest checks.
 - **Money in Rial**, **dates Jalali `YYYYMMDD`**, **server-assigned IDs/numbers**.
 - **Immutable updates** — rebuild arrays/objects; editing an order rebuilds
   `items[]` but preserves each item's `state/stateHistory/weight`.

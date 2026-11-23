@@ -4,8 +4,8 @@ The backend for the سامان پولک platform: the single shared source of tr
 React clients read from and write to. Plain **PHP 8 + PDO + MySQL/MariaDB**, no
 framework or dependencies.
 
-- **Base URL (production):** `https://api.samanpoolak.ir` (its own subdomain; the
-  front-ends at `platform.samanpoolak.ir` and `employee.samanpoolak.ir` call it cross-origin)
+- **Base URL (production):** `https://api.samanpoolak.ir` (the management app at
+  `platform.samanpoolak.ir` calls it cross-origin)
 - **Format:** JSON in / JSON out, UTF-8. Wire field names are `camelCase`.
 - **Auth:** bearer tokens — send `Authorization: Bearer <token>` on every
   endpoint except public endpoints: `GET /`, `POST /setup/seed-admin`,
@@ -86,50 +86,49 @@ JSON · 401 auth · 403 admin/setup · 404 not found · 409 conflict · 422 vali
   `201 { ok, id }`. One-time; guarded by `setup_key` in config (blank it after).
 
 ### Auth
-- `POST /auth/login` `{ username, password, surface }` → `{ token, user }`.
-  `surface` is `management` (default) or `employee`; login validates role and
-  the supplied browser origin against the configured app origin.
+- `POST /auth/login` `{ username, password }` → `{ token, user }`. Only `admin`
+  and `user` roles can sign in; the supplied browser origin is checked against
+  the configured management app origin.
 - `POST /auth/logout` *(auth)* → `{ ok }` (invalidates the token).
 - `GET /auth/me` *(auth)* → `{ user }`.
 
-`user` = `{ id, username, displayName, role }` (`role`: `admin` | `user` | `employee`).
-Employee tokens are restricted by the front controller's route allowlist and
-handler ownership checks. The general authenticated management routes below
-are not available to employees. Employee credentials are managed through People.
+`user` = `{ id, username, displayName, role }` (`role`: `admin` | `user`).
+Employee People records are profile data only; they have no login accounts.
 
 ### Production
 
-Employee task/report entry and employee production statistics are retired.
-The retirement migration removes their data and report link while preserving
-existing order production rows. Employee accounts remain managed through People;
-employee tokens have no production routes. Production records are entered by
-managers on order items.
+Employee-submitted production is removed. Employee profiles remain in People,
+and production records are entered and managed by managers on order items.
 
 - `GET /production/employees` *(admin)* lists eligible employees.
 - `GET /production/orders/{orderId}/items/{itemUid}/summary` *(management)*
   returns manager-entered logs, progress, per-employee totals, and the canonical
   order item state/history.
 - `POST /production/orders/{orderId}/items/{itemUid}/logs` *(admin)* accepts
-  `{ employeeUserId, weightKg, productionDate, submissionKey }`. It derives
+  `{ employeePersonId, weightKg, productionDate, submissionKey }`. It derives
   pieces from the order item's saved 10-piece weight, has no order-quantity cap,
   and returns `{ productionLog }` with 201 (or 200 for an identical UUID retry).
 - `PUT /production/orders/{orderId}/items/{itemUid}/logs/{logId}` *(admin)* accepts
-  `{ employeeUserId, weightKg, productionDate }` and recalculates quantity from
+  `{ employeePersonId, weightKg, productionDate }` and recalculates quantity from
   the item's saved 10-piece weight. `DELETE` on the same path soft-deletes the
   manager entry; refreshed totals are available through the item summary.
 - `GET /production/statistics/management/month?year&month` and
   `/day?date` *(admin)* return management statistics from manager-entered logs;
-  month/day accept optional
-  `employeeUserId` to restrict results to one employee.
+  month/day accept optional `employeePersonId` to restrict results to one People
+  employee profile.
 
 Manager batch kg is stored as `total_weight_grams`; piece quantity is rounded
 from the order item's saved 10-piece gram measurement. If the sample weight is
 missing, quantity remains pending until it is entered. Past Jalali dates are
 accepted within 1405–1499. Aggregates exclude `deleted_at` rows. An identical
 UUID retry returns the original log; changed content or a deleted key returns
-409. Apply `2026-10-06-manager-production-logs` and both pending employee
-production-retirement migrations to the intended database before deploying this
-route. The retirement migrations require `--allow-destructive`.
+409. Existing databases must have the manager log table and person identity
+migration applied. The API supports both the old and new manager-log schema
+during the login-removal rollout. Deploy the API and management app first, then
+run `migrations/phpmyadmin/2026-11-23-remove-employee-login-system-preflight.sql`.
+After resolving any rows it reports and saving the displayed baseline, apply
+`migrations/phpmyadmin/2026-11-23-remove-employee-login-system-apply.sql`.
+The tracked CLI migration is destructive and requires `--allow-destructive`.
 
 ### Users *(admin only)*
 - `GET /users` → `{ users: [user] }`.
@@ -234,7 +233,7 @@ createdBy, createdByName, createdAt, updatedAt, deletedAt`.
   never uploaded by the deploy script.
 - CORS is locked to `cors_allowed_origins` in `config.php`. The front-end
   (`platform.samanpoolak.ir`) and API (`api.samanpoolak.ir`) are **different
-  origins**, so both management and employee app origins must be in the allowlist; the
+  origins**, so the management app origin must be in the allowlist; the
   handler answers `OPTIONS` preflight.
 - Uploaded marking/product images are saved under `/uploads` and stored as
   **absolute** URLs (`https://api.samanpoolak.ir/uploads/…`) so they load from

@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import ProductionBarChart from '../components/ProductionBarChart';
 import ProductionMonthChart from '../components/ProductionMonthChart';
 import ProductionYearChart from '../components/ProductionYearChart';
-import { EmployeeProductionRecord } from '../components/ProductionDayDetails';
+import { ProductionRecord } from '../components/ProductionDayDetails';
 import ProductionMonthControls from '../components/ProductionMonthControls';
 import { productionApi, ApiError } from '../api/client';
 import { currentProductionDate, currentProductionMonth, productionFa as fa, productionFaYear, productionMonthDays, PRODUCTION_CHART_YEARS, PRODUCTION_MONTHS } from '../productionStatistics';
-import employeeStatisticsStyles from './EmployeeStatistics.module.css';
+import productionStatisticsStyles from './ProductionStatistics.module.css';
 import styles from './ManagementStatistics.module.css';
 import SegmentedTabs from '../components/SegmentedTabs';
 
@@ -27,7 +27,6 @@ const defaultProductionDay = (monthStats) => {
 
 const employeeIdentityKey = (employee) => {
   if (employee.employeePersonId != null && employee.employeePersonId !== '') return `person:${employee.employeePersonId}`;
-  if (employee.employeeUserId != null) return `user:${employee.employeeUserId}`;
   return `name:${employee.employeeName || '—'}`;
 };
 
@@ -103,7 +102,7 @@ function ManagementEmployeeRow({ employee, maxProduction, records = [], expanded
     >
       <div className="statistics-employee-panel-inner" inert={!expanded}>
         <div className="statistics-details statistics-employee-records">
-          {records.map((record) => <EmployeeProductionRecord key={record.id} record={record} linkToOrder showStatus showItemIcon />)}
+          {records.map((record) => <ProductionRecord key={record.id} record={record} linkToOrder showStatus showItemIcon />)}
         </div>
       </div>
     </div>}
@@ -295,7 +294,7 @@ export default function ManagementStatistics() {
     if (nextView === 'year' && !loadedYearMatches) loadMonth(false);
   };
 
-  return <div className={`${employeeStatisticsStyles.root} ${styles.root} employee-statistics`}>
+  return <div className={`${productionStatisticsStyles.root} ${styles.root} production-statistics`}>
     <header className={styles.pageHeader}><h1>آمار تولید</h1></header>
     <SegmentedTabs className={styles.viewTabs} label="بازه آمار تولید" value={view} onChange={changeView} items={[
       { value: 'day', label: 'روز', icon: 'fa-solid fa-calendar-day', id: 'management-statistics-day-tab', controls: 'management-statistics-panel' },

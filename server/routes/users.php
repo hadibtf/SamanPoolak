@@ -5,7 +5,7 @@
 function users_list($params, $body, $user)
 {
     require_admin($user);
-    $stmt = db()->query('SELECT * FROM users ORDER BY id ASC');
+    $stmt = db()->query("SELECT * FROM users WHERE role IN ('admin', 'user') ORDER BY id ASC");
     json_response(['users' => array_map('public_user', $stmt->fetchAll())]);
 }
 
@@ -57,7 +57,7 @@ function users_update($params, $body, $user)
         json_error('رمز جدید را وارد کنید', 422);
     }
 
-    $exists = db()->prepare('SELECT id FROM users WHERE id = :id LIMIT 1');
+    $exists = db()->prepare("SELECT id FROM users WHERE id = :id AND role IN ('admin', 'user') LIMIT 1");
     $exists->execute([':id' => $id]);
     if (!$exists->fetch()) {
         json_error('کاربر یافت نشد', 404);
@@ -87,7 +87,7 @@ function users_delete($params, $body, $user)
     if ($id === (int) $user['id']) {
         json_error('حذف حساب خودتان ممکن نیست', 422);
     }
-    $del = db()->prepare('DELETE FROM users WHERE id = :id');
+    $del = db()->prepare("DELETE FROM users WHERE id = :id AND role IN ('admin', 'user')");
     $del->execute([':id' => $id]);
     if ($del->rowCount() === 0) {
         json_error('کاربر یافت نشد', 404);

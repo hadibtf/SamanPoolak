@@ -107,9 +107,7 @@ const formatJalali = (dateKey) => {
 };
 
 const currentJalaliDateKey = () => productionDateKey(new DateObject({ calendar: persian, locale: persian_fa }));
-const managerEmployeeIdentity = (employee) => employee?.personId
-  ? { employeePersonId: employee.personId }
-  : { employeeUserId: Number(employee?.userId) };
+const managerEmployeeIdentity = (employee) => ({ employeePersonId: employee?.personId });
 const pickerDateFromKey = (dateKey) => /^\d{8}$/.test(dateKey) ? new DateObject({
   calendar: persian,
   locale: persian_fa,
@@ -247,12 +245,8 @@ const ItemPanel = ({ item, index, markingMap, onUpdate, onToast, onProductionSum
     setEditingManagerLogId(log.id);
     setManagerLogEditDate(log.productionDate);
     setManagerLogEditWeightKg(String(Number(log.totalWeightGrams) / 1000));
-    const employee = employees.find((candidate) => log.employeePersonId
-      ? candidate.personId === log.employeePersonId
-      : Number(candidate.userId) === Number(log.employeeUserId));
-    setManagerLogEditEmployeeKey(employee?.employeeKey || (log.employeePersonId
-      ? `person:${log.employeePersonId}`
-      : `user:${log.employeeUserId}`));
+    const employee = employees.find((candidate) => candidate.personId === log.employeePersonId);
+    setManagerLogEditEmployeeKey(employee?.employeeKey || (log.employeePersonId ? `person:${log.employeePersonId}` : ''));
   };
 
   const cancelManagerLogEdit = () => {
@@ -1242,7 +1236,7 @@ const OrderView = () => {
           onProductionSummaryChange={reportItemProduction}
           orderId={orderId}
           canManageProduction={user?.role === 'admin'}
-          canViewProduction={user?.role !== 'employee'}
+          canViewProduction={Boolean(user)}
           hidden={item.uid !== selectedItem?.uid}
         />
       ))}

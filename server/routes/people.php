@@ -61,47 +61,6 @@ function people_from_wire($body)
     return $cols;
 }
 
-// Admin-only employee login provisioning. Employee logins are always active.
-// Passwords are accepted only for a write and are never included in a response.
-function save_employee_account($personId, $category, $account, $user, $now)
-{
-    if ($account === null) return;
-    require_admin($user);
-    if ($category !== 'EMPLOYEE') json_error('Only employees can have an employee login', 422);
-    $username = trim((string) ($account['username'] ?? ''));
-    $password = (string) ($account['password'] ?? '');
-    $find = db()->prepare('SELECT ea.user_id, u.username FROM employee_accounts ea JOIN users u ON u.id = ea.user_id WHERE ea.person_id = :personId LIMIT 1');
-    $find->execute([':personId' => $personId]); $existing = $find->fetch();
-    if (!$existing && $username === '' && $password === '') return;
-    if ($username === '' && $existing) $username = $existing['username'];
-    if ($username === '') json_error('Employee username is required', 422);
-    if (!$existing && $password === '') json_error('Employee password is required', 422);
-    $nameStmt = db()->prepare('SELECT first_name, last_name FROM people WHERE id = :id LIMIT 1');
-    $nameStmt->execute([':id' => $personId]); $person = $nameStmt->fetch();
-    $displayName = trim(($person['first_name'] ?? '') . ' ' . ($person['last_name'] ?? '')) ?: $username;
-    if ($existing) {
-        $sets = ['username = :username', 'display_name = :displayName', "role = 'employee'"];
-        $bind = [':username' => $username, ':displayName' => $displayName, ':id' => $existing['user_id']];
-        if ($password !== '') { $sets[] = 'password_hash = :passwordHash'; $bind[':passwordHash'] = password_hash($password, PASSWORD_DEFAULT); }
-        $update = db()->prepare('UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id'); $update->execute($bind);
-        $map = db()->prepare('UPDATE employee_accounts SET updated_at = :updatedAt WHERE person_id = :personId');
-        $map->execute([':updatedAt' => $now, ':personId' => $personId]);
-        return;
-    }
-    $create = db()->prepare('INSERT INTO users (username, password_hash, display_name, role, created_at) VALUES (:username, :passwordHash, :displayName, :role, :createdAt)');
-    $create->execute([':username' => $username, ':passwordHash' => password_hash($password, PASSWORD_DEFAULT), ':displayName' => $displayName, ':role' => 'employee', ':createdAt' => $now]);
-    $map = db()->prepare('INSERT INTO employee_accounts (person_id, user_id, created_at, updated_at) VALUES (:personId, :userId, :createdAt, :updatedAt)');
-    $map->execute([':personId' => $personId, ':userId' => (int) db()->lastInsertId(), ':createdAt' => $now, ':updatedAt' => $now]);
-}
-
-function people_employee_account_get($params, $body, $user)
-{
-    require_admin($user);
-    $stmt = db()->prepare('SELECT u.username FROM employee_accounts ea JOIN users u ON u.id = ea.user_id JOIN people p ON p.id = ea.person_id WHERE ea.person_id = :id AND p.category = :category AND p.deleted_at IS NULL LIMIT 1');
-    $stmt->execute([':id' => $params['id'], ':category' => 'EMPLOYEE']); $row = $stmt->fetch();
-    json_response(['employeeAccount' => $row ? ['username' => $row['username']] : null]);
-}
-
 // GET /people?updatedAfter=<iso>
 // No param: all non-deleted. With param: everything changed since then, incl. soft-deletes.
 function people_list($params, $body, $user)
@@ -168,7 +127,6 @@ function people_create($params, $body, $user)
             $stmt->bindValue(':' . $k, $v);
         }
         $stmt->execute();
-        save_employee_account($id, $category, $body['employeeAccount'] ?? null, $user, $now);
         db()->commit();
     } catch (Throwable $e) {
         db()->rollBack();
@@ -194,11 +152,6 @@ function people_update($params, $body, $user)
 
     $cols = people_from_wire($body);
     if (isset($body['category']) && isset(CATEGORY_PREFIX[$body['category']])) {
-        if ($existing['category'] === 'EMPLOYEE' && $body['category'] !== 'EMPLOYEE') {
-            $account = db()->prepare('SELECT 1 FROM employee_accounts WHERE person_id = :id LIMIT 1');
-            $account->execute([':id' => $id]);
-            if ($account->fetch()) json_error('An employee with a login must remain in the employee category', 422);
-        }
         $cols['category'] = $body['category'];
     }
     $cols['updated_by'] = $user['id'];
@@ -213,8 +166,6 @@ function people_update($params, $body, $user)
         }
         $stmt->bindValue(':id', $id);
         $stmt->execute();
-        $category = $cols['category'] ?? $existing['category'];
-        if (array_key_exists('employeeAccount', $body)) save_employee_account($id, $category, $body['employeeAccount'], $user, $cols['updated_at']);
         db()->commit();
     } catch (Throwable $e) {
         if (db()->inTransaction()) db()->rollBack();

@@ -2,14 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import ManagementApp from './App';
-import EmployeeApp from './EmployeeApp';
 import './index.css';
 import { AuthProvider } from './auth/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
-
-const App = import.meta.env.VITE_APP_SURFACE === 'employee'
-  ? EmployeeApp
-  : ManagementApp;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -17,7 +12,7 @@ root.render(
     <SettingsProvider>
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <ManagementApp />
         </AuthProvider>
       </BrowserRouter>
     </SettingsProvider>

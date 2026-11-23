@@ -1,10 +1,10 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { EmployeeProductionRecord } from './ProductionDayDetails';
+import { ProductionRecord } from './ProductionDayDetails';
 
 test('management production record links to its exact order item', () => {
-  render(<MemoryRouter><EmployeeProductionRecord linkToOrder record={{
+  render(<MemoryRouter><ProductionRecord linkToOrder record={{
     id: 12,
     orderId: 42,
     orderItemUid: 'item/دو',

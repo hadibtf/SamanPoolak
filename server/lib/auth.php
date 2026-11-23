@@ -58,7 +58,7 @@ function current_user()
         $del->execute([':t' => $token]);
         return null;
     }
-    if (($row['role'] ?? '') !== 'employee' && (int) $row['disabled'] === 1) {
+    if (!in_array($row['role'] ?? '', ['admin', 'user'], true) || (int) $row['disabled'] === 1) {
         return null;
     }
     // Sliding expiry: extend on use.
@@ -90,11 +90,10 @@ function require_admin($user)
     return $user;
 }
 
-// Legacy `user` accounts retain the existing management access. The new
-// employee role is explicitly limited to its production endpoints.
+// Only management roles can use the management API.
 function require_management($user)
 {
-    if (($user['role'] ?? '') === 'employee') {
+    if (!in_array($user['role'] ?? '', ['admin', 'user'], true)) {
         json_error('Management access required', 403);
     }
     return $user;

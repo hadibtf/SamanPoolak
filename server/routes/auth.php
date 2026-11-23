@@ -11,15 +11,14 @@ function auth_login($params, $body, $user)
     $row = $stmt->fetch();
 
     if (!$row || !password_verify($body['password'], $row['password_hash'])
-        || (($row['role'] ?? '') !== 'employee' && (int) $row['disabled'] === 1)) {
+        || !in_array($row['role'] ?? '', ['admin', 'user'], true)
+        || (int) $row['disabled'] === 1) {
         json_error('Invalid username or password', 401);
     }
     $surface = $body['surface'] ?? 'management';
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $employeeOrigin = config('employee_app_origin', 'https://employee.samanpoolak.ir');
     $managementOrigin = config('management_app_origin', 'https://platform.samanpoolak.ir');
-    if ($surface === 'employee' && ($row['role'] !== 'employee' || ($origin && $origin !== $employeeOrigin))) json_error('Invalid username or password', 401);
-    if ($surface === 'management' && ($row['role'] === 'employee' || ($origin && $origin !== $managementOrigin))) json_error('Invalid username or password', 401);
+    if ($surface !== 'management' || ($origin && $origin !== $managementOrigin)) json_error('Invalid username or password', 401);
 
     $token = generate_token();
     $ttlDays = (int) config('session_ttl_days', 30);

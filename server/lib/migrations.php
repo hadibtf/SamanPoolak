@@ -8,7 +8,9 @@ interface MigrationDatabase
     public function appliedMigrations(): array;
     public function tableExists($table): bool;
     public function columnExists($table, $column): bool;
+    public function indexExists($table, $index): bool;
     public function foreignKeyExists($table, $constraint): bool;
+    public function fetchValue($sql);
     public function execute($sql): void;
     public function recordMigration($migrationId): void;
     public function acquireMigrationLock($lockName): bool;
@@ -86,6 +88,16 @@ final class PdoMigrationDatabase implements MigrationDatabase
         return (int) $stmt->fetchColumn() > 0;
     }
 
+    public function indexExists($table, $index): bool
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table_name AND INDEX_NAME = :index_name'
+        );
+        $stmt->execute([':table_name' => $table, ':index_name' => $index]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
     public function foreignKeyExists($table, $constraint): bool
     {
         $stmt = $this->pdo->prepare(
@@ -100,6 +112,11 @@ final class PdoMigrationDatabase implements MigrationDatabase
     public function execute($sql): void
     {
         $this->pdo->exec($sql);
+    }
+
+    public function fetchValue($sql)
+    {
+        return $this->pdo->query($sql)->fetchColumn();
     }
 
     public function recordMigration($migrationId): void

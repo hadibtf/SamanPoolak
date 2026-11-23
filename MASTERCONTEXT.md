@@ -17,7 +17,7 @@ imply exhaustive test coverage.
 | [project-map](#project-map) | Product, domains, folders, source entry points |
 | [architecture](#architecture) | App surfaces, auth, API, screen state |
 | [domain-rules](#domain-rules) | Money, dates, IDs, orders, weights |
-| [employee-production](#employee-production) | Retired employee production access; manager production remains |
+| [employee-production](#employee-production) | Employee login removal; manager production remains |
 | [ui-and-pdf](#ui-and-pdf) | Styling, calendar, RTL, exports |
 | [deployment](#deployment) | Commands, configuration, migrations, host setup |
 | [verification](#verification) | Tests, feature implementation checklist, release status |
@@ -38,9 +38,8 @@ imply exhaustive test coverage.
 - Deploy commands default to automatic upload; `:manual` produces ZIP packages.
 - Apply required live database changes before dependent API deployment.
   Uploading schema files does not migrate an existing database.
-- Build the platform and employee surfaces with `npm run build:platform` and
-  `npm run build:employee`; outputs are isolated in `dist/platform/` and
-  `dist/employee/`. `npm run build` aliases the platform build.
+- Build the management surface with `npm run build:platform`; output is in
+  `dist/platform/`. `npm run build` aliases the platform build.
 - Keep passwords/tokens out of docs and commits. `deploy.env` and server
   `config.php` hold private configuration and must remain gitignored.
 
@@ -50,24 +49,23 @@ imply exhaustive test coverage.
 Persian/RTL business software for a metal stamping/plating workshop: payroll,
 attendance, people/customers, customer markings, multi-item orders, invoices,
 expenses, manager-entered production, statistics, and administrative settings.
-Employee accounts remain for attribution on production records. The landing and
-careers sites are separate static surfaces.
+Employee People profiles remain for HR and production attribution, with no
+employee login accounts or employee-facing site. Landing and careers sites are
+separate static surfaces.
 
 | Surface | Host | Host directory under `/home/hadibt` |
 | --- | --- | --- |
 | Management | `platform.samanpoolak.ir` | `platform/` |
-| Employee | `employee.samanpoolak.ir` | `employee/` |
 | PHP API | `api.samanpoolak.ir` | `api/` |
 | Landing | `samanpoolak.ir` | `samanpoolak.ir/` |
 | Careers | `jobs.samanpoolak.ir` | `jobs/` |
 
-These management host details are internal agent context: never expose the
-management URL in employee-facing UI, links, or bundles. Other projects on the
-same hosting account are outside this app's deployment targets.
+Other projects on the same hosting account are outside this app's deployment
+targets.
 
 | Source | Responsibility |
 | --- | --- |
-| `src/index.jsx` | Build-time surface selection and mounting |
+| `src/index.jsx` | Management app mounting |
 | `src/App.jsx` | Management routes, login gate, calendar bootstrap |
 | `src/auth/AuthContext.jsx` | User/session, login/logout, token validation |
 | `src/api/client.js` | Fetch wrapper, bearer token, per-resource API helpers |
@@ -77,7 +75,7 @@ same hosting account are outside this app's deployment targets.
 | `src/constants.js` | Enums and Persian labels |
 | `src/pages/`, `src/components/` | Screens and shared UI |
 | `src/utils/image.js` | Image compression before upload |
-| `server/index.php` | CORS, route table, authentication and employee allowlist |
+| `server/index.php` | CORS, route table, and authentication |
 | `server/lib/` | Configuration, PDO, HTTP and auth helpers |
 | `server/routes/production.php` | Assignments, logs, corrections, statistics |
 | `server/routes/` | Other resource handlers, backup/restore |
@@ -108,17 +106,17 @@ downloaded and acknowledged, then handles blocked deletion with a retry/reload.
 Counters from unused client ID generators are retired. Remove the shim after
 this cleanup release reaches existing users; see `docs/REMOVE-DEXIE-AUDIT.md`.
 
-`VITE_APP_SURFACE=employee` selects the separate employee app at build time;
-otherwise the management app is selected.
-Management and employee surfaces have separate routes and role restrictions.
-AuthContext validates saved tokens through `/auth/me`; global API 401 responses
-clear the session. Login sends `username`, `password`, and `surface`.
+The repository ships one management app. Employee People profiles support HR
+and manager-entered production attribution; they have no login accounts or
+employee-submitted production access. AuthContext validates saved tokens
+through `/auth/me`; global API 401 responses clear the session. Authentication
+accepts only `admin` and `user` roles.
 
 API requests use bearer tokens, not cookies, across origins. The fetch wrapper
 prefixes `VITE_API_URL`, parses JSON, and throws `ApiError`; status `0`
 means a network failure. The server validates roles/ownership independently of
-frontend navigation. Employee routes are allowlisted in the front controller.
-Both app origins belong in `cors_allowed_origins`; the API answers OPTIONS.
+frontend navigation. The management app origin belongs in
+`cors_allowed_origins`; the API answers OPTIONS.
 Uploaded images use absolute API URLs so they work across origins.
 
 React conventions: immutable object/array updates, local `useState`, effect
@@ -157,15 +155,12 @@ cleanup, providers for auth/settings, and React Router for navigation.
   dimensions, and description, omitting absent parts.
 
 <a id="employee-production"></a>
-## Employee production (retired)
+## Employee production and login removal
 
-Employee accounts remain provisioned through People, but employee task and
-report entry, employee production statistics, task assignment controls, and
-their APIs are retired. The employee site now shows an unavailable notice after
-login. Employee task logs and report storage are removed from existing databases;
-synced order production remains as ordinary manager production records. Manager
-production remains available through `manager_production_logs` and continues to
-power management statistics.
+There are no employee logins, user accounts, employee production reports, task
+assignments, or employee-facing app. Employee records remain in People. Manager
+production remains available through `manager_production_logs`, links to People
+profiles, and continues to power order totals and management statistics.
 
 Manager production records use the order item's saved 10-piece sample weight to
 calculate piece quantity. If that sample is missing, the entry remains pending
@@ -193,7 +188,7 @@ plot within a 260px cell with a 24px label gutter: keep CSS and math aligned.
 - Reuse `JalaliDatePicker` with a Jalali DateObject. Compact `YYYYMMDD` strings
   are storage values, not picker values. Serialize numeric fields to ASCII keys.
 - Document direction is RTL; use local LTR for numeric fields/negative amounts.
-  Shared employee/management navigation uses the floating bottom-nav appearance.
+  Management navigation uses the floating bottom-nav appearance.
 - PDF: off-screen DOM → html2canvas → jsPDF, contain-fit and centered, plain
   download. Salary slip is A5 landscape; invoice is A4 portrait.
 - Keep `.salary-slip` and `.invoice-sheet` light even in dark mode. Avoid ASCII
@@ -205,25 +200,24 @@ plot within a 260px cell with a 24px label gutter: keep CSS and math aligned.
 | Command | Target |
 | --- | --- |
 | `npm run deploy:web` / `npm run deploy:platform` | Management build |
-| `npm run deploy:employee` | Employee build |
 | `npm run deploy:api` | PHP server |
 | `npm run deploy:landing` | Landing site |
 | `npm run deploy:jobs` | Careers site |
-| `npm run deploy:all` | API + platform + landing + jobs + employee |
+| `npm run deploy:all` | API + platform + landing + jobs |
 
 Append `:manual` for ZIPs and upload instructions in `deploy-manual/`. Automatic
-deployment uses Node and WinSCP FTPS through a persistent connection. Employee
-deployment explicitly uploads `.htaccess` through curl afterward; manual employee
-packages include it. Platform/landing preserve server-owned `.htaccess`; API
-includes its router. Never upload live `server/config.php`.
+deployment uses Node and WinSCP FTPS through a persistent connection.
+Platform/landing preserve server-owned `.htaccess`; API includes its router.
+Never upload live `server/config.php`. The deploy sync does not delete remote
+files; the old employee document root and subdomain must be removed separately.
 
-GitHub Actions verifies frontend tests, management and employee builds, PHP
+GitHub Actions verifies frontend tests, the management build, PHP
 lint, and production validation on pushes and pull requests. It requires no
 production secrets and never deploys. Production deployment remains a local
 operation using the commands above.
 
 Private `deploy.env` uses `FTP_SERVER`, `FTP_USER`, `FTP_PASSWORD`, `FTP_WEB_DIR`,
-`FTP_API_DIR`, `FTP_LANDING_DIR`, `FTP_JOBS_DIR`, `FTP_EMPLOYEE_DIR`, and `API_URL`;
+`FTP_API_DIR`, `FTP_LANDING_DIR`, `FTP_JOBS_DIR`, and `API_URL`;
 see `deploy.env.sample`. Optional `WINSCP_PATH` locates WinSCP.com. Host is
 `hadibtf.ir`, FTPS port 21, main account `hadibt`; subaccounts are jailed away from
 the doc roots. Directory names are short names, not full domain names.
@@ -244,6 +238,13 @@ those four columns in `hadibt_business_platform` and bootstrapped
 (2026-10-01 09:21:21 UTC). Legacy log weight zero remains unknown measured
 weight, not a fabricated estimate. Full operating steps are in
 [DEPLOY.md](DEPLOY.md#database-migrations).
+
+For the employee-login retirement, deploy the updated person-ID-only API and
+management app first; they work against both manager-log schemas. Then run the
+phpMyAdmin preflight SQL, resolve any unmapped/conflicting attribution, export a
+backup, and apply the matching cleanup SQL. Verify manager-log counts, weights,
+quantities, and People profile counts are unchanged. Hosting must separately
+remove the old employee subdomain, DNS/SSL, and document-root files.
 
 The `2026-10-06-manager-production-logs` migration adds the separate manager
 log table. Apply it to the intended database before deploying API code that
@@ -267,21 +268,20 @@ Use checks proportionate to the change:
 
 - PHP lint for changed PHP files and `php server/tests/production_validation.php`.
 - Vitest: `npm test`.
-- Platform and employee login-surface builds, sequentially; no TypeScript check exists.
-- After app deployment, verify the employee site's root login and inactive notice,
-  and the management `/statistics` route. Test appropriate authorized/denied roles.
+- Management production build; no TypeScript check exists.
+- Verify management authentication and the `/statistics` route. Employee login
+  attempts and saved employee sessions must be rejected.
 
-Historical release record: the employee assignment and reporting workflow was
-accepted on 2026-09-26 and retired on 2026-11-22. Earlier verification notes
-describe that retired release, not the current employee experience. Offline
-business-data writes are unsupported.
+Historical employee report/task migrations remain in the ledger for existing
+databases. The 2026-11-23 login-removal migration deletes login accounts while
+preserving People profiles and manager production rows. Offline business-data
+writes are unsupported.
 
 <a id="troubleshooting"></a>
 ## Known failures and remedies
 
 | Symptom | Check / remedy |
 | --- | --- |
-| Employee root page returns 404 | Employee doc-root SPA `.htaccess` upload |
 | Build warning about a large chunk | Inspect the Vite bundle report; current app surfaces include large existing route bundles |
 | Missing table/column API 500 | Apply required SQL in selected live database |
 | MySQL #1046 | Select `hadibt_business_platform` first |

@@ -34,7 +34,7 @@
  * @property {UserId} id
  * @property {string} username
  * @property {string} displayName
- * @property {string} role
+ * @property {'admin'|'user'} role
  * Password hashes and write-only credentials are deliberately excluded.
  *
  * @typedef {Object} StateHistory
@@ -75,7 +75,6 @@
  * @typedef {Object} ProductionLog
  * @property {number|string} id Manager-entered log IDs use a `manager-` prefix.
  * @property {boolean} isManagerEntry
- * @property {UserId|null} employeeUserId Manager entries may belong to a profile without a login.
  * @property {PersonId|null} employeePersonId
  * @property {OrderId} orderId
  * @property {string} orderItemUid
@@ -100,8 +99,7 @@
  * @property {string} location
  *
  * @typedef {Object} ManagerProductionLogRequest
- * @property {PersonId} [employeePersonId] Preferred identity for linked employee profiles.
- * @property {UserId} [employeeUserId] Used for legacy employee logins without a People profile.
+ * @property {PersonId} employeePersonId Employee People profile attribution.
  * @property {Kilograms} weightKg Measured batch weight; piece quantity is calculated from the item's sample weight when available.
  * @property {JalaliDateKey} productionDate
  * @property {string} submissionKey
