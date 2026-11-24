@@ -22,14 +22,34 @@ export const DEFAULT_SETTINGS = {
   // Shift window + unpaid breaks (minutes). Blank/0 break = not deducted.
   shiftStart: '07:00',
   shiftEnd: '17:00',
+  thursdayShiftEnd: '14:00',
   breakfastMin: 20,
   lunchMin: 40,
+};
+
+const threeHoursBefore = (time) => {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(time || ''));
+  if (!match) return '14:00';
+  const minutes = Math.max(0, Number(match[1]) * 60 + Number(match[2]) - 180);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 };
 
 export const loadSettings = () => {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+    if (!raw) return { ...DEFAULT_SETTINGS };
+
+    const stored = JSON.parse(raw);
+    const saved = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+    return {
+      ...DEFAULT_SETTINGS,
+      ...saved,
+      // Existing installations may have a custom regular end time. Preserve
+      // the requested three-hour difference when adding the new independent field.
+      thursdayShiftEnd: Object.prototype.hasOwnProperty.call(saved, 'thursdayShiftEnd')
+        ? saved.thursdayShiftEnd
+        : threeHoursBefore(saved.shiftEnd || DEFAULT_SETTINGS.shiftEnd),
+    };
   } catch {
     return { ...DEFAULT_SETTINGS };
   }

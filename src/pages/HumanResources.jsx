@@ -12,7 +12,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useSettings } from '../context/SettingsContext';
 import { useHolidays } from '../holidays';
-import { computeDay, groupByDay, toMinutes } from '../utils/attendance';
+import { summarizeAttendance } from '../utils/attendance';
 import PayrollAttendance from './PayrollAttendance';
 import PayrollSettings from './PayrollSettings';
 import JobApplications from './JobApplications';
@@ -121,6 +121,7 @@ const HumanResources = () => {
 
   const slipRef = useRef(null);
   const attendanceInputsKeyRef = useRef('');
+  const attendanceManualFieldsRef = useRef({ overtime: false, hourlyDeduction: false });
   // True once the user has calculated; lets inputs/currency changes re-run the
   // calc without an effect that depends on `results` (which would loop forever).
   const hasCalculatedRef = useRef(false);
@@ -132,8 +133,6 @@ const HumanResources = () => {
   const [isEmployeeSheetOpen, setIsEmployeeSheetOpen] = useState(false);
   const [toast, setToast] = useState(null);
   const { isHoliday, version: holidayVersion } = useHolidays();
-  const breakMin = (Number(s.breakfastMin) || 0) + (Number(s.lunchMin) || 0);
-  const shiftWindowMin = Math.max(0, (toMinutes(s.shiftEnd) ?? 0) - (toMinutes(s.shiftStart) ?? 0));
 
   const peopleQuery = useApiQuery(async () => activeTab !== 'calc' ? [] : liveRows((await peopleApi.list()).people).filter((p) => p.category === 'EMPLOYEE'), [activeTab]);
   const matchedEmployees = peopleQuery.data?.filter((person) => `${person.firstName || ''} ${person.lastName || ''}`.includes(searchFullName.trim()))
@@ -148,26 +147,21 @@ const HumanResources = () => {
   }, [activeTab, selectedEmployee?.cardNo, attendanceFromKey, attendanceToKey]);
   const { data: attendanceScans } = attendanceQuery;
 
-  const attendanceAdjustments = useMemo(() => {
-    let overtimeMinutes = 0;
-    let deductionMinutes = 0;
-    let completeDays = 0;
-
-    for (const day of groupByDay(attendanceScans || [])) {
-      const summary = computeDay(day.scans, {
-        doubleScanMinutes: 10,
-        breakMin,
-        shiftWindowMin,
-        isHoliday: isHoliday(day.dateKey),
-      });
-      if (summary.balanceMin == null) continue;
-      completeDays += 1;
-      if (summary.balanceMin > 0) overtimeMinutes += summary.balanceMin;
-      else if (summary.balanceMin < 0) deductionMinutes += Math.abs(summary.balanceMin);
-    }
-
-    return { overtimeMinutes, deductionMinutes, completeDays };
-  }, [attendanceScans, breakMin, shiftWindowMin, isHoliday, holidayVersion]);
+  const attendanceAdjustments = useMemo(() => summarizeAttendance(
+    attendanceScans || [],
+    {
+      doubleScanMinutes: 10,
+      shiftStart: s.shiftStart,
+      shiftEnd: s.shiftEnd,
+      thursdayShiftEnd: s.thursdayShiftEnd,
+      breakfastMin: Number(s.breakfastMin) || 0,
+      lunchMin: Number(s.lunchMin) || 0,
+    },
+    isHoliday,
+  ), [
+    attendanceScans, s.shiftStart, s.shiftEnd, s.thursdayShiftEnd,
+    s.breakfastMin, s.lunchMin, isHoliday, holidayVersion,
+  ]);
 
   const handleSelectEmployee = (emp) => {
     attendanceInputsKeyRef.current = '';
@@ -279,22 +273,27 @@ const HumanResources = () => {
   useEffect(() => {
     if (!selectedEmployee || !startDate || !endDate || attendanceScans === undefined || attendanceQuery.loading || attendanceQuery.error) return;
 
-    // Attendance is live, so its query can refresh after the user has edited
-    // these fields. Seed the inputs once for each employee/date range instead
-    // of overwriting manual values on every refresh.
+    // Attendance is live. Recompute fields that still come from attendance,
+    // while preserving each field as soon as the user edits it manually.
     const inputsKey = `${selectedEmployee.cardNo || ''}:${attendanceFromKey}:${attendanceToKey}`;
-    if (attendanceInputsKeyRef.current === inputsKey) return;
-    attendanceInputsKeyRef.current = inputsKey;
+    const newInputScope = attendanceInputsKeyRef.current !== inputsKey;
+    if (newInputScope) {
+      attendanceInputsKeyRef.current = inputsKey;
+      attendanceManualFieldsRef.current = { overtime: false, hourlyDeduction: false };
+    }
+
+    const shouldUpdateOvertime = newInputScope || !attendanceManualFieldsRef.current.overtime;
+    const shouldUpdateDeduction = newInputScope || !attendanceManualFieldsRef.current.hourlyDeduction;
 
     if (!selectedEmployee.cardNo || attendanceAdjustments.completeDays === 0) {
-      setOvertime('');
-      setHourlyDeduction('');
+      if (shouldUpdateOvertime) setOvertime('');
+      if (shouldUpdateDeduction) setHourlyDeduction('');
       return;
     }
 
     const asHours = (minutes) => minutes === 0 ? '0' : String(Number((minutes / 60).toFixed(2)));
-    setOvertime(asHours(attendanceAdjustments.overtimeMinutes));
-    setHourlyDeduction(asHours(attendanceAdjustments.deductionMinutes));
+    if (shouldUpdateOvertime) setOvertime(asHours(attendanceAdjustments.overtimeMinutes));
+    if (shouldUpdateDeduction) setHourlyDeduction(asHours(attendanceAdjustments.deductionMinutes));
   }, [selectedEmployee, startDate, endDate, attendanceFromKey, attendanceToKey, attendanceScans, attendanceAdjustments, attendanceQuery.loading, attendanceQuery.error]);
 
   // Re-run the calc when inputs or the currency change — but only after the
@@ -462,11 +461,11 @@ const HumanResources = () => {
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={overtime} onChange={(e) => setOvertime(e.target.value)} min="0" step="0.01" placeholder="اضافه کار" aria-label="ساعت اضافه‌کاری" /><span className={`${styles.fieldIcon} ${styles.orangeIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={overtime} onChange={(e) => { attendanceManualFieldsRef.current.overtime = true; setOvertime(e.target.value); }} min="0" step="0.01" placeholder="اضافه کار" aria-label="ساعت اضافه‌کاری" /><span className={`${styles.fieldIcon} ${styles.orangeIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">
-            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={hourlyDeduction} onChange={(e) => setHourlyDeduction(e.target.value)} min="0" step="0.01" placeholder="کسر کار" aria-label="ساعت کسری کار" /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
+            <div className={`${styles.fieldShell} ${styles.inputField}`}><input type="number" inputMode="decimal" value={hourlyDeduction} onChange={(e) => { attendanceManualFieldsRef.current.hourlyDeduction = true; setHourlyDeduction(e.target.value); }} min="0" step="0.01" placeholder="کسر کار" aria-label="ساعت کسری کار" /><span className={`${styles.fieldIcon} ${styles.pinkIcon}`} aria-hidden="true"><i className="fa-regular fa-clock" /></span></div>
           </div>
 
           <div className="form-group">

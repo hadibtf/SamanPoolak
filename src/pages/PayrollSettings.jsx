@@ -43,17 +43,21 @@ const PayrollSettings = () => {
     <form className={`${styles.root} card`} onSubmit={handleSave}>
       <h2 className="ps-title">شیفت و تنفس</h2>
       <p className="ps-hint">
-        شیفت کاری شامل ساعت شروع و پایان و زمان تنفس‌هاست. هر تنفسی که مقدارش
+        پایان شیفت پنجشنبه مستقل از روزهای عادی تنظیم می‌شود. هر تنفسی که مقدارش
         صفر/خالی باشد از زمان کار کسر نمی‌شود.
       </p>
       <div className="grid-form">
         <div className="form-group">
-          <label>ساعت شروع شیفت</label>
-          <input type="time" value={form.shiftStart} onChange={(e) => setField('shiftStart', e.target.value)} dir="ltr" />
+          <label htmlFor="payroll-shift-start">ساعت شروع شیفت</label>
+          <input id="payroll-shift-start" type="time" value={form.shiftStart} onChange={(e) => setField('shiftStart', e.target.value)} dir="ltr" />
         </div>
         <div className="form-group">
-          <label>ساعت پایان شیفت</label>
-          <input type="time" value={form.shiftEnd} onChange={(e) => setField('shiftEnd', e.target.value)} dir="ltr" />
+          <label htmlFor="payroll-shift-end">ساعت پایان شیفت روزهای عادی</label>
+          <input id="payroll-shift-end" type="time" value={form.shiftEnd} onChange={(e) => setField('shiftEnd', e.target.value)} dir="ltr" />
+        </div>
+        <div className="form-group">
+          <label htmlFor="payroll-thursday-shift-end">ساعت پایان شیفت پنجشنبه</label>
+          <input id="payroll-thursday-shift-end" type="time" value={form.thursdayShiftEnd} onChange={(e) => setField('thursdayShiftEnd', e.target.value)} dir="ltr" />
         </div>
         {numField('breakfastMin', 'زمان صبحانه', 'دقیقه')}
         {numField('lunchMin', 'زمان ناهار', 'دقیقه')}

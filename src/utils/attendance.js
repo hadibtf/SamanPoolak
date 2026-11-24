@@ -3,6 +3,9 @@
 // summaries. Used by the PayrollAttendance screen.
 
 import { SHIFT_MINUTES, WORK_BREAK_MINUTES } from '../constants';
+import DateObject from 'react-date-object';
+import persian from 'react-date-object/calendars/persian';
+import persian_fa from 'react-date-object/locales/persian_fa';
 
 /** Latin digits -> Persian digits. */
 export const toFa = (val) => String(val ?? '').replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -21,6 +24,23 @@ export const minutesBetween = (a, b) => {
   const mb = toMinutes(b);
   if (ma == null || mb == null) return null;
   return mb - ma;
+};
+
+/** Persian weekday name for a Jalali YYYYMMDD date key. */
+export const weekdayOfDateKey = (dateKey) => {
+  if (!/^\d{8}$/.test(String(dateKey || ''))) return '';
+  try {
+    const d = new DateObject({
+      calendar: persian,
+      locale: persian_fa,
+      year: Number(dateKey.slice(0, 4)),
+      month: Number(dateKey.slice(4, 6)),
+      day: Number(dateKey.slice(6, 8)),
+    });
+    return d.weekDay?.name || '';
+  } catch {
+    return '';
+  }
 };
 
 /** "8 ساعت و 53 دقیقه" from a minute count. */
@@ -65,21 +85,56 @@ export const groupByDay = (scans) => {
  * - flags.missingExit: odd number of scans (forgot to clock out).
  * - flags.duplicates: indexes of adjacent pairs closer than doubleScanMinutes.
  */
-export const computeDay = (scans, {
-  doubleScanMinutes = 10,
-  breakMin = WORK_BREAK_MINUTES,    // mandatory unpaid daily breaks
-  shiftWindowMin = SHIFT_MINUTES,
-  isHoliday = false,
-} = {}) => {
+export const computeDay = (scans, options = {}) => {
+  const {
+    doubleScanMinutes = 10,
+    breakMin,
+    breakfastMin,
+    lunchMin,
+    shiftWindowMin,
+    shiftStart,
+    shiftEnd,
+    thursdayShiftEnd,
+    dateKey,
+    isHoliday = false,
+  } = options;
   const sorted = [...scans].sort((a, b) => (toMinutes(a.time) ?? 0) - (toMinutes(b.time) ?? 0));
   const firstIn = sorted[0]?.time || null;
   const lastOut = sorted.length > 1 ? sorted[sorted.length - 1].time : null;
-  // Gross presence (first-in -> last-out). Worked = presence − mandatory breaks;
-  // expected daily work = shift window − the same breaks; balance = worked −
-  // expected (= extra when over the shift, deduction when under).
+
+  const hasSeparateBreakSettings = breakfastMin !== undefined || lunchMin !== undefined;
+  const breakfast = Math.max(0, Number(breakfastMin) || 0);
+  const lunch = Math.max(0, Number(lunchMin) || 0);
+  const standardBreakMin = Math.max(0, Number(
+    breakMin ?? (hasSeparateBreakSettings ? breakfast + lunch : WORK_BREAK_MINUTES)
+  ) || 0);
+  const startMin = toMinutes(shiftStart);
+  const regularEndMin = toMinutes(shiftEnd);
+  const hasConfiguredShiftTimes = shiftStart !== undefined || shiftEnd !== undefined;
+  const regularWindowMin = hasConfiguredShiftTimes
+    ? Math.max(0, (regularEndMin ?? 0) - (startMin ?? 0))
+    : Math.max(0, Number(shiftWindowMin ?? SHIFT_MINUTES) || 0);
+  const thursdayEndMin = toMinutes(thursdayShiftEnd) ?? regularEndMin;
+  const isThursday = weekdayOfDateKey(dateKey) === 'پنجشنبه';
+  const dayWindowMin = isThursday && hasConfiguredShiftTimes
+    ? Math.max(0, (thursdayEndMin ?? 0) - (startMin ?? 0))
+    : regularWindowMin;
+
+  // Thursday lunch is unpaid only when the employee stays past 15:00. The
+  // expected schedule uses the configured end time to determine whether lunch
+  // belongs in that day's target.
+  const actualBreakMin = isThursday && hasSeparateBreakSettings
+    ? breakfast + ((toMinutes(lastOut) ?? 0) > 15 * 60 ? lunch : 0)
+    : standardBreakMin;
+  const scheduledBreakMin = isThursday && hasSeparateBreakSettings
+    ? breakfast + ((thursdayEndMin ?? 0) > 15 * 60 ? lunch : 0)
+    : standardBreakMin;
+
+  // Gross presence (first-in -> last-out). Worked and expected minutes each
+  // exclude the breaks that apply to the actual attendance and schedule.
   const durationMin = sorted.length > 1 ? minutesBetween(firstIn, lastOut) : null;
-  const workedMin = durationMin == null ? null : Math.max(0, durationMin - breakMin);
-  const expectedMin = Math.max(0, shiftWindowMin - breakMin);
+  const workedMin = durationMin == null ? null : Math.max(0, durationMin - actualBreakMin);
+  const expectedMin = Math.max(0, dayWindowMin - scheduledBreakMin);
   // On an official holiday a full shift is credited even with no records; any
   // time actually worked counts entirely as overtime.
   const balanceMin = isHoliday
@@ -97,6 +152,7 @@ export const computeDay = (scans, {
   return {
     firstIn,
     lastOut,
+    expectedMin,
     durationMin,   // gross presence (last-out − first-in)
     workedMin,     // durationMin − unpaid breaks, clamped at 0
     balanceMin,    // workedMin − shift length (+ overtime / − deduction)
@@ -106,6 +162,33 @@ export const computeDay = (scans, {
       duplicates,
     },
   };
+};
+
+/** Compute daily summaries and payroll worktime totals from a scan list. */
+export const summarizeAttendance = (scans, settings = {}, isHolidayForDate = () => false) => {
+  const days = groupByDay(scans || []).map((day) => ({
+    ...day,
+    summary: computeDay(day.scans, {
+      ...settings,
+      dateKey: day.dateKey,
+      isHoliday: isHolidayForDate(day.dateKey),
+    }),
+  }));
+
+  let workedMin = 0;
+  let overtimeMinutes = 0;
+  let deductionMinutes = 0;
+  let completeDays = 0;
+
+  for (const { summary } of days) {
+    if (summary.workedMin == null) continue;
+    workedMin += summary.workedMin;
+    completeDays += 1;
+    if (summary.balanceMin > 0) overtimeMinutes += summary.balanceMin;
+    else deductionMinutes += -summary.balanceMin;
+  }
+
+  return { days, workedMin, overtimeMinutes, deductionMinutes, completeDays };
 };
 
 /** Signed "+۱:۴۰" / "−۰:۴۰" balance label (Persian digits). */

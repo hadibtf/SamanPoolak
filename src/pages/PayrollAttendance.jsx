@@ -8,7 +8,7 @@ import persian_fa from 'react-date-object/locales/persian_fa';
 import JalaliDatePicker from '../components/JalaliDatePicker';
 import { jalaliDateKey } from '../domain';
 import {
-  groupByDay, computeDay, formatDuration, formatDateKey, formatBalance, toFa, toMinutes,
+  summarizeAttendance, formatDuration, formatDateKey, formatBalance, toFa, weekdayOfDateKey,
 } from '../utils/attendance';
 import { useHolidays } from '../holidays';
 import { usePayrollSettings, hourlyAdjustRate } from '../payrollSettings';
@@ -20,28 +20,17 @@ const DOUBLE_SCAN_MIN = 10;
 const mkFirst = (y, m) =>
   new DateObject({ calendar: persian, locale: persian_fa, year: y, month: m, day: 1 });
 
-// Persian weekday name (شنبه ... جمعه) for a YYYYMMDD Jalali key.
-const weekdayOf = (dateKey) => {
-  if (!dateKey || String(dateKey).length !== 8) return '';
-  const d = new DateObject({
-    calendar: persian,
-    locale: persian_fa,
-    year: Number(dateKey.slice(0, 4)),
-    month: Number(dateKey.slice(4, 6)),
-    day: Number(dateKey.slice(6, 8)),
-  });
-  return d.weekDay?.name || '';
-};
-
 const PayrollAttendance = () => {
   const { formatMoney } = useSettings();
   const s = usePayrollSettings();
-  // Shift window + unpaid breaks from the settings tab.
-  const breakMin = (Number(s.breakfastMin) || 0) + (Number(s.lunchMin) || 0);
-  const shiftWindowMin = Math.max(
-    0,
-    (toMinutes(s.shiftEnd) ?? 0) - (toMinutes(s.shiftStart) ?? 0)
-  );
+  const attendanceSettings = {
+    doubleScanMinutes: DOUBLE_SCAN_MIN,
+    shiftStart: s.shiftStart,
+    shiftEnd: s.shiftEnd,
+    thursdayShiftEnd: s.thursdayShiftEnd,
+    breakfastMin: Number(s.breakfastMin) || 0,
+    lunchMin: Number(s.lunchMin) || 0,
+  };
   const fileRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -121,33 +110,22 @@ const PayrollAttendance = () => {
   // on import so the day calcs below recompute.
   const { isHoliday, version: holidayVersion } = useHolidays();
 
-  const days = useMemo(() => {
-    const grouped = groupByDay(scans || []);
-    return grouped.map((d) => ({
-      ...d,
-      summary: computeDay(d.scans, {
-        doubleScanMinutes: DOUBLE_SCAN_MIN, breakMin, shiftWindowMin,
-        isHoliday: isHoliday(d.dateKey),
-      }),
-    }));
-    // holidayVersion: recompute when holiday data loads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scans, breakMin, shiftWindowMin, holidayVersion]);
+  const attendanceSummary = useMemo(() => summarizeAttendance(
+    scans || [], attendanceSettings, isHoliday
+  ), [
+    scans, s.shiftStart, s.shiftEnd, s.thursdayShiftEnd,
+    s.breakfastMin, s.lunchMin, isHoliday, holidayVersion,
+  ]);
+  const days = attendanceSummary.days;
 
   const totals = useMemo(() => {
-    let worked = 0; let overtime = 0; let deduction = 0; let daysWorked = 0;
-    for (const d of days) {
-      const { workedMin, balanceMin } = d.summary;
-      if (workedMin == null) continue;
-      worked += workedMin;
-      daysWorked += 1;
-      if (balanceMin > 0) overtime += balanceMin;
-      else deduction += -balanceMin;
-    }
+    const worked = attendanceSummary.workedMin;
+    const overtime = attendanceSummary.overtimeMinutes;
+    const deduction = attendanceSummary.deductionMinutes;
     const netMin = overtime - deduction;
     const netRial = (netMin / 60) * hourlyAdjustRate(s);
-    return { worked, overtime, deduction, netMin, netRial, daysWorked };
-  }, [days, s]);
+    return { worked, overtime, deduction, netMin, netRial, daysWorked: attendanceSummary.completeDays };
+  }, [attendanceSummary, s]);
 
   const openEmployee = (emp) => {
     const cardNo = cardByPerson[emp.id];
@@ -343,7 +321,7 @@ const PayrollAttendance = () => {
             <div className="att-info-banner">
               <i className="fa-solid fa-circle-info" aria-hidden="true" />
               <p className="att-hint">
-                شیفت: {toFa(s.shiftStart)} تا {toFa(s.shiftEnd)} • تنفس روزانه {toFa(breakMin)} دقیقه از زمان کار کسر می‌شود • قابل تغییر در تب «تنظیمات».
+                شیفت روزهای عادی: {toFa(s.shiftStart)} تا {toFa(s.shiftEnd)} • پنجشنبه: {toFa(s.shiftStart)} تا {toFa(s.thursdayShiftEnd)} • در پنجشنبه صبحانه همیشه و ناهار فقط با خروج بعد از ۱۵:۰۰ کسر می‌شود • قابل تغییر در تب «تنظیمات».
               </p>
             </div>
 
@@ -379,7 +357,7 @@ const PayrollAttendance = () => {
                   <div key={dateKey} className={`att-day ${flagged ? 'flagged' : ''}`}>
                     <div className="att-day-main">
                       <span className="att-day-id">
-                        <b>{weekdayOf(dateKey)}</b>
+                        <b>{weekdayOfDateKey(dateKey)}</b>
                         <span className="att-day-date">{formatDateKey(dateKey)}</span>
                       </span>
                       {/* align under header «ورود / خروج»: exit (left) – entry (right) */}

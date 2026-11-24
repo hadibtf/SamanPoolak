@@ -150,6 +150,10 @@ cleanup, providers for auth/settings, and React Router for navigation.
   batch weight when the item's sample weight becomes available.
 - Payroll calculation results are not persisted. Keep insured-base insurance,
   non-insured additions/deductions, and Jalali working-day calculations intact.
+- Attendance uses a separate configurable Thursday end time. Thursday breakfast
+  is always deducted; lunch is deducted from worked time only after a 15:00
+  checkout, and enters the expected target only when the configured Thursday
+  shift ends after 15:00.
 - Images are compressed before upload; marking records belong to customers.
 - Invoice descriptions combine product, applicable hardening/plating,
   dimensions, and description, omitting absent parts.
