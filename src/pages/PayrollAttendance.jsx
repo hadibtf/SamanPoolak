@@ -45,7 +45,6 @@ const PayrollAttendance = () => {
   const peopleQuery = useApiQuery(async () => liveRows((await peopleApi.list()).people).filter((p) => p.category === 'EMPLOYEE'));
   const { data: employees } = peopleQuery;
   const countQuery = useApiQuery(async () => (await attendanceApi.list({ countOnly: 1 })).count);
-  const scanCount = countQuery.data;
 
   // Card number now lives on the person (server-backed people.cardNo).
   const cardByPerson = useMemo(() => {
@@ -111,10 +110,10 @@ const PayrollAttendance = () => {
   const { isHoliday, version: holidayVersion } = useHolidays();
 
   const attendanceSummary = useMemo(() => summarizeAttendance(
-    scans || [], attendanceSettings, isHoliday
+    scans || [], attendanceSettings, isHoliday, { from: fromKey, to: toKey }
   ), [
     scans, s.shiftStart, s.shiftEnd, s.thursdayShiftEnd,
-    s.breakfastMin, s.lunchMin, isHoliday, holidayVersion,
+    s.breakfastMin, s.lunchMin, isHoliday, holidayVersion, fromKey, toKey,
   ]);
   const days = attendanceSummary.days;
 
@@ -209,28 +208,7 @@ const PayrollAttendance = () => {
   return (
     <div className={styles.root}>
       <ApiReadStatus queries={[peopleQuery, countQuery]} />
-      <div className="card att-import-card">
-        <div className="att-import-row">
-          <div>
-            <h2 className="att-h2">سوابق حضور و غیاب</h2>
-            <p className="att-sub">
-              {countQuery.loading || countQuery.error ? '' : scanCount ? `${toFa(scanCount)} رکورد` : 'هنوز رکوردی وارد نشده است'}
-            </p>
-          </div>
-          <button className="att-btn-primary" onClick={handleImportClick} disabled={importing}>
-            {importing ? 'در حال ورود...' : 'بروز رسانی سوابق'}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json,.json"
-            style={{ display: 'none' }}
-            onChange={handleFile}
-          />
-        </div>
-      </div>
-
-      <div className="card">
+      <div className="card att-employee-card">
         <h3 className="att-h3">کارمندان</h3>
         <div className="att-emp-list">
           {(employees || []).map((emp) => {
@@ -252,6 +230,18 @@ const PayrollAttendance = () => {
           {employees && employees.length === 0 && (
             <p className="att-hint">کارمندی ثبت نشده است.</p>
           )}
+        </div>
+        <div className="att-emp-footer">
+          <button className="att-btn-primary" onClick={handleImportClick} disabled={importing}>
+            {importing ? 'در حال ورود...' : 'بروز رسانی سوابق'}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            style={{ display: 'none' }}
+            onChange={handleFile}
+          />
         </div>
       </div>
 
@@ -343,6 +333,10 @@ const PayrollAttendance = () => {
               {days.map(({ dateKey, summary }) => {
                 const dupSecondIds = new Set(summary.flags.duplicates.map((d) => d.second.id));
                 const flagged = summary.flags.missingExit || summary.flags.duplicates.length > 0;
+                const displayedWorkedMin = summary.isHoliday ? summary.creditedWorkedMin : summary.workedMin;
+                const statusClass = summary.isHoliday
+                  ? 'holiday'
+                  : summary.workedMin == null ? 'warn' : summary.balanceMin >= 0 ? 'pos' : 'neg';
                 const detailsOpen = expandedDays[dateKey] ?? false;
                 const firstScan = summary.scans[0];
                 const lastScan = summary.scans[summary.scans.length - 1];
@@ -354,7 +348,7 @@ const PayrollAttendance = () => {
                   >{toFa(scan.time)}</span>
                 ) : '—');
                 return (
-                  <div key={dateKey} className={`att-day ${flagged ? 'flagged' : ''}`}>
+                  <div key={dateKey} className={`att-day ${flagged ? 'flagged' : ''} ${summary.isHoliday ? 'holiday' : ''}`}>
                     <div className="att-day-main">
                       <span className="att-day-id">
                         <b>{weekdayOfDateKey(dateKey)}</b>
@@ -367,13 +361,13 @@ const PayrollAttendance = () => {
                           : renderTime(firstScan)}
                       </span>
                       <span className={`att-day-dur ${summary.flags.missingExit ? 'warn' : ''}`}>
-                        {summary.workedMin != null ? (
-                          <span className="att-worked">{formatDuration(summary.workedMin)}</span>
+                        {displayedWorkedMin != null ? (
+                          <span className="att-worked">{formatDuration(displayedWorkedMin)}</span>
                         ) : 'بدون خروج'}
                       </span>
-                      <span className={`att-status ${summary.workedMin == null ? 'warn' : summary.balanceMin >= 0 ? 'pos' : 'neg'}`}>
+                      <span className={`att-status ${statusClass}`}>
                         <i aria-hidden="true" />
-                        {summary.workedMin == null ? 'ناقص' : formatBalance(summary.balanceMin)}
+                        {summary.isHoliday ? 'تعطیل' : summary.workedMin == null ? 'ناقص' : formatBalance(summary.balanceMin)}
                       </span>
                       <button
                         type="button"

@@ -6,19 +6,7 @@
   gap: 18px;
 }
 
-:local(.root) :global(.att-import-card) { padding: 22px 24px; }
-
-:local(.root) :global(.att-import-row) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-:local(.root) :global(.att-h2) { font-size: 18px; font-weight: 700; color: #1c1c1e; margin: 0; }
 :local(.root) :global(.att-h3) { font-size: 16px; font-weight: 700; color: #1c1c1e; margin: 0 0 14px; }
-:local(.root) :global(.att-sub) { font-size: 13px; color: #8e8e93; margin: 4px 0 0; }
 
 :local(.root) :global(.att-hint) { font-size: 12.5px; color: #8e8e93; margin: 12px 0 0; line-height: 1.9; }
 :local(.root) :global(.att-hint) code {
@@ -649,4 +637,191 @@
 :local(.root) :global(.att-sum-cell) strong { max-width:100%; white-space:normal; overflow-wrap:anywhere; }
 @media(max-width: 560px) {
   :local(.root) :global(.att-summary) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+/* Main attendance list: soft blue liquid glass, matching the reference. */
+:local(.root) :global(.card):global(.att-employee-card) {
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 28px;
+  background: linear-gradient(128deg,
+    rgba(255, 255, 255, .82) 0%,
+    rgba(225, 238, 255, .56) 54%,
+    rgba(255, 255, 255, .68) 100%);
+  -webkit-backdrop-filter: blur(28px) saturate(175%);
+  backdrop-filter: blur(28px) saturate(175%);
+  box-shadow: 0 18px 44px -18px rgba(49, 94, 153, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .94);
+}
+
+:local(.root) :global(.card):global(.att-employee-card) {
+  padding: 26px clamp(22px, 2.7vw, 42px) 32px;
+}
+
+:local(.root) :global(.att-h3) {
+  color: var(--sp-text, #20242b);
+}
+
+:local(.root) :global(.att-h3) { font-size: 18px; margin-bottom: 18px; }
+
+:local(.root) :global(.att-btn-primary) {
+  min-height: 56px;
+  padding: 13px 26px;
+  border: 1px solid rgba(255, 255, 255, .86);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #42a3ff 0%, #147cf2 52%, #0568e6 100%);
+  box-shadow: 0 10px 24px -7px rgba(0, 113, 238, .62),
+    inset 0 1px 0 rgba(255, 255, 255, .52),
+    inset 0 -1px 0 rgba(0, 62, 168, .26);
+  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+}
+:local(.root) :global(.att-btn-primary):hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 13px 28px -7px rgba(0, 113, 238, .68),
+    inset 0 1px 0 rgba(255, 255, 255, .58);
+}
+:local(.root) :global(.att-btn-primary):active { transform: translateY(0) scale(.99); }
+:local(.root) :global(.att-btn-primary):focus-visible,
+:local(.root) :global(.att-emp-row):focus-visible {
+  outline: 3px solid rgba(0, 122, 255, .52);
+  outline-offset: 3px;
+}
+
+:local(.root) :global(.att-emp-list) { gap: 12px; }
+:local(.root) :global(.att-emp-row) {
+  box-sizing: border-box;
+  min-height: 60px;
+  padding: 10px 18px;
+  border: 1px solid rgba(255, 255, 255, .94);
+  border-radius: 999px;
+  background: linear-gradient(105deg,
+    rgba(255, 255, 255, .76),
+    rgba(237, 245, 255, .66) 55%,
+    rgba(255, 255, 255, .78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9),
+    0 4px 12px rgba(71, 107, 158, .08);
+}
+:local(.root) :global(.att-emp-row):hover {
+  border-color: rgba(83, 165, 255, .55);
+  background: linear-gradient(105deg,
+    rgba(255, 255, 255, .9),
+    rgba(220, 237, 255, .82) 55%,
+    rgba(255, 255, 255, .9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .96),
+    0 8px 18px rgba(55, 112, 184, .14);
+}
+:local(.root) :global(.att-emp-name) {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--sp-text, #20242b);
+  font-size: clamp(15px, 1.05vw, 18px);
+  font-weight: 700;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+:local(.root) :global(.att-emp-card) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .92);
+  border-radius: 999px;
+  background: rgba(218, 232, 251, .72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .78);
+  color: var(--sp-text-muted, #656d78);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+:local(.root) :global(.att-emp-footer) {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+[data-theme="dark"] :local(.root) :global(.card):global(.att-employee-card) {
+  border-color: rgba(255, 255, 255, .12);
+  background: linear-gradient(128deg,
+    rgba(43, 51, 64, .94),
+    rgba(31, 38, 50, .92) 56%,
+    rgba(37, 45, 58, .94));
+  box-shadow: 0 18px 44px -18px rgba(0, 0, 0, .58),
+    inset 0 1px 0 rgba(255, 255, 255, .1);
+}
+[data-theme="dark"] :local(.root) :global(.att-h3),
+[data-theme="dark"] :local(.root) :global(.att-emp-name) {
+  color: var(--sp-text, #ececf1);
+}
+[data-theme="dark"] :local(.root) :global(.att-emp-card) {
+  color: var(--sp-text-muted, #a4acb8);
+}
+[data-theme="dark"] :local(.root) :global(.att-emp-row) {
+  border-color: rgba(255, 255, 255, .13);
+  background: linear-gradient(105deg,
+    rgba(57, 67, 83, .78),
+    rgba(42, 51, 66, .88) 55%,
+    rgba(51, 61, 77, .82));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12),
+    0 4px 12px rgba(0, 0, 0, .16);
+}
+[data-theme="dark"] :local(.root) :global(.att-emp-row):hover {
+  border-color: rgba(117, 186, 255, .48);
+  background: linear-gradient(105deg,
+    rgba(63, 82, 106, .88),
+    rgba(44, 63, 88, .94) 55%,
+    rgba(55, 74, 99, .9));
+}
+[data-theme="dark"] :local(.root) :global(.att-emp-card) {
+  border-color: rgba(255, 255, 255, .12);
+  background: rgba(24, 31, 42, .72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+@media (max-width: 600px) {
+  :local(.root) :global(.card):global(.att-employee-card) {
+    padding: 20px 18px 22px;
+    border-radius: 22px;
+  }
+  :local(.root) :global(.att-h3) { margin-bottom: 14px; }
+  :local(.root) :global(.att-btn-primary) { min-height: 48px; padding: 10px 18px; font-size: 13px; }
+  :local(.root) :global(.att-emp-list) { gap: 9px; }
+  :local(.root) :global(.att-emp-row) { min-height: 54px; padding: 8px 13px; gap: 9px; }
+  :local(.root) :global(.att-emp-name) { font-size: 15px; }
+  :local(.root) :global(.att-emp-card) { padding: 5px 10px; font-size: 11px; }
+  :local(.root) :global(.att-emp-footer) { margin-top: 16px; }
+}
+
+@media (max-width: 400px) {
+  :local(.root) :global(.att-btn-primary) { min-height: 44px; padding: 9px 12px; font-size: 12px; }
+  :local(.root) :global(.att-emp-row) { padding-inline: 10px; }
+  :local(.root) :global(.att-emp-name) { font-size: 14px; }
+}
+
+/* Holiday credits stay visible and distinct from attendance warnings. */
+:local(.root) :global(.att-day):global(.holiday) {
+  border-color: #efb7b7;
+  background: #fff1f1;
+}
+:local(.root) :global(.att-day):global(.holiday):global(.flagged) {
+  border-color: #efb7b7;
+  background: #fff1f1;
+}
+:local(.root) :global(.att-status):global(.holiday) {
+  min-width: 0;
+  background: #ffe2e2;
+  color: #b4232d;
+  direction: rtl;
+}
+[data-theme="dark"] :local(.root) :global(.att-day):global(.holiday),
+[data-theme="dark"] :local(.root) :global(.att-day):global(.holiday):global(.flagged) {
+  border-color: #713b40;
+  background: #392328;
+}
+[data-theme="dark"] :local(.root) :global(.att-status):global(.holiday) {
+  background: #522a30;
+  color: #ff9a9a;
 }

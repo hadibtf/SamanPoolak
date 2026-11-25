@@ -79,6 +79,42 @@ export const groupByDay = (scans) => {
   return days;
 };
 
+const dateKeyOf = (date) =>
+  `${date.year}${String(date.month.number).padStart(2, '0')}${String(date.day).padStart(2, '0')}`;
+
+const dateFromKey = (dateKey) => new DateObject({
+  calendar: persian,
+  locale: persian_fa,
+  year: Number(dateKey.slice(0, 4)),
+  month: Number(dateKey.slice(4, 6)),
+  day: Number(dateKey.slice(6, 8)),
+});
+
+/** List recognized holiday keys in an inclusive Jalali date range. */
+const holidayKeysInRange = (fromKey, toKey, isHolidayForDate) => {
+  const from = String(fromKey || '');
+  const to = String(toKey || '');
+  if (!/^\d{8}$/.test(from) || !/^\d{8}$/.test(to) || from > to) {
+    return [];
+  }
+
+  const cursor = dateFromKey(from);
+  const end = dateFromKey(to);
+  if (!cursor.isValid || !end.isValid || dateKeyOf(cursor) !== from || dateKeyOf(end) !== to) return [];
+
+  const keys = [];
+  let key = dateKeyOf(cursor);
+  while (key <= to) {
+    if (isHolidayForDate(key)) keys.push(key);
+    if (key === to) break;
+    cursor.add(1, 'day');
+    const nextKey = dateKeyOf(cursor);
+    if (nextKey <= key) break;
+    key = nextKey;
+  }
+  return keys;
+};
+
 /**
  * Compute a single day's summary from its (time-sorted) scans.
  * - duration = lastOut - firstIn (first-in→last-out; mid-day scans ignored).
@@ -135,8 +171,11 @@ export const computeDay = (scans, options = {}) => {
   const durationMin = sorted.length > 1 ? minutesBetween(firstIn, lastOut) : null;
   const workedMin = durationMin == null ? null : Math.max(0, durationMin - actualBreakMin);
   const expectedMin = Math.max(0, dayWindowMin - scheduledBreakMin);
-  // On an official holiday a full shift is credited even with no records; any
-  // time actually worked counts entirely as overtime.
+  // A holiday earns its scheduled shift credit; any actual presence is
+  // additional credited time and also counts entirely as overtime.
+  const creditedWorkedMin = isHoliday
+    ? expectedMin + (workedMin ?? 0)
+    : workedMin;
   const balanceMin = isHoliday
     ? (workedMin == null ? 0 : workedMin)
     : (workedMin == null ? null : workedMin - expectedMin);
@@ -155,7 +194,9 @@ export const computeDay = (scans, options = {}) => {
     expectedMin,
     durationMin,   // gross presence (last-out − first-in)
     workedMin,     // durationMin − unpaid breaks, clamped at 0
-    balanceMin,    // workedMin − shift length (+ overtime / − deduction)
+    creditedWorkedMin, // actual worked time plus scheduled holiday credit
+    balanceMin,    // holiday actual time or regular schedule deviation
+    isHoliday,
     scans: sorted,
     flags: {
       missingExit: sorted.length % 2 === 1,
@@ -164,16 +205,35 @@ export const computeDay = (scans, options = {}) => {
   };
 };
 
-/** Compute daily summaries and payroll worktime totals from a scan list. */
-export const summarizeAttendance = (scans, settings = {}, isHolidayForDate = () => false) => {
-  const days = groupByDay(scans || []).map((day) => ({
-    ...day,
-    summary: computeDay(day.scans, {
-      ...settings,
-      dateKey: day.dateKey,
-      isHoliday: isHolidayForDate(day.dateKey),
-    }),
-  }));
+/**
+ * Compute daily summaries and payroll worktime totals from a scan list.
+ * When `dateRange` is supplied, recognized holidays in its inclusive Jalali
+ * range are added to the result and receive their configured shift credit.
+ */
+export const summarizeAttendance = (scans, settings = {}, isHolidayForDate = () => false, dateRange = null) => {
+  const scanDays = groupByDay(scans || []);
+  const scansByDay = new Map(scanDays.map(({ dateKey, scans: dayScans }) => [dateKey, dayScans]));
+  const includeHolidayCredits = Boolean(
+    dateRange?.from && dateRange?.to && dateRange.from <= dateRange.to
+  );
+
+  if (includeHolidayCredits) {
+    holidayKeysInRange(dateRange.from, dateRange.to, isHolidayForDate).forEach((dateKey) => {
+      if (!scansByDay.has(dateKey)) scansByDay.set(dateKey, []);
+    });
+  }
+
+  const days = [...scansByDay.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([dateKey, dayScans]) => ({
+      dateKey,
+      scans: dayScans,
+      summary: computeDay(dayScans, {
+        ...settings,
+        dateKey,
+        isHoliday: isHolidayForDate(dateKey),
+      }),
+    }));
 
   let workedMin = 0;
   let overtimeMinutes = 0;
@@ -181,9 +241,14 @@ export const summarizeAttendance = (scans, settings = {}, isHolidayForDate = () 
   let completeDays = 0;
 
   for (const { summary } of days) {
+    const dayWorkedMin = includeHolidayCredits && summary.isHoliday
+      ? summary.creditedWorkedMin
+      : summary.workedMin;
+    if (dayWorkedMin != null) {
+      workedMin += dayWorkedMin;
+      completeDays += 1;
+    }
     if (summary.workedMin == null) continue;
-    workedMin += summary.workedMin;
-    completeDays += 1;
     if (summary.balanceMin > 0) overtimeMinutes += summary.balanceMin;
     else deductionMinutes += -summary.balanceMin;
   }
